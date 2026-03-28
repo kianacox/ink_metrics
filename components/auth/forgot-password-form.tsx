@@ -2,16 +2,16 @@
 
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  Input,
+  Label,
+} from "@/components/ui";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -49,7 +49,7 @@ export function ForgotPasswordForm({
       {success ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Check Your Email</CardTitle>
             <CardDescription>Password reset instructions sent</CardDescription>
           </CardHeader>
           <CardContent>
@@ -62,7 +62,7 @@ export function ForgotPasswordForm({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Reset Your Password</CardTitle>
             <CardDescription>
               Type in your email and we&apos;ll send you a link to reset your
               password
