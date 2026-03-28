@@ -97,9 +97,11 @@ export function AddSessionModal() {
       let clientId = existingRows?.[0]?.id as string | undefined;
 
       if (!clientId) {
+        const newClientId = crypto.randomUUID();
         const { data: inserted, error: insertClientError } = await supabase
           .from("Clients")
           .insert({
+            id: newClientId,
             user_id: user.id,
             name,
             contact_info: contact.length > 0 ? contact : null,
@@ -120,6 +122,7 @@ export function AddSessionModal() {
       }
 
       const { error: sessionError } = await supabase.from("Sessions").insert({
+        session_id: crypto.randomUUID(),
         user_id: user.id,
         client_id: clientId,
         price,
