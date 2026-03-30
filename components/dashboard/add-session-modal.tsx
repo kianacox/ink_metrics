@@ -11,6 +11,7 @@ import {
   Input,
   Label,
 } from "@/components/ui";
+import { DEFAULT_CURRENCY, toMinorUnits } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useId, useState } from "react";
 
@@ -63,7 +64,7 @@ export function AddSessionModal() {
     const name = clientName.trim();
     const contact = clientContact.trim();
     const lengthMinutes = Number.parseInt(sessionLength, 10);
-    const price = Number.parseFloat(profit);
+    let priceMinor = 0;
 
     if (!name) {
       setStatus({ type: "error", message: "Client name is required." });
@@ -78,7 +79,9 @@ export function AddSessionModal() {
       setIsLoading(false);
       return;
     }
-    if (!Number.isFinite(price)) {
+    try {
+      priceMinor = toMinorUnits(profit);
+    } catch {
       setStatus({ type: "error", message: "Profit must be a valid number." });
       setIsLoading(false);
       return;
@@ -86,46 +89,47 @@ export function AddSessionModal() {
 
     try {
       const { data: existingRows, error: findError } = await supabase
-        .from("Clients")
-        .select("id")
+        .from("clients")
+        .select("client_id")
         .eq("user_id", user.id)
         .eq("name", name)
         .limit(1);
 
       if (findError) throw findError;
 
-      let clientId = existingRows?.[0]?.id as string | undefined;
+      let clientId = existingRows?.[0]?.client_id as string | undefined;
 
       if (!clientId) {
         const newClientId = crypto.randomUUID();
         const { data: inserted, error: insertClientError } = await supabase
-          .from("Clients")
+          .from("clients")
           .insert({
-            id: newClientId,
+            client_id: newClientId,
             user_id: user.id,
             name,
             contact_info: contact.length > 0 ? contact : null,
           })
-          .select("id")
+          .select("client_id")
           .single();
 
         if (insertClientError) throw insertClientError;
-        clientId = inserted.id;
+        clientId = inserted.client_id;
       } else if (contact.length > 0) {
         const { error: updateError } = await supabase
-          .from("Clients")
+          .from("clients")
           .update({ contact_info: contact })
-          .eq("id", clientId)
+          .eq("client_id", clientId)
           .eq("user_id", user.id);
 
         if (updateError) throw updateError;
       }
 
-      const { error: sessionError } = await supabase.from("Sessions").insert({
+      const { error: sessionError } = await supabase.from("sessions").insert({
         session_id: crypto.randomUUID(),
         user_id: user.id,
         client_id: clientId,
-        price,
+        price: priceMinor,
+        currency: DEFAULT_CURRENCY,
         session_duration: lengthMinutes,
       });
 

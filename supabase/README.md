@@ -1,44 +1,72 @@
 # Supabase (Ink Metrics)
 
-Schema (including `Sessions.session_duration`) is maintained in your Supabase project. Tables are **PascalCase** (`Clients`, `Sessions`); the JS client uses `.from("Clients")` / `.from("Sessions")`. This folder documents RLS and auth URL setup only.
+Schema is maintained in your Supabase project. The app now uses lowercase table names:
+- `clients` (primary key: `client_id`)
+- `sessions` (primary key: `session_id`)
+- `profiles` (primary key: `profile_id`)
+
+Currency basics in Slice 1:
+- `profiles.default_currency` defaults to `'GBP'` for new users.
+- `sessions.currency` stores a currency code (`'GBP'` for now).
+- `sessions.price` stores an integer in minor units.
 
 ## Row Level Security
 
 The session logger **selects** existing clients by `user_id` and `name` before inserting. If there is **no `SELECT` policy** (or it is too strict), every save looks like a new client and triggers extra inserts. Add **`clients_select_own`** as below.
 
-`"Clients"` should have primary key **`id`** (uuid). There must be **no UNIQUE constraint on `user_id` alone**—that pattern (constraint name often `Clients_user_id_key`) allows only one client per artist and the second insert raises `23505`. If needed, run `supabase/drop_clients_user_id_unique.sql` in the SQL editor.
+`clients` should use primary key **`client_id`** (uuid). There must be **no UNIQUE constraint on `user_id` alone**—that pattern allows only one client per artist and the second insert raises `23505`.
 
-`"Sessions"` should use a unique primary key per row (commonly **`session_id` uuid**). If the default on that column is missing or wrong, the second session insert can raise **`23505` on `Sessions_pkey`**. The app passes an explicit `session_id` on insert; if your PK column is named **`id`** instead, rename the field in the app insert to match or set `default gen_random_uuid()` on the PK in Supabase.
+`sessions` should use a unique primary key per row (commonly **`session_id` uuid**). If the default on that column is missing or wrong, the second session insert can raise `23505` on the table primary key.
 
-There must be **no UNIQUE constraint on `Sessions.user_id` alone** (often `Sessions_user_id_key`), or only one session per artist is allowed. If needed, run `supabase/drop_sessions_user_id_unique.sql`.
+There must be **no UNIQUE constraint on `sessions.user_id` alone**, or only one session per artist is allowed.
 
-If inserts from the app fail with an RLS error, ensure `Clients` and `Sessions` allow authenticated users to manage only their own rows (`user_id = auth.uid()`). Example policies (adjust names if yours differ; use quoted identifiers for case-sensitive tables):
+If inserts from the app fail with an RLS error, ensure `clients`, `sessions`, and `profiles` allow authenticated users to manage only their own rows (`user_id = auth.uid()`). Example policies (adjust names if yours differ):
 
 ```sql
-alter table public."Clients" enable row level security;
-alter table public."Sessions" enable row level security;
+alter table public.clients enable row level security;
+alter table public.sessions enable row level security;
+alter table public.profiles enable row level security;
 
 create policy "clients_select_own"
-  on public."Clients" for select
+  on public.clients for select
   using (auth.uid() = user_id);
 
 create policy "clients_insert_own"
-  on public."Clients" for insert
+  on public.clients for insert
   with check (auth.uid() = user_id);
 
 create policy "clients_update_own"
-  on public."Clients" for update
+  on public.clients for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 create policy "sessions_select_own"
-  on public."Sessions" for select
+  on public.sessions for select
   using (auth.uid() = user_id);
 
 create policy "sessions_insert_own"
-  on public."Sessions" for insert
+  on public.sessions for insert
+  with check (auth.uid() = user_id);
+
+create policy "profiles_select_own"
+  on public.profiles for select
+  using (auth.uid() = user_id);
+
+create policy "profiles_insert_own"
+  on public.profiles for insert
+  with check (auth.uid() = user_id);
+
+create policy "profiles_update_own"
+  on public.profiles for update
+  using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 ```
+
+## Profile auto-creation
+
+`supabase/create_profile_on_user_signup.sql` includes a trigger on `auth.users` that inserts a matching `profiles` row with `default_currency = 'GBP'`.
+
+The app also upserts the profile during auth confirmation as a fallback to keep onboarding resilient.
 
 ## Auth redirect URLs
 

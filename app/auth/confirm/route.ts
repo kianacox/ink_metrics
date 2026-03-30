@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
@@ -25,6 +26,25 @@ export async function GET(request: NextRequest) {
       token_hash,
     });
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { error: profileError } = await supabase.from("profiles").upsert(
+          {
+            profile_id: crypto.randomUUID(),
+            user_id: user.id,
+            default_currency: DEFAULT_CURRENCY,
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (profileError) {
+          redirect(`/auth/error?error=${profileError.message}`);
+        }
+      }
+
       redirect(next);
     } else {
       // redirect the user to an error page with some instructions
