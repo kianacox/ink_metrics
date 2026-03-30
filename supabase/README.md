@@ -64,9 +64,9 @@ create policy "profiles_update_own"
 
 ## Profile auto-creation
 
-`supabase/create_profile_on_user_signup.sql` includes a trigger on `auth.users` that inserts a matching `profiles` row with `default_currency = 'GBP'`.
+Profile creation is currently handled in the app auth confirmation flow.
 
-The app also upserts the profile during auth confirmation as a fallback to keep onboarding resilient.
+After successful OTP verification, the app upserts a `profiles` row for the user with `default_currency = 'GBP'`.
 
 ## Auth redirect URLs
 
