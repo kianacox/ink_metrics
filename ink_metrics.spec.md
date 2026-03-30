@@ -75,10 +75,10 @@ Development follows **vertical slices** so value ships as quickly as possible.
 
 ## Slices
 
-1. **Slice 1** — Auth & session logger
+1. **Slice 1** — Auth & Sessions
 2. **Slice 2** - Profile Page
-3. **Slice 3** — Tracking expenses
-4. **Slice 4** — Tracking client metrics
+3. **Slice 3** — Tracking Clients
+4. **Slice 4** — Tracking Expenses
 5. **Slice 5** — Analytics dashboard
 6. **Slice 6** — Monthly reports (exportable summaries)
 7. **Slice 7** — Plan limits

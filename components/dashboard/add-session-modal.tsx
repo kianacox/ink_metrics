@@ -11,7 +11,7 @@ import {
   Input,
   Label,
 } from "@/components/ui";
-import { DEFAULT_CURRENCY, toMinorUnits } from "@/lib/currency";
+import { toMinorUnits } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useId, useState } from "react";
 
@@ -129,7 +129,6 @@ export function AddSessionModal() {
         user_id: user.id,
         client_id: clientId,
         price: priceMinor,
-        currency: DEFAULT_CURRENCY,
         session_duration: lengthMinutes,
       });
 
