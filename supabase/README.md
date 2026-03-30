@@ -3,7 +3,7 @@
 Schema is maintained in your Supabase project. The app now uses lowercase table names:
 - `clients` (primary key: `client_id`)
 - `sessions` (primary key: `session_id`)
-- `profiles` (primary key: `profile_id`)
+- `profiles`: primary key **`user_id`** (uuid), foreign key to **`auth.users` (`id`)** — one row per auth user, no separate `profile_id` (see `supabase/migrations/20250330120000_profiles_user_id_primary_key.sql` if migrating from a `profile_id` PK)
 
 Currency basics in Slice 1:
 - `profiles.default_currency` defaults to `'GBP'` for new users.
@@ -64,9 +64,7 @@ create policy "profiles_update_own"
 
 ## Profile auto-creation
 
-Profile creation is currently handled in the app auth confirmation flow.
-
-After successful OTP verification, the app upserts a `profiles` row for the user with `default_currency = 'GBP'`.
+When a signed-in user opens the dashboard, the app upserts a `profiles` row if needed (`default_currency = 'GBP'`, existing rows are left unchanged). See `lib/supabase/ensure-user-profile.ts`.
 
 ## Auth redirect URLs
 

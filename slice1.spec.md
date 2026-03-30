@@ -8,8 +8,7 @@ Clients:
 
 New Table: profiles
 schema:
-profile_id: uuid (primary key)
-user_id: (uuid) (foreign key)
+user_id: uuid (primary key, foreign key → auth.users.id)
 default_currency: text
 
 Sessions

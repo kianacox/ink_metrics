@@ -1,6 +1,6 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
-import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/supabase/ensure-user-profile";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -14,14 +14,7 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      profile_id: crypto.randomUUID(),
-      user_id: user.id,
-      default_currency: DEFAULT_CURRENCY,
-    },
-    { onConflict: "user_id", ignoreDuplicates: true },
-  );
+  const { error: profileError } = await ensureUserProfile(supabase, user.id);
 
   if (profileError) {
     redirect(`/auth/error?error=${profileError.message}`);
