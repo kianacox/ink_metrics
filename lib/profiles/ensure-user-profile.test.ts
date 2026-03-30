@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DEFAULT_CURRENCY } from "@/lib/currency";
-import { ensureUserProfile } from "@/lib/profiles/ensure-user-profile";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_CURRENCY } from "../currency";
+import { ensureUserProfile } from "./ensure-user-profile";
 
 test("throws when userId is missing", async () => {
   const mockSupabase = {
@@ -18,7 +19,7 @@ test("throws when userId is missing", async () => {
   await assert.rejects(
     () =>
       ensureUserProfile({
-        supabase: mockSupabase,
+        supabase: mockSupabase as unknown as SupabaseClient,
         userId: "",
       }),
     /Cannot create a profile without a user id\./,
@@ -45,7 +46,7 @@ test("upserts profile with default GBP currency and duplicate-safe options", asy
   };
 
   const result = await ensureUserProfile({
-    supabase: mockSupabase,
+    supabase: mockSupabase as unknown as SupabaseClient,
     userId: "user-123",
   });
 

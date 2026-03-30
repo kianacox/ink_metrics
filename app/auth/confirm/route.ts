@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { ensureUserProfile } from "@/lib/profiles/ensure-user-profile";
+import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
@@ -32,18 +32,11 @@ export async function GET(request: NextRequest) {
         redirect("/auth/error?error=Could not determine verified user.");
       }
 
-      const { error: profileError } = await ensureUserProfile({
+      await bootstrapUserProfile({
         supabase,
         userId: verifiedUserId,
+        source: "auth_confirm_route",
       });
-
-      if (profileError) {
-        console.error("profile_bootstrap_failed", {
-          source: "auth_confirm_route",
-          userId: verifiedUserId,
-          message: profileError.message,
-        });
-      }
 
       redirect(next);
     } else {

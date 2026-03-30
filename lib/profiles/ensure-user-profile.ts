@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface ProfileBootstrapPayload {
@@ -10,27 +11,8 @@ interface ProfileBootstrapOptions {
   ignoreDuplicates: boolean;
 }
 
-interface ProfileBootstrapError {
-  message: string;
-}
-
-type ProfileBootstrapResult = {
-  error: ProfileBootstrapError | null;
-} & Record<string, unknown>;
-
-interface ProfilesQueryBuilder {
-  upsert(
-    values: ProfileBootstrapPayload,
-    options: ProfileBootstrapOptions,
-  ): Promise<ProfileBootstrapResult>;
-}
-
-interface ProfilesClient {
-  from(tableName: "profiles"): ProfilesQueryBuilder;
-}
-
 interface EnsureUserProfileParams {
-  supabase: ProfilesClient;
+  supabase: SupabaseClient;
   userId: string;
 }
 

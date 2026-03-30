@@ -1,5 +1,5 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
-import { ensureUserProfile } from "@/lib/profiles/ensure-user-profile";
+import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -14,18 +14,11 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  const { error: profileError } = await ensureUserProfile({
+  await bootstrapUserProfile({
     supabase,
     userId: user.id,
+    source: "dashboard_page",
   });
-
-  if (profileError) {
-    console.error("profile_bootstrap_failed", {
-      source: "dashboard_page",
-      userId: user.id,
-      message: profileError.message,
-    });
-  }
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
