@@ -1,13 +1,30 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (error || !data?.claims) {
+  if (error || !user) {
     redirect("/auth/login");
+  }
+
+  const { error: profileError } = await supabase.from("profiles").upsert(
+    {
+      profile_id: crypto.randomUUID(),
+      user_id: user.id,
+      default_currency: DEFAULT_CURRENCY,
+    },
+    { onConflict: "user_id", ignoreDuplicates: true },
+  );
+
+  if (profileError) {
+    redirect(`/auth/error?error=${profileError.message}`);
   }
 
   return (

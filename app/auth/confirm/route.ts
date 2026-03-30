@@ -21,28 +21,28 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const supabase = await createClient();
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data: otpData, error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     });
     if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const verifiedUserId = otpData.user?.id;
 
-      if (user) {
-        const { error: profileError } = await supabase.from("profiles").upsert(
-          {
-            profile_id: crypto.randomUUID(),
-            user_id: user.id,
-            default_currency: DEFAULT_CURRENCY,
-          },
-          { onConflict: "user_id" },
-        );
+      if (!verifiedUserId) {
+        redirect("/auth/error?error=Could not determine verified user.");
+      }
 
-        if (profileError) {
-          redirect(`/auth/error?error=${profileError.message}`);
-        }
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          profile_id: crypto.randomUUID(),
+          user_id: verifiedUserId,
+          default_currency: DEFAULT_CURRENCY,
+        },
+        { onConflict: "user_id", ignoreDuplicates: true },
+      );
+
+      if (profileError) {
+        redirect(`/auth/error?error=${profileError.message}`);
       }
 
       redirect(next);
