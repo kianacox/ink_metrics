@@ -3,10 +3,8 @@
 Schema is maintained in your Supabase project. The app now uses lowercase table names:
 - `clients` (primary key: `client_id`)
 - `sessions` (primary key: `session_id`)
-- `profiles`: primary key **`user_id`** (uuid), foreign key to **`auth.users` (`id`)** — one row per auth user, no separate `profile_id` (see `supabase/migrations/20250330120000_profiles_user_id_primary_key.sql` if migrating from a `profile_id` PK)
 
 Currency basics in Slice 1:
-- `profiles.default_currency` defaults to `'GBP'` for new users.
 - `sessions.currency` stores a currency code (`'GBP'` for now).
 - `sessions.price` stores an integer in minor units.
 
@@ -20,12 +18,11 @@ The session logger **selects** existing clients by `user_id` and `name` before i
 
 There must be **no UNIQUE constraint on `sessions.user_id` alone**, or only one session per artist is allowed.
 
-If inserts from the app fail with an RLS error, ensure `clients`, `sessions`, and `profiles` allow authenticated users to manage only their own rows (`user_id = auth.uid()`). Example policies (adjust names if yours differ):
+If inserts from the app fail with an RLS error, ensure `clients` and `sessions` allow authenticated users to manage only their own rows (`user_id = auth.uid()`). Example policies (adjust names if yours differ):
 
 ```sql
 alter table public.clients enable row level security;
 alter table public.sessions enable row level security;
-alter table public.profiles enable row level security;
 
 create policy "clients_select_own"
   on public.clients for select
@@ -47,24 +44,7 @@ create policy "sessions_select_own"
 create policy "sessions_insert_own"
   on public.sessions for insert
   with check (auth.uid() = user_id);
-
-create policy "profiles_select_own"
-  on public.profiles for select
-  using (auth.uid() = user_id);
-
-create policy "profiles_insert_own"
-  on public.profiles for insert
-  with check (auth.uid() = user_id);
-
-create policy "profiles_update_own"
-  on public.profiles for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
 ```
-
-## Profile auto-creation
-
-When a signed-in user opens the dashboard, the app upserts a `profiles` row if needed (`default_currency = 'GBP'`, existing rows are left unchanged). See `lib/supabase/ensure-user-profile.ts`.
 
 ## Auth redirect URLs
 

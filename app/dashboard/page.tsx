@@ -1,6 +1,5 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
 import { createClient } from "@/lib/supabase/server";
-import { ensureUserProfile } from "@/lib/supabase/ensure-user-profile";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -12,12 +11,6 @@ export default async function DashboardPage() {
 
   if (error || !user) {
     redirect("/auth/login");
-  }
-
-  const { error: profileError } = await ensureUserProfile(supabase, user.id);
-
-  if (profileError) {
-    redirect(`/auth/error?error=${profileError.message}`);
   }
 
   return (
