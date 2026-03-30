@@ -1,4 +1,5 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
+import { ensureUserProfile } from "@/lib/profiles/ensure-user-profile";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -11,6 +12,19 @@ export default async function DashboardPage() {
 
   if (error || !user) {
     redirect("/auth/login");
+  }
+
+  const { error: profileError } = await ensureUserProfile({
+    supabase,
+    userId: user.id,
+  });
+
+  if (profileError) {
+    console.error("profile_bootstrap_failed", {
+      source: "dashboard_page",
+      userId: user.id,
+      message: profileError.message,
+    });
   }
 
   return (

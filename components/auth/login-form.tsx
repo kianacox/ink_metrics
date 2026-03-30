@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { ensureUserProfile } from "@/lib/profiles/ensure-user-profile";
 import {
   Button,
   Card,
@@ -33,11 +34,28 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+
+      const userId = data.user?.id;
+      if (userId) {
+        const { error: profileError } = await ensureUserProfile({
+          supabase,
+          userId,
+        });
+
+        if (profileError) {
+          console.error("profile_bootstrap_failed", {
+            source: "login_form",
+            userId,
+            message: profileError.message,
+          });
+        }
+      }
+
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/dashboard");
     } catch (error: unknown) {
