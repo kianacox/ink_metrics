@@ -1,4 +1,5 @@
 import { AddSessionModal } from "@/components/dashboard/add-session-modal";
+import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -12,6 +13,12 @@ export default async function DashboardPage() {
   if (error || !user) {
     redirect("/auth/login");
   }
+
+  await bootstrapUserProfile({
+    supabase,
+    userId: user.id,
+    source: "dashboard_page",
+  });
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">

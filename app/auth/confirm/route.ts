@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
@@ -30,6 +31,12 @@ export async function GET(request: NextRequest) {
       if (!verifiedUserId) {
         redirect("/auth/error?error=Could not determine verified user.");
       }
+
+      await bootstrapUserProfile({
+        supabase,
+        userId: verifiedUserId,
+        source: "auth_confirm_route",
+      });
 
       redirect(next);
     } else {
