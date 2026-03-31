@@ -1,6 +1,4 @@
 "use client";
-
-import { createClient } from "@/lib/supabase/client";
 import {
   Button,
   Card,
@@ -11,15 +9,14 @@ import {
   Input,
   Label,
 } from "@/components/ui";
-import { DEFAULT_CURRENCY, toMinorUnits } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import {
   getFilteredClients,
   isDuplicateClientName,
   normalizeClientName,
-  validateDuration,
-  type ClientOption,
-} from "@/components/dashboard/add-session-modal.logic";
+} from "@/components/dashboard/session-form/utils/client-selection";
+import { useSessionFormData } from "@/components/dashboard/session-form/hooks/use-session-form-data";
+import { validateSessionForm } from "@/components/dashboard/session-form/utils/session-form-validation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
@@ -38,9 +35,13 @@ export function AddSessionModal() {
   const [status, setStatus] = useState<SubmitStatus>(null);
   const [toast, setToast] = useState<ToastStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [clients, setClients] = useState<ClientOption[]>([]);
-  const [isClientsLoading, setIsClientsLoading] = useState(false);
-  const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
+  const {
+    clients,
+    isClientsLoading,
+    defaultCurrency,
+    loadError,
+    saveSession,
+  } = useSessionFormData(open);
 
   const resetForm = useCallback((preserveStatus = false) => {
     setClientQuery("");
@@ -77,69 +78,10 @@ export function AddSessionModal() {
   }, [toast]);
 
   useEffect(() => {
-    if (!open) {
-      return;
+    if (loadError) {
+      setStatus({ type: "error", message: loadError });
     }
-
-    let isMounted = true;
-    const loadClients = async () => {
-      setIsClientsLoading(true);
-      setStatus(null);
-      const supabase = createClient();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        if (isMounted) {
-          setStatus({
-            type: "error",
-            message: "You must be signed in to log a session.",
-          });
-          setIsClientsLoading(false);
-        }
-        return;
-      }
-
-      const [{ data: clientRows, error: clientsError }, { data: profileRows, error: profileError }] =
-        await Promise.all([
-          supabase
-            .from("clients")
-            .select("client_id,name")
-            .eq("user_id", user.id)
-            .order("name", { ascending: true }),
-          supabase
-            .from("profiles")
-            .select("default_currency")
-            .eq("user_id", user.id)
-            .limit(1),
-        ]);
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (clientsError || profileError) {
-        setStatus({
-          type: "error",
-          message: "Could not load form data. Please try again.",
-        });
-        setIsClientsLoading(false);
-        return;
-      }
-
-      setClients((clientRows ?? []) as ClientOption[]);
-      setDefaultCurrency(profileRows?.[0]?.default_currency ?? DEFAULT_CURRENCY);
-      setIsClientsLoading(false);
-    };
-
-    void loadClients();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [open]);
+  }, [loadError]);
 
   const filteredClients = useMemo(
     () => getFilteredClients(clients, clientQuery),
@@ -170,149 +112,45 @@ export function AddSessionModal() {
     setStatus(null);
     setIsLoading(true);
 
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      setStatus({ type: "error", message: "You must be signed in to log a session." });
-      setIsLoading(false);
-      return;
-    }
-
     const normalizedNewClientContact = newClientContact.trim();
-    const durationResult = validateDuration(hours, minutes);
-
-    let priceMinor = 0;
     let clientId = selectedClientId;
-
-    if (!durationResult.valid) {
-      setStatus({ type: "error", message: durationResult.errorMessage });
-      setIsLoading(false);
-      return;
-    }
-
-    if (!clientId && !createNewClient) {
-      setStatus({
-        type: "error",
-        message: "Select an existing client or create a new one before saving.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (createNewClient && !normalizedClientName) {
-      setStatus({ type: "error", message: "Client name is required for a new client." });
-      setIsLoading(false);
-      return;
-    }
-
-    if (createNewClient && isDuplicateClientName(clients, normalizedClientName)) {
-      setStatus({
-        type: "error",
-        message: "A client with this name already exists. Choose it from Existing client.",
-      });
+    const validationResult = validateSessionForm({
+      selectedClientId: clientId,
+      createNewClient,
+      clientName: normalizedClientName,
+      hours,
+      minutes,
+      profit,
+      clients,
+    });
+    if (!validationResult.valid) {
+      setStatus({ type: "error", message: validationResult.errorMessage });
       setIsLoading(false);
       return;
     }
 
     try {
-      priceMinor = toMinorUnits(profit);
-    } catch {
-      setStatus({ type: "error", message: "Profit must be a valid number." });
-      setIsLoading(false);
-      return;
-    }
+      const result = await saveSession({
+        selectedClientId: clientId,
+        createNewClient,
+        clientName: validationResult.normalizedClientName,
+        clientContact: normalizedNewClientContact,
+        priceMinor: validationResult.priceMinor,
+        sessionDurationMinutes: validationResult.sessionDurationMinutes,
+      });
 
-    try {
-      if (createNewClient) {
-        const { data: duplicateRows, error: duplicateError } = await supabase
-          .from("clients")
-          .select("client_id")
-          .eq("user_id", user.id)
-          .eq("name", normalizedClientName)
-          .limit(1);
-
-        if (duplicateError) {
-          throw duplicateError;
-        }
-        if (duplicateRows?.[0]?.client_id) {
-          setStatus({
-            type: "error",
-            message: "A client with this name already exists. Choose it from Existing client.",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        const newClientId = crypto.randomUUID();
-        const { data: inserted, error: insertClientError } = await supabase
-          .from("clients")
-          .insert({
-            client_id: newClientId,
-            user_id: user.id,
-            name: normalizedClientName,
-            contact_info:
-              normalizedNewClientContact.length > 0 ? normalizedNewClientContact : null,
-          })
-          .select("client_id")
-          .single();
-
-        if (insertClientError) {
-          throw insertClientError;
-        }
-        const insertedClientId = inserted.client_id;
-        if (!insertedClientId) {
-          setStatus({ type: "error", message: "Could not create the new client." });
-          setIsLoading(false);
-          return;
-        }
-        clientId = insertedClientId;
-
-        setClients((prevClients) => {
-          const existingClient = prevClients.find(
-            (client) => client.client_id === insertedClientId,
-          );
-          if (existingClient) {
-            return prevClients;
-          }
-          return [
-            ...prevClients,
-            {
-              client_id: insertedClientId,
-              name: normalizedClientName,
-            },
-          ].sort((a, b) => a.name.localeCompare(b.name));
+      if (!result.success) {
+        setStatus({
+          type: "error",
+          message: result.message ?? "Could not save session.",
         });
-      }
-
-      if (!clientId) {
-        setStatus({ type: "error", message: "Select an existing client before saving." });
         setIsLoading(false);
         return;
-      }
-
-      const { error: sessionError } = await supabase.from("sessions").insert({
-        session_id: crypto.randomUUID(),
-        user_id: user.id,
-        client_id: clientId,
-        price: priceMinor,
-        session_duration: durationResult.totalMinutes,
-      });
-
-      if (sessionError) {
-        throw sessionError;
       }
 
       setOpen(false);
       resetForm();
       setToast({ message: "Session saved successfully." });
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Could not save session.";
-      setStatus({ type: "error", message });
     } finally {
       setIsLoading(false);
     }

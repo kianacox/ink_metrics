@@ -3,8 +3,6 @@ export interface ClientOption {
   name: string;
 }
 
-export type ClientMode = "existing" | "new";
-
 interface DurationValidationResult {
   valid: boolean;
   totalMinutes: number;

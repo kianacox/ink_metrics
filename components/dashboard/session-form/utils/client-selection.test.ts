@@ -6,7 +6,7 @@ import {
   normalizeClientName,
   validateDuration,
   type ClientOption,
-} from "./add-session-modal.logic";
+} from "./client-selection";
 
 const clients: ClientOption[] = [
   { client_id: "1", name: "Alice Doe" },
