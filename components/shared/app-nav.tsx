@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { BarChart3, LogOut, Syringe, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   mapNavItemsWithState,
   type AppNavItemKey,
@@ -11,12 +12,24 @@ import {
 } from "./app-nav-utils";
 import { useLogout } from "@/components/auth/hooks/use-logout";
 
+const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions"] as const;
+
 const navIcons: Record<AppNavItemKey, React.ComponentType<{ className?: string }>> = {
   dashboard: BarChart3,
   sessions: Syringe,
   clients: UserRound,
   logout: LogOut,
 };
+
+function usePrimaryRoutePrefetch() {
+  const router = useRouter();
+
+  useEffect(() => {
+    PREFETCH_ROUTES.forEach((route) => {
+      router.prefetch(route);
+    });
+  }, [router]);
+}
 
 function DesktopNavItem({
   item,
@@ -33,6 +46,7 @@ function DesktopNavItem({
     return (
       <Link
         href={item.href}
+        prefetch
         className={cn(
           baseClassName,
           item.isActive
@@ -89,6 +103,7 @@ function MobileNavItem({
     return (
       <Link
         href={item.href}
+        prefetch
         className={cn(
           baseClassName,
           item.isActive
@@ -131,6 +146,7 @@ function MobileNavItem({
 }
 
 export function DesktopSidebarNav() {
+  usePrimaryRoutePrefetch();
   const pathname = usePathname();
   const logout = useLogout();
   const navItems = mapNavItemsWithState(pathname);
@@ -154,6 +170,7 @@ export function DesktopSidebarNav() {
 }
 
 export function MobileBottomNav() {
+  usePrimaryRoutePrefetch();
   const pathname = usePathname();
   const logout = useLogout();
   const navItems = mapNavItemsWithState(pathname);
