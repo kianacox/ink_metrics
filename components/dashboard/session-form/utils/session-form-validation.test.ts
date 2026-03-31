@@ -89,7 +89,7 @@ test("fails with invalid profit", () => {
 
   assert.deepEqual(result, {
     valid: false,
-    errorMessage: "Profit must be a valid number.",
+    errorMessage: "Price must be a valid number.",
   });
 });
 

@@ -68,6 +68,6 @@ export function validateSessionForm(
       priceMinor,
     };
   } catch {
-    return { valid: false, errorMessage: "Profit must be a valid number." };
+    return { valid: false, errorMessage: "Price must be a valid number." };
   }
 }
