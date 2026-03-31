@@ -213,7 +213,7 @@ export function AddSessionModal() {
                   <Label htmlFor="client-combobox">
                     Client{" "}
                     <span className="text-muted-foreground font-normal">
-                      (type at least 1 character)
+                      (type to search existing or create new)
                     </span>
                   </Label>
                   <div className="relative">
@@ -225,7 +225,7 @@ export function AddSessionModal() {
                         setSelectedClientId(null);
                         setCreateNewClient(false);
                       }}
-                      placeholder="Search by client name"
+                      placeholder="Type client name to search or create"
                       autoComplete="off"
                       required
                     />
@@ -347,7 +347,7 @@ export function AddSessionModal() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="profit">Profit</Label>
+                  <Label htmlFor="profit">Price</Label>
                   <div className="relative">
                     <span
                       className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"

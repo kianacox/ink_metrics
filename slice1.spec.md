@@ -1,35 +1,51 @@
-# Slice 1: Authentication & Session Logging
+# Slice 1: Authentication and Session Logging
 
-## Requirements
+## Authentication
 
-### Authentication
+- [x] A user can sign up using email
+- [ ] A new user can sign up using Facebook login
+- [x] An existing user can log in using email
+- [ ] An existing user can log in using Facebook login
+- [x] User passwords have strength restrictions
+- [x] A user can reset their password
+- [x] The password reset email matches brand styling
+- [x] A new user receives a styled verification email on sign up, and it redirects to the dashboard
 
-- [x] a user can sign up using email
-- [ ] a new user can sign up using their facebook login
-- [x] an existing user can log in using their email
-- [ ] an existing user can log in using their facebook login
-- [x] user passwords have strength restrictions
-- [x] a user can reset their password
-- [x] the password reset email should match brand styling
-- [x] a new user should receive a styled verification email upon sign up. This verification email should redirect to the dashboard.
+## Session Logging
 
-### Session Logging
+- [x] A user can add a new or existing client to a session
+- [x] A new client must have a unique name
+- [x] Users can choose between "Add new client" and selecting an existing client
+- [x] "Add new client" shows client name and optional contact info inputs
+- [x] Submitting a new client creates a new client record
+- [x] "Choose client" shows a matching client dropdown after the first character is entered
+- [x] A user can track session length in hours and minutes, converted to storage format
+- [x] A user can track profit formatted with the account default currency code
+- [x] Form validation requires numeric duration and price, plus a selected or new client
 
-- [x] a user can add a new or existing client to a session
-- [x] a new client must have a unique name
-- [x] users have the option to 'add new client' or choose a client
-- [x] add new client shows client name input and client contact info input (still optional)
-- [x] on form submission, a new client record will be created using these details
-- [x] choose client shows input that will display a dropdown list of client names matching the input AFTER the first character has been entered
-- [x] a user can track session length in hours and minutes. This will be converted to a an appropriate format to be stored in the database.
-- [x] a user can track profit, which will be formatted using the account's default currency code
-- [x] appropriate validation should be used on the form. Duration and price must be numbers and a client must be selected or added.
+## Sessions Page
 
-### Sessions Page
+- [x] A user can view all sessions on a dedicated sessions page
+- [x] Each session record displays client name, session length, and session profit
+- [x] Sessions are shown in chronological order by default (most recent first)
+- [ ] A user can sort sessions by session length and session profit (ascending and descending)
+- [ ] A user can sort sessions by date (most recent to oldest and oldest to most recent)
+- [x] A user can search sessions by client name
 
-- [ ] a user can view all sessions on a dedicated sessions page
-- [ ] each session record should display the client name, session length and session profit
-- [ ] the sessions should be displayed in chronological order by default, with the most recent session appearing first
-- [ ] a user should be able to sort sessions by session length and session profit, asc-desc and vice-versa
-- [ ] a user should be able to sort sessions by date, most recent to oldest, and vice versa
-- [ ] a user should be able to search for sessions by client name
+## Navigation
+
+### Mobile and Tablet View
+
+- [x] Logged-in users see a bottom icon menu on dashboard/app pages
+- [x] Bottom menu options:
+  - Dashboard (analytics icon) -> `/dashboard`
+  - Sessions (needle icon) -> `/dashboard/sessions`
+  - Clients (person icon) -> placeholder (no route yet)
+  - Logout (logout icon) -> signs user out
+- [x] Top navigation options are removed for logged-in users on mobile
+
+### Desktop View
+
+- [x] Logged-in users see a left-aligned sidebar navigation
+- [x] Sidebar options/icons/routes match mobile navigation
+- [x] Dashboard and Sessions are removed from top-right navigation actions
