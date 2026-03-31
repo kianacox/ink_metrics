@@ -1,4 +1,4 @@
-import { AddSessionModal } from "@/components/dashboard/add-session-modal";
+import { AddSessionModal } from "@/components/dashboard/session-form/add-session-modal";
 import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
