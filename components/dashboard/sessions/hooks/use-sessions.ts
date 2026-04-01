@@ -26,6 +26,7 @@ export interface UseSessionsParams {
 
 interface UseSessionsResult {
   sessions: SessionListItem[];
+  totalCount: number;
   defaultCurrency: string;
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -42,6 +43,7 @@ export function useSessions({
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseSessionsParams): UseSessionsResult {
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -110,6 +112,7 @@ export function useSessions({
       setSessions((previousSessions) =>
         append ? [...previousSessions, ...mappedPage] : mappedPage,
       );
+      setTotalCount(pageResult.totalCount);
       setHasNextPage(pageResult.hasNextPage);
       setCurrentPageIndex(pageIndex);
     },
@@ -127,6 +130,7 @@ export function useSessions({
     } catch {
       setError("Could not load sessions. Please try again.");
       setSessions([]);
+      setTotalCount(0);
       setHasNextPage(false);
     } finally {
       setIsLoading(false);
@@ -154,6 +158,7 @@ export function useSessions({
 
   return {
     sessions,
+    totalCount,
     defaultCurrency,
     isLoading,
     isLoadingMore,

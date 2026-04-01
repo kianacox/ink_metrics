@@ -17,6 +17,7 @@ export interface FetchSessionsPageParams {
 export interface FetchSessionsPageResult {
   rows: SessionRow[];
   hasNextPage: boolean;
+  totalCount: number;
 }
 
 const SORT_FIELD_TO_COLUMN: Record<SessionSortField, string> = {
@@ -59,32 +60,44 @@ export async function fetchSessionsPage({
   const normalizedQuery = searchQuery.trim();
   const rangeStart = pageIndex * pageSize;
   const rangeEnd = rangeStart + pageSize - 1;
+  const dateRangeStart = getDateRangeStart(dateRange);
 
-  let query = supabase
+  let rowsQuery = supabase
     .from("sessions")
     .select("session_id,price,session_duration,created_at,clients!inner(name)")
     .eq("user_id", userId)
     .order(sortColumn, { ascending: false })
     .order("session_id", { ascending: false });
 
-  const dateRangeStart = getDateRangeStart(dateRange);
+  let totalCountQuery = supabase
+    .from("sessions")
+    .select("session_id,clients!inner(name)", { count: "exact", head: true })
+    .eq("user_id", userId);
+
   if (dateRangeStart) {
-    query = query.gte("created_at", dateRangeStart);
+    rowsQuery = rowsQuery.gte("created_at", dateRangeStart);
+    totalCountQuery = totalCountQuery.gte("created_at", dateRangeStart);
   }
 
   if (normalizedQuery.length > 0) {
-    query = query.ilike("clients.name", `%${escapeLikePattern(normalizedQuery)}%`);
+    const escapedQuery = `%${escapeLikePattern(normalizedQuery)}%`;
+    rowsQuery = rowsQuery.ilike("clients.name", escapedQuery);
+    totalCountQuery = totalCountQuery.ilike("clients.name", escapedQuery);
   }
 
-  const { data, error } = await query.range(rangeStart, rangeEnd + 1);
+  const [{ data, error }, { count, error: countError }] = await Promise.all([
+    rowsQuery.range(rangeStart, rangeEnd + 1),
+    totalCountQuery,
+  ]);
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || countError) {
+    throw new Error(error?.message ?? countError?.message ?? "Could not load sessions.");
   }
 
   const rows = ((data ?? []) as SessionRow[]).slice(0, pageSize);
   return {
     rows,
     hasNextPage: (data ?? []).length > pageSize,
+    totalCount: count ?? 0,
   };
 }

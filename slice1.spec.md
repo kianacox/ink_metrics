@@ -31,9 +31,7 @@
 - [ ] A user can sort sessions by session length and session profit (ascending and descending)
 - [ ] A user can sort sessions by date (most recent to oldest and oldest to most recent)
 - [x] A user can search sessions by client name
-- [ ] A user can see the total number of sessions for the current week (starting mon ending Sun)
-- [ ] a user can see the total number of sessions done for the current month
-- [ ] a user xan see the total number of sessions done for the year to date
+- [x] A user can see a single total session count that updates based on the selected date range
 
 ## Navigation
 

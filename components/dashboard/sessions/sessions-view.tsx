@@ -32,6 +32,13 @@ const DATE_RANGE_OPTIONS: Array<{ label: string; value: SessionDateRangePreset }
   { label: "All time", value: "allTime" },
 ];
 
+const TOTAL_LABEL_BY_DATE_RANGE: Record<SessionDateRangePreset, string> = {
+  last30Days: "Sessions in the last 30 days",
+  last90Days: "Sessions in the last 90 days",
+  yearToDate: "Sessions year to date",
+  allTime: "Sessions all time",
+};
+
 export function SessionsView() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +46,7 @@ export function SessionsView() {
   const [dateRange, setDateRange] = useState<SessionDateRangePreset>(DEFAULT_DATE_RANGE);
   const {
     sessions,
+    totalCount,
     defaultCurrency,
     isLoading,
     isLoadingMore,
@@ -66,6 +74,8 @@ export function SessionsView() {
     SORT_FIELDS.find((option) => option.value === sortField)?.label ?? "Date";
   const selectedDateRangeLabel =
     DATE_RANGE_OPTIONS.find((option) => option.value === dateRange)?.label ?? "Last 90 days";
+  const selectedDateRangeLabelLower = selectedDateRangeLabel.toLowerCase();
+  const selectedTotalLabel = TOTAL_LABEL_BY_DATE_RANGE[dateRange] ?? "Sessions in this range";
   const hasSessions = sessions.length > 0;
   const hasFatalError = Boolean(error) && !hasSessions;
 
@@ -77,6 +87,10 @@ export function SessionsView() {
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Search by client and sort by date, session length, or session profit (descending).
+        </p>
+        <p className="mt-3 text-sm text-foreground">
+          {selectedTotalLabel}:{" "}
+          <span className="font-semibold">{isLoading ? "..." : totalCount}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">
@@ -147,7 +161,7 @@ export function SessionsView() {
 
       {!isLoading && !error && !hasSessions ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground sm:p-8">
-          No sessions found for {selectedDateRangeLabel.toLowerCase()}.
+          No sessions found for {selectedDateRangeLabelLower}.
         </div>
       ) : null}
 
