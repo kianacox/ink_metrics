@@ -113,7 +113,7 @@ export function AddSessionModal() {
     setIsLoading(true);
 
     const normalizedNewClientContact = newClientContact.trim();
-    let clientId = selectedClientId;
+    const clientId = selectedClientId;
     const validationResult = validateSessionForm({
       selectedClientId: clientId,
       createNewClient,
