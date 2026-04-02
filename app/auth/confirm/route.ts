@@ -4,7 +4,7 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 
-function safeNextPath(next: string | null): string {
+export function safeNextPath(next: string | null): string {
   if (!next) return "/dashboard";
   const path = next.split("?")[0] ?? next;
   if (!path.startsWith("/") || path.startsWith("//")) return "/dashboard";
