@@ -1,0 +1,27 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: unit-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Run Jest Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: node:22-bookworm-slim
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
