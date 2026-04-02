@@ -1,0 +1,28 @@
+import { safeNextPath } from "./route";
+
+describe("safeNextPath", () => {
+  it("falls back to dashboard when next is null or empty", () => {
+    expect(safeNextPath(null)).toBe("/dashboard");
+    expect(safeNextPath("")).toBe("/dashboard");
+  });
+
+  it("keeps safe in-app paths", () => {
+    expect(safeNextPath("/dashboard")).toBe("/dashboard");
+    expect(safeNextPath("/dashboard/sessions?sort=date")).toBe(
+      "/dashboard/sessions?sort=date",
+    );
+  });
+
+  it("rejects non-relative and protocol-style redirects", () => {
+    expect(safeNextPath("dashboard")).toBe("/dashboard");
+    expect(safeNextPath("//evil.com/path")).toBe("/dashboard");
+    expect(safeNextPath("https://evil.com/path")).toBe("/dashboard");
+    expect(safeNextPath("/https://evil.com/path")).toBe("/dashboard");
+  });
+
+  it("allows safe path with suspicious query text in search params", () => {
+    expect(safeNextPath("/dashboard?next=https://evil.com")).toBe(
+      "/dashboard?next=https://evil.com",
+    );
+  });
+});

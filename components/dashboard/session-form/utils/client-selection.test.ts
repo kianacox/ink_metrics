@@ -1,5 +1,3 @@
-import assert from "node:assert/strict";
-import test from "node:test";
 import {
   getFilteredClients,
   isDuplicateClientName,
@@ -13,32 +11,34 @@ const clients: ClientOption[] = [
   { client_id: "2", name: "Bob Stone" },
 ];
 
-test("filters existing clients only after first character", () => {
-  assert.deepEqual(getFilteredClients(clients, ""), []);
-  assert.deepEqual(getFilteredClients(clients, " "), []);
+describe("client-selection utils", () => {
+  it("filters existing clients only after first character", () => {
+    expect(getFilteredClients(clients, "")).toEqual([]);
+    expect(getFilteredClients(clients, " ")).toEqual([]);
 
-  assert.deepEqual(getFilteredClients(clients, "a"), [
-    { client_id: "1", name: "Alice Doe" },
-  ]);
-});
-
-test("normalizes and checks duplicate client names", () => {
-  assert.equal(normalizeClientName("  New Client  "), "New Client");
-  assert.equal(isDuplicateClientName(clients, "alice doe"), true);
-  assert.equal(isDuplicateClientName(clients, "  Bob Stone "), true);
-  assert.equal(isDuplicateClientName(clients, "Charlie"), false);
-});
-
-test("validates hours and minutes duration inputs", () => {
-  assert.deepEqual(validateDuration("1", "30"), {
-    valid: true,
-    totalMinutes: 90,
-    errorMessage: "",
+    expect(getFilteredClients(clients, "a")).toEqual([
+      { client_id: "1", name: "Alice Doe" },
+    ]);
   });
 
-  assert.equal(validateDuration("-1", "0").valid, false);
-  assert.equal(validateDuration("0", "60").valid, false);
-  assert.equal(validateDuration("0", "0").valid, false);
-  assert.equal(validateDuration("abc", "10").valid, false);
-  assert.equal(validateDuration("2", "x").valid, false);
+  it("normalizes and checks duplicate client names", () => {
+    expect(normalizeClientName("  New Client  ")).toBe("New Client");
+    expect(isDuplicateClientName(clients, "alice doe")).toBe(true);
+    expect(isDuplicateClientName(clients, "  Bob Stone ")).toBe(true);
+    expect(isDuplicateClientName(clients, "Charlie")).toBe(false);
+  });
+
+  it("validates hours and minutes duration inputs", () => {
+    expect(validateDuration("1", "30")).toEqual({
+      valid: true,
+      totalMinutes: 90,
+      errorMessage: "",
+    });
+
+    expect(validateDuration("-1", "0").valid).toBe(false);
+    expect(validateDuration("0", "60").valid).toBe(false);
+    expect(validateDuration("0", "0").valid).toBe(false);
+    expect(validateDuration("abc", "10").valid).toBe(false);
+    expect(validateDuration("2", "x").valid).toBe(false);
+  });
 });

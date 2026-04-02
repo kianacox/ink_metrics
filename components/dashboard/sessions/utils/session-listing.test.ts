@@ -1,5 +1,3 @@
-import assert from "node:assert/strict";
-import test from "node:test";
 import {
   filterSessionsByClientName,
   getVisibleSessions,
@@ -32,67 +30,64 @@ const sessions: SessionListItem[] = [
   },
 ];
 
-test("normalizes search query by trimming and lowercasing", () => {
-  assert.equal(normalizeSearchQuery("  ALIce  "), "alice");
-});
+describe("session-listing utils", () => {
+  it("normalizes search query by trimming and lowercasing", () => {
+    expect(normalizeSearchQuery("  ALIce  ")).toBe("alice");
+  });
 
-test("filters sessions by client name case-insensitively", () => {
-  assert.deepEqual(
-    filterSessionsByClientName(sessions, "  bOb ").map((session) => session.id),
-    ["s1", "s3"],
-  );
-});
+  it("filters sessions by client name case-insensitively", () => {
+    expect(
+      filterSessionsByClientName(sessions, "  bOb ").map((session) => session.id),
+    ).toEqual(["s1", "s3"]);
+  });
 
-test("returns original sessions when search query is empty", () => {
-  assert.deepEqual(filterSessionsByClientName(sessions, "   "), sessions);
-});
+  it("returns original sessions when search query is empty", () => {
+    expect(filterSessionsByClientName(sessions, "   ")).toEqual(sessions);
+  });
 
-test("sorts by date descending by default", () => {
-  assert.deepEqual(sortSessions(sessions).map((session) => session.id), [
-    "s2",
-    "s1",
-    "s3",
-  ]);
-});
+  it("sorts by date descending by default", () => {
+    expect(sortSessions(sessions).map((session) => session.id)).toEqual([
+      "s2",
+      "s1",
+      "s3",
+    ]);
+  });
 
-test("sorts by duration ascending", () => {
-  assert.deepEqual(
-    sortSessions(sessions, { field: "duration", direction: "asc" }).map(
-      (session) => session.id,
-    ),
-    ["s3", "s1", "s2"],
-  );
-});
+  it("sorts by duration ascending", () => {
+    expect(
+      sortSessions(sessions, { field: "duration", direction: "asc" }).map(
+        (session) => session.id,
+      ),
+    ).toEqual(["s3", "s1", "s2"]);
+  });
 
-test("sorts by profit descending and keeps stable order on ties", () => {
-  assert.deepEqual(
-    sortSessions(sessions, { field: "profit", direction: "desc" }).map(
-      (session) => session.id,
-    ),
-    ["s2", "s3", "s1"],
-  );
-});
+  it("sorts by profit descending and keeps stable order on ties", () => {
+    expect(
+      sortSessions(sessions, { field: "profit", direction: "desc" }).map(
+        (session) => session.id,
+      ),
+    ).toEqual(["s2", "s3", "s1"]);
+  });
 
-test("falls back to default sorting for invalid sort state", () => {
-  assert.deepEqual(
-    sortSessions(sessions, {
-      field: "not-valid" as never,
-      direction: "not-valid" as never,
-    }).map((session) => session.id),
-    ["s2", "s1", "s3"],
-  );
-});
+  it("falls back to default sorting for invalid sort state", () => {
+    expect(
+      sortSessions(sessions, {
+        field: "not-valid" as never,
+        direction: "not-valid" as never,
+      }).map((session) => session.id),
+    ).toEqual(["s2", "s1", "s3"]);
+  });
 
-test("combines filtering and sorting in getVisibleSessions", () => {
-  assert.deepEqual(
-    getVisibleSessions(sessions, "bob", {
-      field: "duration",
-      direction: "desc",
-    }).map((session) => session.id),
-    ["s1", "s3"],
-  );
-});
+  it("combines filtering and sorting in getVisibleSessions", () => {
+    expect(
+      getVisibleSessions(sessions, "bob", {
+        field: "duration",
+        direction: "desc",
+      }).map((session) => session.id),
+    ).toEqual(["s1", "s3"]);
+  });
 
-test("returns empty list when source sessions are empty", () => {
-  assert.deepEqual(getVisibleSessions([], "alice"), []);
+  it("returns empty list when source sessions are empty", () => {
+    expect(getVisibleSessions([], "alice")).toEqual([]);
+  });
 });
