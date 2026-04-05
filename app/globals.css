@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Slice 1 palette → semantic tokens (see slice1.spec.md)
+/* Slice 1 palette → semantic tokens (see docs/slice1.spec.md)
    Lightest swatch (#F7FEF6) = base canvas (background/card/popover), not accent.
    Light mint (#C7FABD) = muted surfaces. Accent = interactive/hover (slate tint). */
 @layer base {

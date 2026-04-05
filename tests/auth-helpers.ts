@@ -1,0 +1,167 @@
+import { expect, type Page } from "@playwright/test";
+import {
+  DEFAULT_INBUCKET_BASE_URL,
+  DEFAULT_PLAYWRIGHT_BASE_URL,
+} from "./constants";
+
+const inbucketBaseUrl =
+  process.env.INBUCKET_BASE_URL ?? DEFAULT_INBUCKET_BASE_URL;
+const appBaseUrl =
+  process.env.PLAYWRIGHT_BASE_URL ?? DEFAULT_PLAYWRIGHT_BASE_URL;
+
+function collectStrings(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(collectStrings);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).flatMap(collectStrings);
+  }
+
+  return [];
+}
+
+function extractConfirmationLink(message: unknown): string | null {
+  const allText = collectStrings(message)
+    .join("\n")
+    .replaceAll("&amp;", "&");
+  const match = allText.match(
+    /(https?:\/\/[^\s"'<>]*(?:\/auth\/v1\/verify|\/auth\/confirm)\?[^\s"'<>]*)/i,
+  );
+
+  return match?.[1] ?? null;
+}
+
+function localMailboxName(email: string): string {
+  return email.split("@")[0] ?? email;
+}
+
+async function clearMailbox(email: string): Promise<void> {
+  const mailbox = localMailboxName(email);
+  const response = await fetch(
+    `${inbucketBaseUrl}/api/v1/mailbox/${encodeURIComponent(mailbox)}`,
+    { method: "DELETE" },
+  );
+
+  if (!response.ok && response.status !== 404) {
+    throw new Error(
+      `Failed to clear mailbox ${mailbox}. Status: ${response.status}`,
+    );
+  }
+}
+
+async function fetchConfirmationLink(
+  email: string,
+  timeoutMs = 30_000,
+): Promise<string> {
+  const mailbox = localMailboxName(email);
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const mailboxResponse = await fetch(
+      `${inbucketBaseUrl}/api/v1/mailbox/${encodeURIComponent(mailbox)}`,
+    );
+
+    if (mailboxResponse.ok) {
+      const mailboxMessages = (await mailboxResponse.json()) as Array<{
+        id?: string;
+      }>;
+
+      for (const message of mailboxMessages) {
+        if (!message.id) {
+          continue;
+        }
+
+        const messageResponse = await fetch(
+          `${inbucketBaseUrl}/api/v1/mailbox/${encodeURIComponent(mailbox)}/${message.id}`,
+        );
+
+        if (!messageResponse.ok) {
+          continue;
+        }
+
+        const fullMessage = await messageResponse.json();
+        const confirmationLink = extractConfirmationLink(fullMessage);
+
+        if (confirmationLink) {
+          return confirmationLink;
+        }
+      }
+    } else {
+      const mailpitResponse = await fetch(`${inbucketBaseUrl}/api/v1/messages`);
+
+      if (mailpitResponse.ok) {
+        const mailpitBody = (await mailpitResponse.json()) as {
+          messages?: Array<{
+            ID?: string;
+            To?: Array<{ Address?: string }>;
+          }>;
+        };
+
+        const candidateMessages = (mailpitBody.messages ?? []).filter(
+          (message) =>
+            (message.To ?? []).some((recipient) => recipient.Address === email),
+        );
+
+        for (const message of candidateMessages) {
+          if (!message.ID) {
+            continue;
+          }
+
+          const messageResponse = await fetch(
+            `${inbucketBaseUrl}/api/v1/message/${message.ID}`,
+          );
+
+          if (!messageResponse.ok) {
+            continue;
+          }
+
+          const fullMessage = await messageResponse.json();
+          const confirmationLink = extractConfirmationLink(fullMessage);
+
+          if (confirmationLink) {
+            return confirmationLink;
+          }
+        }
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+
+  throw new Error(
+    `No confirmation link found for ${email} within ${timeoutMs}ms.`,
+  );
+}
+
+export async function signUpAndConfirmUser(
+  page: Page,
+  email: string,
+  password: string,
+): Promise<void> {
+  await clearMailbox(email);
+
+  await page.goto("/auth/sign-up");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Repeat Password").fill(password);
+  await page.getByRole("button", { name: /^sign up$/i }).click();
+
+  const confirmationLink = await fetchConfirmationLink(email);
+  const verificationUrl = new URL(confirmationLink);
+  if (verificationUrl.pathname.includes("/auth/v1/verify")) {
+    verificationUrl.searchParams.set("redirect_to", `${appBaseUrl}/dashboard`);
+  }
+
+  await page.goto(verificationUrl.toString());
+  if (page.url().includes("/auth/login")) {
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: /^login$/i }).click();
+  }
+  await expect(page).toHaveURL(/\/dashboard/);
+}
