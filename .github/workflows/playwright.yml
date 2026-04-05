@@ -1,0 +1,99 @@
+name: Playwright E2E
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+concurrency:
+  group: playwright-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright-e2e:
+    name: Run full Playwright suite with local Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          node <<'EOF'
+          const fs = require("node:fs");
+          const lock = require("./package-lock.json");
+          const version = lock.packages?.["node_modules/@playwright/test"]?.version;
+
+          if (!version) {
+            throw new Error("Could not determine @playwright/test version from package-lock.json");
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          EOF
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Export local Supabase env vars
+        run: supabase status -o env >> "$GITHUB_ENV"
+
+      - name: Create local test env file
+        run: |
+          cat <<EOF > .env.local
+          NEXT_PUBLIC_SUPABASE_URL=$API_URL
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY
+          PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001
+          INBUCKET_BASE_URL=http://127.0.0.1:54324
+          E2E_SIGN_UP_PASSWORD=Password123!
+          E2E_MAILBOX_DOMAIN=example.com
+          EOF
+
+      - name: Reset local database
+        run: supabase db reset --local --yes
+
+      - name: Install Playwright browser and system deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright test suite
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore
