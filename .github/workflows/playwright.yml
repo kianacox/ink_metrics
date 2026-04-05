@@ -1,4 +1,4 @@
-name: Playwright Auth E2E
+name: Playwright E2E
 
 on:
   pull_request:
@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  auth-e2e:
-    name: Run Playwright auth suite with local Supabase
+  playwright-e2e:
+    name: Run full Playwright suite with local Supabase
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -27,6 +27,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -e \"console.log(require('./package-lock.json').packages['node_modules/@playwright/test'].version)\")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -54,10 +65,11 @@ jobs:
         run: supabase db reset --local --yes
 
       - name: Install Playwright browser and system deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright auth tests
-        run: npm run test:e2e:auth
+      - name: Run Playwright test suite
+        run: npm run test:e2e
 
       - name: Upload Playwright report
         if: always()
