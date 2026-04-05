@@ -30,7 +30,18 @@ jobs:
 
       - name: Get Playwright version
         id: playwright-version
-        run: echo "version=$(node -e \"console.log(require('./package-lock.json').packages['node_modules/@playwright/test'].version)\")" >> "$GITHUB_OUTPUT"
+        run: |
+          node <<'EOF'
+          const fs = require("node:fs");
+          const lock = require("./package-lock.json");
+          const version = lock.packages?.["node_modules/@playwright/test"]?.version;
+
+          if (!version) {
+            throw new Error("Could not determine @playwright/test version from package-lock.json");
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          EOF
 
       - name: Cache Playwright browsers
         id: playwright-cache
