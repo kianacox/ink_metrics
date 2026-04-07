@@ -50,3 +50,11 @@
 - [x] Logged-in users see a left-aligned sidebar navigation
 - [x] Sidebar options/icons/routes match mobile navigation
 - [x] Dashboard and Sessions are removed from top-right navigation actions
+
+E2E Tests
+Due to fast development and CI/CD we only need to write playwright tests for key journeys.
+Sessions
+[] user can create a session
+[] user can create a new client when creating a session
+[] user can select an existing client when creating a session
+[] user can view a session
