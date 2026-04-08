@@ -81,6 +81,8 @@ jobs:
 
       - name: Run Playwright test suite
         run: npm run test:e2e
+        env:
+          PLAYWRIGHT_SKIP_DB_RESET: "1"
 
       - name: Upload Playwright report
         if: always()

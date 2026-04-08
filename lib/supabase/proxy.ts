@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
-import { shouldRedirectToLogin } from "./proxy-auth-guard";
+import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
+import { resolveProxyRedirectPath } from "./proxy-auth-guard";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -47,11 +48,25 @@ export async function updateSession(request: NextRequest) {
   // with the Supabase client, your users may be randomly logged out.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
+  const userId = user?.sub;
+  let profileIsComplete = false;
 
-  if (shouldRedirectToLogin(request.nextUrl.pathname, Boolean(user))) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (typeof userId === "string" && request.nextUrl.pathname.startsWith("/dashboard")) {
+    profileIsComplete = await isUserProfileComplete({
+      supabase,
+      userId,
+    });
+  }
+
+  const redirectPath = resolveProxyRedirectPath({
+    pathname: request.nextUrl.pathname,
+    hasUser: Boolean(user),
+    isProfileComplete: profileIsComplete,
+  });
+
+  if (redirectPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = redirectPath;
     return NextResponse.redirect(url);
   }
 

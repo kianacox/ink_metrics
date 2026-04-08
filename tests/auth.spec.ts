@@ -3,16 +3,26 @@ import {
   DEFAULT_MAILBOX_DOMAIN,
   DEFAULT_SIGN_UP_PASSWORD,
 } from "./constants";
-import { signUpAndConfirmUser } from "./auth-helpers";
+import {
+  completeProfileSetupMinimal,
+  loginAsSeededUser,
+  signUpAndConfirmUser,
+  signUpAndConfirmUserOnly,
+} from "./auth-helpers";
 const signUpPassword =
   process.env.E2E_SIGN_UP_PASSWORD ?? DEFAULT_SIGN_UP_PASSWORD;
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 
-test("signs up a user and confirms email from Inbucket", async ({ page }) => {
+test("new user is sent to profile setup and can finish onboarding", async ({
+  page,
+}) => {
   const email = `signup-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUser(page, email, signUpPassword);
-  await expect(page.getByRole("link", { name: /dashboard/i })).toBeVisible();
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard/);
 });
 
 test("logs in, persists session, and logs out", async ({ page }) => {
@@ -30,6 +40,16 @@ test("logs in, persists session, and logs out", async ({ page }) => {
   await page.getByLabel("Password").fill(signUpPassword);
   await page.getByRole("button", { name: /^login$/i }).click();
   await expect(page).toHaveURL(/\/dashboard/);
+});
+
+test("redirects incomplete users to profile setup for protected dashboard routes", async ({
+  page,
+}) => {
+  await loginAsSeededUser(page, "incomplete");
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+
+  await page.goto("/dashboard/sessions");
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
 });
 
 test("redirects unauthenticated users from /dashboard to /auth/login", async ({

@@ -146,7 +146,17 @@ Use DB constraints to enforce valid combinations:
 - Invalid combinations cannot be persisted because DB constraints reject them.
 - Existing users without setup data remain incomplete until they submit valid profile and compensation settings.
 
-### Out of scope note for Slice 2
+### Edit Profile
 
-- Historical versioning of compensation settings is out of scope for this slice.
-- Temporary assumption: current compensation settings apply to all historical sessions until versioning is introduced in a later slice.
+Users should be able to edit their profile via a dedicated profile page, accesible from the bottom nav menu on mobile and the left menu on desktop.
+Users can edit:
+
+- their display name
+- all compensation settings
+
+For this section we have two options:
+
+- introduce compensation versioning for fully accurate records over time (i.e an artist starts using the application employed at one studio, then moves to a different one with a different chair rent. In their records, sessions done at the original studio should apply the compensation calculations for that studio)
+- apply current compensation settings to all historical settings.
+
+I would prefer the first option, as it is a better, more accurate experience for the user. But I am unsure how to design the database to handle this.

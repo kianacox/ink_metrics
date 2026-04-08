@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  DEFAULT_MAILBOX_DOMAIN,
-  DEFAULT_SIGN_UP_PASSWORD,
-} from "./constants";
-import { signUpAndConfirmUser } from "./auth-helpers";
+import { loginAsSeededUser } from "./auth-helpers";
 import {
   createSessionWithExistingClient,
   createSessionWithNewClient,
@@ -12,23 +8,17 @@ import {
   openAddSessionModal,
 } from "./session-helpers";
 
-const signUpPassword =
-  process.env.E2E_SIGN_UP_PASSWORD ?? DEFAULT_SIGN_UP_PASSWORD;
-const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
-
-function uniqueEmail(prefix: string): string {
-  return `${prefix}-${Date.now()}@${mailboxDomain}`;
-}
-
 function uniqueClientName(prefix: string): string {
   return `${prefix}-${Date.now()}`;
 }
 
-test("creates a session from dashboard", async ({ page }) => {
-  const email = uniqueEmail("session-create");
-  const clientName = uniqueClientName("client-create");
+test.beforeEach(async ({ page }) => {
+  await loginAsSeededUser(page, "sessionComplete");
+  await expect(page).toHaveURL(/\/dashboard/);
+});
 
-  await signUpAndConfirmUser(page, email, signUpPassword);
+test("creates a session from dashboard", async ({ page }) => {
+  const clientName = uniqueClientName("client-create");
 
   await createSessionWithNewClient(page, {
     clientName,
@@ -39,10 +29,7 @@ test("creates a session from dashboard", async ({ page }) => {
 });
 
 test("creates a new client while creating a session", async ({ page }) => {
-  const email = uniqueEmail("session-new-client");
   const clientName = uniqueClientName("client-new");
-
-  await signUpAndConfirmUser(page, email, signUpPassword);
 
   await createSessionWithNewClient(page, {
     clientName,
@@ -59,10 +46,7 @@ test("creates a new client while creating a session", async ({ page }) => {
 });
 
 test("selects an existing client when creating a session", async ({ page }) => {
-  const email = uniqueEmail("session-existing-client");
   const clientName = uniqueClientName("client-existing");
-
-  await signUpAndConfirmUser(page, email, signUpPassword);
 
   await createSessionWithNewClient(page, {
     clientName,
@@ -80,10 +64,7 @@ test("selects an existing client when creating a session", async ({ page }) => {
 });
 
 test("views a created session on the sessions page", async ({ page }) => {
-  const email = uniqueEmail("session-view");
   const clientName = uniqueClientName("client-view");
-
-  await signUpAndConfirmUser(page, email, signUpPassword);
 
   await createSessionWithNewClient(page, {
     clientName,

@@ -93,8 +93,10 @@ export async function expectSessionVisible(
 ): Promise<void> {
   const durationText = formatSessionDuration(session.durationMinutes);
   const profitText = formatSessionProfit(session.priceMinor, DEFAULT_CURRENCY);
+  const sessionRow = page.locator("tbody tr", { hasText: session.clientName }).first();
 
-  await expect(page.getByRole("cell", { name: session.clientName })).toBeVisible();
-  await expect(page.getByRole("cell", { name: durationText })).toBeVisible();
-  await expect(page.getByRole("cell", { name: profitText })).toBeVisible();
+  await expect(sessionRow).toBeVisible();
+  await expect(sessionRow).toContainText(session.clientName);
+  await expect(sessionRow).toContainText(durationText);
+  await expect(sessionRow).toContainText(profitText);
 }

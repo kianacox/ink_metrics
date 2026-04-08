@@ -51,6 +51,7 @@ describe("ensureUserProfile", () => {
     expect(capturedPayload).toEqual({
       user_id: "user-123",
       default_currency: DEFAULT_CURRENCY,
+      is_profile_complete: false,
     });
     expect(capturedOptions).toEqual({
       onConflict: "user_id",
