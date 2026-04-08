@@ -98,7 +98,7 @@ export async function completeProfileSetupMinimal(
   }
 
   await expect(page.getByText(/you.re all setup! welcome to inkmetrics/i)).toBeVisible();
-  await page.getByRole("link", { name: /continue to dashboard/i }).click();
+  await page.getByRole("button", { name: /continue to dashboard/i }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
