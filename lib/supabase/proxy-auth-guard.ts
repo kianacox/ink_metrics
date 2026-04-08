@@ -1,11 +1,41 @@
-export function shouldRedirectToLogin(pathname: string, hasUser: boolean): boolean {
+interface ResolveProxyRedirectPathParams {
+  pathname: string;
+  hasUser: boolean;
+  isProfileComplete: boolean;
+}
+
+function isPublicRoute(pathname: string): boolean {
   if (pathname === "/") {
-    return false;
+    return true;
   }
 
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
-    return false;
+    return true;
   }
 
-  return !hasUser;
+  return false;
+}
+
+export function resolveProxyRedirectPath({
+  pathname,
+  hasUser,
+  isProfileComplete,
+}: ResolveProxyRedirectPathParams): string | null {
+  if (!hasUser) {
+    if (isPublicRoute(pathname)) {
+      return null;
+    }
+
+    return "/auth/login";
+  }
+
+  if (pathname.startsWith("/dashboard/profile-setup")) {
+    return isProfileComplete ? "/dashboard" : null;
+  }
+
+  if (pathname.startsWith("/dashboard") && !isProfileComplete) {
+    return "/dashboard/profile-setup";
+  }
+
+  return null;
 }

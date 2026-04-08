@@ -1,16 +1,20 @@
 import { SessionsView } from "@/components/dashboard/sessions/sessions-view";
+import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
+import { requireAuthenticatedUser } from "@/lib/supabase/require-authenticated-user";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function SessionsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const user = await requireAuthenticatedUser({ supabase });
 
-  if (error || !user) {
-    redirect("/auth/login");
+  const profileIsComplete = await isUserProfileComplete({
+    supabase,
+    userId: user.id,
+  });
+
+  if (!profileIsComplete) {
+    redirect("/dashboard/profile-setup");
   }
 
   return (

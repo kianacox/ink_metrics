@@ -1,20 +1,98 @@
-import { shouldRedirectToLogin } from "./proxy-auth-guard";
+import { resolveProxyRedirectPath } from "./proxy-auth-guard";
 
-describe("shouldRedirectToLogin", () => {
-  it("does not redirect for public routes", () => {
-    expect(shouldRedirectToLogin("/", false)).toBe(false);
-    expect(shouldRedirectToLogin("/auth/login", false)).toBe(false);
-    expect(shouldRedirectToLogin("/auth/confirm", false)).toBe(false);
-    expect(shouldRedirectToLogin("/login", false)).toBe(false);
+describe("resolveProxyRedirectPath", () => {
+  it("does not redirect unauthenticated users for public routes", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/auth/login",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/auth/confirm",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
   });
 
   it("redirects unauthenticated users for protected routes", () => {
-    expect(shouldRedirectToLogin("/dashboard", false)).toBe(true);
-    expect(shouldRedirectToLogin("/dashboard/sessions", false)).toBe(true);
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBe("/auth/login");
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard/sessions",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBe("/auth/login");
   });
 
-  it("does not redirect authenticated users for protected routes", () => {
-    expect(shouldRedirectToLogin("/dashboard", true)).toBe(false);
-    expect(shouldRedirectToLogin("/dashboard/sessions", true)).toBe(false);
+  it("redirects incomplete authenticated users to setup", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard",
+        hasUser: true,
+        isProfileComplete: false,
+      }),
+    ).toBe("/dashboard/profile-setup");
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard/sessions",
+        hasUser: true,
+        isProfileComplete: false,
+      }),
+    ).toBe("/dashboard/profile-setup");
+  });
+
+  it("allows incomplete authenticated users to stay on setup route", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard/profile-setup",
+        hasUser: true,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("redirects complete users away from setup route", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard/profile-setup",
+        hasUser: true,
+        isProfileComplete: true,
+      }),
+    ).toBe("/dashboard");
+  });
+
+  it("does not redirect complete authenticated users for dashboard routes", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard",
+        hasUser: true,
+        isProfileComplete: true,
+      }),
+    ).toBeNull();
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/dashboard/sessions",
+        hasUser: true,
+        isProfileComplete: true,
+      }),
+    ).toBeNull();
   });
 });

@@ -113,6 +113,32 @@ In UI mode, select a test file (for example `tests/auth.spec.ts`) and run tests 
 
 The Playwright global setup resets local Supabase DB before runs (`supabase db reset --local --yes`) for a clean test state.
 
+### Seeded E2E users
+
+Local DB reset also applies [`supabase/seed.sql`](./supabase/seed.sql), which creates deterministic users for fast-path e2e journeys:
+
+- `seeded-session-user@example.com` (profile complete)
+- `seeded-incomplete-user@example.com` (profile incomplete)
+- Password: `Password123!`
+
+You can override these in tests with env vars:
+
+```env
+E2E_SEEDED_SESSION_USER_EMAIL=seeded-session-user@example.com
+E2E_SEEDED_INCOMPLETE_USER_EMAIL=seeded-incomplete-user@example.com
+E2E_SEEDED_USER_PASSWORD=Password123!
+```
+
+### Avoid duplicate DB resets in CI
+
+If the workflow already ran `supabase db reset --local --yes` before `npm run test:e2e`, set:
+
+```bash
+PLAYWRIGHT_SKIP_DB_RESET=1
+```
+
+This skips Playwright global reset and avoids running reset twice in the same job.
+
 ## Supabase Workflow
 
 ### Local stack commands

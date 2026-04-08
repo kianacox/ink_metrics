@@ -18,6 +18,7 @@ export async function ensureUserProfile({
     {
       user_id: userId,
       default_currency: DEFAULT_CURRENCY,
+      is_profile_complete: false,
     },
     {
       onConflict: "user_id",

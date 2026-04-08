@@ -1,6 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 import {
   DEFAULT_INBUCKET_BASE_URL,
+  DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL,
+  DEFAULT_SEEDED_SESSION_USER_EMAIL,
+  DEFAULT_SEEDED_USER_PASSWORD,
   DEFAULT_PLAYWRIGHT_BASE_URL,
 } from "./constants";
 
@@ -8,6 +11,12 @@ const inbucketBaseUrl =
   process.env.INBUCKET_BASE_URL ?? DEFAULT_INBUCKET_BASE_URL;
 const appBaseUrl =
   process.env.PLAYWRIGHT_BASE_URL ?? DEFAULT_PLAYWRIGHT_BASE_URL;
+const seededSessionUserEmail =
+  process.env.E2E_SEEDED_SESSION_USER_EMAIL ?? DEFAULT_SEEDED_SESSION_USER_EMAIL;
+const seededIncompleteUserEmail =
+  process.env.E2E_SEEDED_INCOMPLETE_USER_EMAIL ?? DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL;
+const seededUserPassword =
+  process.env.E2E_SEEDED_USER_PASSWORD ?? DEFAULT_SEEDED_USER_PASSWORD;
 
 function collectStrings(value: unknown): string[] {
   if (typeof value === "string") {
@@ -38,6 +47,59 @@ function extractConfirmationLink(message: unknown): string | null {
 
 function localMailboxName(email: string): string {
   return email.split("@")[0] ?? email;
+}
+
+async function clickFirstVisibleButton(page: Page, namePattern: RegExp) {
+  const buttons = page.getByRole("button", { name: namePattern });
+  const buttonCount = await buttons.count();
+  for (let index = 0; index < buttonCount; index += 1) {
+    const candidateButton = buttons.nth(index);
+    if (await candidateButton.isVisible()) {
+      await candidateButton.click();
+      return;
+    }
+  }
+  throw new Error(`Could not find visible button matching ${namePattern.toString()}`);
+}
+
+async function hasVisibleButton(page: Page, namePattern: RegExp): Promise<boolean> {
+  const buttons = page.getByRole("button", { name: namePattern });
+  const buttonCount = await buttons.count();
+  for (let index = 0; index < buttonCount; index += 1) {
+    if (await buttons.nth(index).isVisible()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function completeProfileSetupMinimal(
+  page: Page,
+  email: string,
+): Promise<void> {
+  await page.waitForLoadState("networkidle");
+
+  const profileHeading = page.getByRole("heading", { name: /set up your profile/i });
+  await expect(profileHeading).toBeVisible();
+  await page.locator("#profile-name:visible").fill(localMailboxName(email));
+
+  const isDesktopFlow = (await hasVisibleButton(page, /^finish setup$/i)) &&
+    !(await hasVisibleButton(page, /^next$/i));
+
+  if (isDesktopFlow) {
+    await clickFirstVisibleButton(page, /^no$/i);
+    await clickFirstVisibleButton(page, /^finish setup$/i);
+  } else {
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await clickFirstVisibleButton(page, /^no$/i);
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^finish setup$/i }).click();
+  }
+
+  await expect(page.getByText(/you.re all setup! welcome to inkmetrics/i)).toBeVisible();
+  await page.getByRole("link", { name: /continue to dashboard/i }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
 }
 
 async function clearMailbox(email: string): Promise<void> {
@@ -138,7 +200,7 @@ async function fetchConfirmationLink(
   );
 }
 
-export async function signUpAndConfirmUser(
+export async function signUpAndConfirmUserOnly(
   page: Page,
   email: string,
   password: string,
@@ -159,9 +221,41 @@ export async function signUpAndConfirmUser(
 
   await page.goto(verificationUrl.toString());
   if (page.url().includes("/auth/login")) {
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: /^login$/i }).click();
+    await loginAsUser(page, email, password);
   }
+}
+
+export async function signUpAndConfirmUser(
+  page: Page,
+  email: string,
+  password: string,
+): Promise<void> {
+  await signUpAndConfirmUserOnly(page, email, password);
+
+  if (page.url().includes("/dashboard/profile-setup")) {
+    await completeProfileSetupMinimal(page, email);
+  }
+
   await expect(page).toHaveURL(/\/dashboard/);
+}
+
+export async function loginAsUser(
+  page: Page,
+  email: string,
+  password: string,
+) {
+  await page.goto("/auth/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: /^login$/i }).click();
+}
+
+export async function loginAsSeededUser(
+  page: Page,
+  userType: "sessionComplete" | "incomplete" = "sessionComplete",
+) {
+  const email =
+    userType === "sessionComplete" ? seededSessionUserEmail : seededIncompleteUserEmail;
+  await loginAsUser(page, email, seededUserPassword);
+  return email;
 }
