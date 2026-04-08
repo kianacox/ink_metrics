@@ -1,9 +1,14 @@
 "use client";
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import Link from "next/link";
+
+const DASHBOARD_PATH = "/dashboard";
 
 export function ProfileSetupComplete() {
+  function handleContinueToDashboard() {
+    window.location.assign(DASHBOARD_PATH);
+  }
+
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
       <Card className="border-border bg-card shadow-sm">
@@ -17,8 +22,12 @@ export function ProfileSetupComplete() {
             Your profile is complete and your dashboard is ready. Start logging
             sessions to build your financial insights.
           </p>
-          <Button type="button" className="w-full sm:w-auto" asChild>
-            <Link href="/dashboard">Continue to dashboard</Link>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={handleContinueToDashboard}
+          >
+            Continue to dashboard
           </Button>
         </CardContent>
       </Card>
