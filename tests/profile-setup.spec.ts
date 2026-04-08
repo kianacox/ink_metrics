@@ -38,9 +38,8 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
   await expect(
     page.getByText(/you.re all setup! welcome to inkmetrics\./i),
   ).toBeVisible();
-  const continueLink = page.getByRole("link", { name: /continue to dashboard/i });
-  await expect(continueLink).toHaveAttribute("href", "/dashboard");
-  await continueLink.click();
+  const continueButton = page.getByRole("button", { name: /continue to dashboard/i });
+  await continueButton.click();
 
   await expect(page).toHaveURL(/\/dashboard/);
 });

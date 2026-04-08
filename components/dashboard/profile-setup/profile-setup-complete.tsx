@@ -20,7 +20,7 @@ export function ProfileSetupComplete() {
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
             Your profile is complete and your dashboard is ready. Start logging
-            sessions to build your financial insights.
+            sessions to build your business insights.
           </p>
           <Button
             type="button"
