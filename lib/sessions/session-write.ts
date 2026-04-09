@@ -70,12 +70,16 @@ export function parseSessionCreatePayload(input: unknown): {
   }
 
   const priceMinor = candidate.priceMinor;
-  if (!Number.isInteger(priceMinor) || Number(priceMinor) < 0) {
+  if (typeof priceMinor !== "number" || !Number.isInteger(priceMinor) || priceMinor < 0) {
     return { data: null, error: "Price is invalid." };
   }
 
   const sessionDurationMinutes = candidate.sessionDurationMinutes;
-  if (!Number.isInteger(sessionDurationMinutes) || Number(sessionDurationMinutes) <= 0) {
+  if (
+    typeof sessionDurationMinutes !== "number" ||
+    !Number.isInteger(sessionDurationMinutes) ||
+    sessionDurationMinutes <= 0
+  ) {
     return { data: null, error: "Session duration is invalid." };
   }
 
