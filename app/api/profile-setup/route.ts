@@ -1,24 +1,24 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to set up your profile.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
     return NextResponse.json(
       { error: "You must be signed in to set up your profile." },
       { status: 401 },
     );
   }
 
-  let body: unknown;
+  let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as unknown;
+    body = (await request.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }

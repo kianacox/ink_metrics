@@ -7,6 +7,14 @@ const clients: ClientOption[] = [
 ];
 
 describe("validateSessionForm", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ now: Date.parse("2026-04-08T10:30:00.000Z") });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("fails when neither existing nor new client path is selected", () => {
     const result = validateSessionForm({
       selectedClientId: null,
@@ -179,6 +187,25 @@ describe("validateSessionForm", () => {
     expect(result).toEqual({
       valid: false,
       errorMessage: "Session date and time is invalid.",
+    });
+  });
+
+  it("fails when session date and time is in the future", () => {
+    const result = validateSessionForm({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice Doe",
+      hours: "1",
+      minutes: "30",
+      profit: "12.34",
+      sessionAtLocal: "2026-04-08T11:30",
+      reportingTimezone: "UTC",
+      clients,
+    });
+
+    expect(result).toEqual({
+      valid: false,
+      errorMessage: "Session date and time cannot be in the future.",
     });
   });
 });

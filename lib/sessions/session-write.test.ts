@@ -1,6 +1,14 @@
 import { parseSessionCreatePayload } from "./session-write";
 
 describe("parseSessionCreatePayload", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ now: Date.parse("2026-04-09T10:30:00.000Z") });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("accepts a valid existing-client payload", () => {
     const result = parseSessionCreatePayload({
       selectedClientId: "client-1",
@@ -51,6 +59,21 @@ describe("parseSessionCreatePayload", () => {
     });
 
     expect(result.error).toBe("Session date and time is invalid.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects future session date and time values", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDurationMinutes: 90,
+      sessionAtIso: "2026-04-09T11:30:00.000Z",
+    });
+
+    expect(result.error).toBe("Session date and time cannot be in the future.");
     expect(result.data).toBeNull();
   });
 });

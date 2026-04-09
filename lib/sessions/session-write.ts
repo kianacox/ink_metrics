@@ -33,6 +33,11 @@ function parseIsoTimestamp(value: unknown): string | null {
   return new Date(timestamp).toISOString();
 }
 
+function isFutureTimestamp(isoTimestamp: string): boolean {
+  const timestamp = Date.parse(isoTimestamp);
+  return Number.isFinite(timestamp) && timestamp > Date.now();
+}
+
 export function parseSessionCreatePayload(input: unknown): {
   data: SessionCreatePayload | null;
   error: string | null;
@@ -86,6 +91,9 @@ export function parseSessionCreatePayload(input: unknown): {
   const sessionAtIso = parseIsoTimestamp(candidate.sessionAtIso);
   if (!sessionAtIso) {
     return { data: null, error: "Session date and time is invalid." };
+  }
+  if (isFutureTimestamp(sessionAtIso)) {
+    return { data: null, error: "Session date and time cannot be in the future." };
   }
 
   return {

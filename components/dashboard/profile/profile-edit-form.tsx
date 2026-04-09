@@ -17,6 +17,12 @@ import {
   isSupportedTimezone,
 } from "@/lib/timezones";
 import { TimezoneCombobox } from "@/components/shared/timezone-combobox";
+import { ChoiceButton } from "@/components/dashboard/profile/components/choice-button";
+import {
+  toInputAmount,
+  toInputPercentFromBps,
+} from "@/components/dashboard/profile/utils/profile-input-formatting";
+import { useSaveProfile } from "@/components/dashboard/profile/hooks/use-save-profile";
 
 interface ProfileEditFormProps {
   initialDisplayName: string;
@@ -30,50 +36,6 @@ interface ProfileEditFormProps {
   initialCommissionCapped: boolean | null;
   initialCommissionCapFrequency: RentFrequency | null;
   initialCommissionCapAmountMinor: number | null;
-}
-
-interface ChoiceButtonProps {
-  selected: boolean;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  className?: string;
-}
-
-function ChoiceButton({
-  selected,
-  label,
-  onClick,
-  disabled = false,
-  className,
-}: ChoiceButtonProps) {
-  return (
-    <Button
-      type="button"
-      variant={selected ? "default" : "outline"}
-      className={cn("w-full", className)}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {label}
-    </Button>
-  );
-}
-
-function toInputAmount(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) {
-    return "";
-  }
-
-  return (value / 100).toFixed(2);
-}
-
-function toInputPercentFromBps(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) {
-    return "";
-  }
-
-  return (value / 100).toFixed(2);
 }
 
 export function ProfileEditForm({
@@ -111,7 +73,7 @@ export function ProfileEditForm({
   const [commissionCapAmount, setCommissionCapAmount] = useState(
     toInputAmount(initialCommissionCapAmountMinor),
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isSubmitting, saveProfile } = useSaveProfile();
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   function resetRentDetails(nextPayChairRent: boolean) {
@@ -159,48 +121,31 @@ export function ProfileEditForm({
       return;
     }
 
-    setIsSubmitting(true);
     setStatus(null);
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          displayName: parsedPayload.data.displayName,
-          reportingTimezone: parsedPayload.data.reportingTimezone,
-          payChairRent: parsedPayload.data.payChairRent,
-          rentType: parsedPayload.data.rentType,
-          fixedFrequency: parsedPayload.data.fixedFrequency,
-          fixedAmountMinor: parsedPayload.data.fixedAmountMinor,
-          commissionRateBps: parsedPayload.data.commissionRateBps,
-          commissionCapped: parsedPayload.data.commissionCapped,
-          commissionCapFrequency: parsedPayload.data.commissionCapFrequency,
-          commissionCapAmountMinor: parsedPayload.data.commissionCapAmountMinor,
-        }),
-      });
-      const responseBody = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setStatus({
-          type: "error",
-          message: responseBody.error ?? "Could not save profile changes.",
-        });
-        return;
-      }
-
-      setStatus({
-        type: "success",
-        message: "Profile updated successfully.",
-      });
-    } catch {
+    const result = await saveProfile({
+      displayName: parsedPayload.data.displayName,
+      reportingTimezone: parsedPayload.data.reportingTimezone,
+      payChairRent: parsedPayload.data.payChairRent,
+      rentType: parsedPayload.data.rentType,
+      fixedFrequency: parsedPayload.data.fixedFrequency,
+      fixedAmountMinor: parsedPayload.data.fixedAmountMinor,
+      commissionRateBps: parsedPayload.data.commissionRateBps,
+      commissionCapped: parsedPayload.data.commissionCapped,
+      commissionCapFrequency: parsedPayload.data.commissionCapFrequency,
+      commissionCapAmountMinor: parsedPayload.data.commissionCapAmountMinor,
+    });
+    if (!result.success) {
       setStatus({
         type: "error",
-        message: "Could not save profile changes.",
+        message: result.error ?? "Could not save profile changes.",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    setStatus({
+      type: "success",
+      message: "Profile updated successfully.",
+    });
   }
 
   return (

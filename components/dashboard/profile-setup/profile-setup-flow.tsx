@@ -13,7 +13,6 @@ import {
   type RentType,
 } from "@/lib/profiles/profile-setup";
 import {
-  detectBrowserTimezone,
   getDefaultReportingTimezone,
   isSupportedTimezone,
 } from "@/lib/timezones";
@@ -54,11 +53,6 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
     return "GBP";
   });
   const [reportingTimezone, setReportingTimezone] = useState<string>(() => {
-    const browserTimezone = detectBrowserTimezone();
-    if (browserTimezone) {
-      return browserTimezone;
-    }
-
     if (isSupportedTimezone(initialTimezone)) {
       return initialTimezone;
     }

@@ -1,5 +1,5 @@
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
 
 interface ProfileEditRequestBody {
@@ -16,13 +16,13 @@ interface ProfileEditRequestBody {
 }
 
 export async function PUT(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to edit your profile.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
     return NextResponse.json(
       { error: "You must be signed in to edit your profile." },
       { status: 401 },

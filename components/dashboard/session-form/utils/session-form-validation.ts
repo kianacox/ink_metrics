@@ -89,6 +89,14 @@ export function validateSessionForm(
     };
   }
 
+  const sessionTimestamp = Date.parse(sessionAtIso);
+  if (Number.isFinite(sessionTimestamp) && sessionTimestamp > Date.now()) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time cannot be in the future.",
+    };
+  }
+
   try {
     const priceMinor = toMinorUnits(input.profit);
     return {
