@@ -15,9 +15,14 @@ import type { SessionListItem } from "@/components/dashboard/sessions/utils/sess
 interface SessionsCardsProps {
   sessions: SessionListItem[];
   currencyCode: string;
+  reportingTimezone: string;
 }
 
-export function SessionsCards({ sessions, currencyCode }: SessionsCardsProps) {
+export function SessionsCards({
+  sessions,
+  currencyCode,
+  reportingTimezone,
+}: SessionsCardsProps) {
   return (
     <div className="grid gap-3 sm:hidden">
       {sessions.map((session) => (
@@ -25,7 +30,7 @@ export function SessionsCards({ sessions, currencyCode }: SessionsCardsProps) {
           <CardHeader className="p-4 pb-3">
             <CardTitle className="text-base">{session.clientName}</CardTitle>
             <CardDescription>
-              {formatSessionDate(session.createdAt)}
+              {formatSessionDate(session.createdAt, reportingTimezone)}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">

@@ -1,22 +1,27 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to set up your profile.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
     return NextResponse.json(
       { error: "You must be signed in to set up your profile." },
       { status: 401 },
     );
   }
 
-  const body = (await request.json()) as unknown;
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
   const { data: payload, error: validationError } = parseProfileSetupPayload(body);
 
   if (!payload || validationError) {
@@ -47,43 +52,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: compensationError } = await supabase
-    .from("artist_compensation_settings")
-    .upsert(
-      {
-        user_id: user.id,
-        pay_chair_rent: payload.payChairRent,
-        rent_type: payload.rentType,
-        fixed_frequency: payload.fixedFrequency,
-        fixed_amount_minor: payload.fixedAmountMinor,
-        commission_rate_bps: payload.commissionRateBps,
-        commission_capped: payload.commissionCapped,
-        commission_cap_frequency: payload.commissionCapFrequency,
-        commission_cap_amount_minor: payload.commissionCapAmountMinor,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+  const { error: setupError } = await supabase.rpc("complete_profile_setup", {
+    p_display_name: payload.displayName,
+    p_default_currency: payload.defaultCurrency,
+    p_reporting_timezone: payload.reportingTimezone,
+    p_pay_chair_rent: payload.payChairRent,
+    p_rent_type: payload.rentType,
+    p_fixed_frequency: payload.fixedFrequency,
+    p_fixed_amount_minor: payload.fixedAmountMinor,
+    p_commission_rate_bps: payload.commissionRateBps,
+    p_commission_capped: payload.commissionCapped,
+    p_commission_cap_frequency: payload.commissionCapFrequency,
+    p_commission_cap_amount_minor: payload.commissionCapAmountMinor,
+  });
 
-  if (compensationError) {
-    return NextResponse.json({ error: compensationError.message }, { status: 400 });
-  }
-
-  const { error: profileUpdateError } = await supabase.from("profiles").upsert(
-    {
-      user_id: user.id,
-      display_name: payload.displayName,
-      default_currency: payload.defaultCurrency,
-      is_profile_complete: true,
-      profile_completed_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "user_id",
-    },
-  );
-
-  if (profileUpdateError) {
-    return NextResponse.json({ error: profileUpdateError.message }, { status: 400 });
+  if (setupError) {
+    const status = setupError.message.includes("already been completed") ? 409 : 400;
+    return NextResponse.json({ error: setupError.message }, { status });
   }
 
   return NextResponse.json({ success: true });

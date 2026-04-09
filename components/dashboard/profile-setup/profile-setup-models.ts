@@ -10,11 +10,13 @@ export type MobileStepKey = "identity" | "chairRent" | "rentType" | "rentDetails
 
 export interface ProfileSetupFlowProps {
   initialCurrency: string;
+  initialTimezone: string;
 }
 
 export interface ProfileSetupCandidate {
   displayName: string;
   defaultCurrency: string;
+  reportingTimezone: string;
   payChairRent: boolean | null;
   rentType: RentType | null;
   fixedFrequency: RentFrequency | null;

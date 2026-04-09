@@ -8,9 +8,14 @@ import type { SessionListItem } from "@/components/dashboard/sessions/utils/sess
 interface SessionsTableProps {
   sessions: SessionListItem[];
   currencyCode: string;
+  reportingTimezone: string;
 }
 
-export function SessionsTable({ sessions, currencyCode }: SessionsTableProps) {
+export function SessionsTable({
+  sessions,
+  currencyCode,
+  reportingTimezone,
+}: SessionsTableProps) {
   return (
     <div className="hidden overflow-hidden rounded-lg border border-border sm:block">
       <table className="w-full border-collapse">
@@ -29,7 +34,7 @@ export function SessionsTable({ sessions, currencyCode }: SessionsTableProps) {
                 {session.clientName}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
-                {formatSessionDate(session.createdAt)}
+                {formatSessionDate(session.createdAt, reportingTimezone)}
               </td>
               <td className="px-4 py-3 text-sm text-foreground">
                 {formatSessionDuration(session.durationMinutes)}

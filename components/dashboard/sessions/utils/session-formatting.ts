@@ -1,4 +1,5 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { getEffectiveReportingTimezone } from "@/lib/timezones";
 import type { SessionListItem } from "./session-listing";
 
 const UNKNOWN_CLIENT_NAME = "Unknown client";
@@ -7,7 +8,33 @@ export interface SessionRow {
   session_id: string;
   price: number | null;
   session_duration: number | null;
-  created_at: string | null;
+  session_at: string | null;
+  created_at?: string | null;
+  compensation_version_id?: string | null;
+  artist_compensation_versions?:
+    | {
+        compensation_version_id?: string | null;
+        pay_chair_rent?: boolean | null;
+        rent_type?: string | null;
+        fixed_frequency?: string | null;
+        fixed_amount_minor?: number | null;
+        commission_rate_bps?: number | null;
+        commission_capped?: boolean | null;
+        commission_cap_frequency?: string | null;
+        commission_cap_amount_minor?: number | null;
+      }
+    | Array<{
+        compensation_version_id?: string | null;
+        pay_chair_rent?: boolean | null;
+        rent_type?: string | null;
+        fixed_frequency?: string | null;
+        fixed_amount_minor?: number | null;
+        commission_rate_bps?: number | null;
+        commission_capped?: boolean | null;
+        commission_cap_frequency?: string | null;
+        commission_cap_amount_minor?: number | null;
+      }>
+    | null;
   clients?:
     | {
         name?: string | null;
@@ -34,7 +61,7 @@ export function mapSessionRowsToListItems(rows: SessionRow[]): SessionListItem[]
     clientName: getClientName(row.clients),
     priceMinor: row.price ?? 0,
     durationMinutes: row.session_duration ?? 0,
-    createdAt: row.created_at ?? new Date(0).toISOString(),
+    createdAt: row.session_at ?? row.created_at ?? new Date(0).toISOString(),
   }));
 }
 
@@ -73,15 +100,24 @@ export function formatSessionProfit(
   }
 }
 
-export function formatSessionDate(createdAtIso: string): string {
+export function formatSessionDate(createdAtIso: string, reportingTimezone?: string): string {
   const timestamp = Date.parse(createdAtIso);
 
   if (!Number.isFinite(timestamp)) {
     return "Unknown date";
   }
 
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(timestamp));
+  try {
+    const effectiveTimezone = getEffectiveReportingTimezone(reportingTimezone);
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: effectiveTimezone,
+    }).format(new Date(timestamp));
+  } catch {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(timestamp));
+  }
 }

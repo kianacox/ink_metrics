@@ -34,6 +34,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "GBP",
+        reportingTimezone: "Europe/London",
         payChairRent: true,
         rentType: "fixed",
         fixedFrequency: "weekly",
@@ -52,6 +53,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "USD",
+        reportingTimezone: "Europe/London",
         payChairRent: true,
         rentType: "commission",
         fixedFrequency: null,
@@ -70,6 +72,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "EUR",
+        reportingTimezone: "Europe/London",
         payChairRent: true,
         rentType: "fixed",
         fixedFrequency: "monthly",
@@ -88,6 +91,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "GBP",
+        reportingTimezone: "Europe/London",
         payChairRent: true,
         rentType: "fixed",
         fixedFrequency: "weekly",
@@ -106,6 +110,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "USD",
+        reportingTimezone: "Europe/London",
         payChairRent: true,
         rentType: "commission",
         fixedFrequency: null,
@@ -124,6 +129,7 @@ describe("profile setup helpers", () => {
       const result = parseProfileSetupPayload({
         displayName: "Jane",
         defaultCurrency: "EUR",
+        reportingTimezone: "Europe/London",
         payChairRent: false,
         rentType: "fixed",
         fixedFrequency: "monthly",
@@ -137,5 +143,24 @@ describe("profile setup helpers", () => {
       expect(result.error).toBe("Rent details must be empty when rent is not paid.");
       expect(result.data).toBeNull();
     });
+  });
+
+  it("rejects payload with invalid reporting timezone", () => {
+    const result = parseProfileSetupPayload({
+      displayName: "Jane",
+      defaultCurrency: "GBP",
+      reportingTimezone: "Mars/Phobos",
+      payChairRent: false,
+      rentType: null,
+      fixedFrequency: null,
+      fixedAmountMinor: null,
+      commissionRateBps: null,
+      commissionCapped: null,
+      commissionCapFrequency: null,
+      commissionCapAmountMinor: null,
+    });
+
+    expect(result.error).toBe("Reporting timezone is invalid.");
+    expect(result.data).toBeNull();
   });
 });

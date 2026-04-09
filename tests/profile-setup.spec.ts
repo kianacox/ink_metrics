@@ -20,6 +20,7 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
 
   await expect(page.getByText(/step 1 of 4/i)).toBeVisible();
   await page.locator("#profile-name:visible").fill("Mobile Setup User");
+  await expect(page.locator("#reporting-timezone:visible")).not.toHaveValue("");
   await page.getByRole("button", { name: /^next$/i }).click();
 
   await expect(page.getByText(/step 2 of 4/i)).toBeVisible();

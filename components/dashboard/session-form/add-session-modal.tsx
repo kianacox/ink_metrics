@@ -10,6 +10,7 @@ import {
   Label,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { formatDateTimeLocalForTimezone, getDefaultReportingTimezone } from "@/lib/timezones";
 import {
   getFilteredClients,
   isDuplicateClientName,
@@ -22,6 +23,11 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
 
+function createDefaultSessionDateTimeValue(reportingTimezone: string): string {
+  const now = new Date();
+  return formatDateTimeLocalForTimezone(now, reportingTimezone);
+}
+
 export function AddSessionModal() {
   const titleId = useId();
   const [open, setOpen] = useState(false);
@@ -32,16 +38,20 @@ export function AddSessionModal() {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
-  const [status, setStatus] = useState<SubmitStatus>(null);
-  const [toast, setToast] = useState<ToastStatus>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const {
     clients,
     isClientsLoading,
     defaultCurrency,
+    reportingTimezone,
     loadError,
     saveSession,
   } = useSessionFormData(open);
+  const [sessionDateTime, setSessionDateTime] = useState(() =>
+    createDefaultSessionDateTimeValue(getDefaultReportingTimezone()),
+  );
+  const [status, setStatus] = useState<SubmitStatus>(null);
+  const [toast, setToast] = useState<ToastStatus>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = useCallback((preserveStatus = false) => {
     setClientQuery("");
@@ -51,10 +61,11 @@ export function AddSessionModal() {
     setHours("");
     setMinutes("");
     setProfit("");
+    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
     if (!preserveStatus) {
       setStatus(null);
     }
-  }, []);
+  }, [reportingTimezone]);
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +87,13 @@ export function AddSessionModal() {
 
     return () => window.clearTimeout(timeout);
   }, [toast]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
+  }, [open, reportingTimezone]);
 
   useEffect(() => {
     if (loadError) {
@@ -121,6 +139,8 @@ export function AddSessionModal() {
       hours,
       minutes,
       profit,
+      sessionAtLocal: sessionDateTime,
+      reportingTimezone,
       clients,
     });
     if (!validationResult.valid) {
@@ -137,6 +157,7 @@ export function AddSessionModal() {
         clientContact: normalizedNewClientContact,
         priceMinor: validationResult.priceMinor,
         sessionDurationMinutes: validationResult.sessionDurationMinutes,
+        sessionAtIso: validationResult.sessionAtIso,
       });
 
       if (!result.success) {
@@ -174,6 +195,7 @@ export function AddSessionModal() {
         onClick={() => {
           setOpen(true);
           setStatus(null);
+          setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
         }}
       >
         Add session
@@ -345,6 +367,16 @@ export function AddSessionModal() {
                       />
                     </div>
                   </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="session-date-time">Session date and time</Label>
+                  <Input
+                    id="session-date-time"
+                    type="datetime-local"
+                    value={sessionDateTime}
+                    onChange={(event) => setSessionDateTime(event.target.value)}
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="profit">Price</Label>

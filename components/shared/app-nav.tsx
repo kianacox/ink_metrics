@@ -12,12 +12,12 @@ import {
 } from "./app-nav-utils";
 import { useLogout } from "@/components/auth/hooks/use-logout";
 
-const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions"] as const;
+const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions", "/dashboard/profile"] as const;
 
 const navIcons: Record<AppNavItemKey, React.ComponentType<{ className?: string }>> = {
   dashboard: BarChart3,
   sessions: Syringe,
-  clients: UserRound,
+  profile: UserRound,
   logout: LogOut,
 };
 

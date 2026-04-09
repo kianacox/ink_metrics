@@ -1,4 +1,5 @@
 import { toMinorUnits } from "@/lib/currency";
+import { convertLocalDateTimeInTimezoneToUtcIso, isSupportedTimezone } from "@/lib/timezones";
 import {
   isDuplicateClientName,
   normalizeClientName,
@@ -13,6 +14,8 @@ interface SessionFormValidationInput {
   hours: string;
   minutes: string;
   profit: string;
+  sessionAtLocal: string;
+  reportingTimezone: string;
   clients: ClientOption[];
 }
 
@@ -22,6 +25,7 @@ type SessionFormValidationResult =
       normalizedClientName: string;
       sessionDurationMinutes: number;
       priceMinor: number;
+      sessionAtIso: string;
     }
   | {
       valid: false;
@@ -59,6 +63,40 @@ export function validateSessionForm(
     };
   }
 
+  const normalizedSessionAtLocal = input.sessionAtLocal.trim();
+  if (!normalizedSessionAtLocal) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time are required.",
+    };
+  }
+
+  if (!isSupportedTimezone(input.reportingTimezone)) {
+    return {
+      valid: false,
+      errorMessage: "Reporting timezone is invalid.",
+    };
+  }
+
+  const sessionAtIso = convertLocalDateTimeInTimezoneToUtcIso(
+    normalizedSessionAtLocal,
+    input.reportingTimezone,
+  );
+  if (!sessionAtIso) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time is invalid.",
+    };
+  }
+
+  const sessionTimestamp = Date.parse(sessionAtIso);
+  if (Number.isFinite(sessionTimestamp) && sessionTimestamp > Date.now()) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time cannot be in the future.",
+    };
+  }
+
   try {
     const priceMinor = toMinorUnits(input.profit);
     return {
@@ -66,6 +104,7 @@ export function validateSessionForm(
       normalizedClientName,
       sessionDurationMinutes: durationResult.totalMinutes,
       priceMinor,
+      sessionAtIso,
     };
   } catch {
     return { valid: false, errorMessage: "Price must be a valid number." };

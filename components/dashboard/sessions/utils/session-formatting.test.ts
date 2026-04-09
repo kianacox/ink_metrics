@@ -5,6 +5,7 @@ import {
   mapSessionRowsToListItems,
   type SessionRow,
 } from "./session-formatting";
+import { getDefaultReportingTimezone } from "@/lib/timezones";
 
 describe("session-formatting utils", () => {
   it("maps session rows into list items", () => {
@@ -13,6 +14,7 @@ describe("session-formatting utils", () => {
         session_id: "s1",
         price: 5000,
         session_duration: 75,
+        session_at: "2026-03-31T10:00:00.000Z",
         created_at: "2026-03-31T10:00:00.000Z",
         clients: { name: "Alice Doe" },
       },
@@ -35,6 +37,7 @@ describe("session-formatting utils", () => {
         session_id: "s2",
         price: null,
         session_duration: null,
+        session_at: null,
         created_at: null,
         clients: null,
       },
@@ -53,6 +56,7 @@ describe("session-formatting utils", () => {
         session_id: "s3",
         price: 1000,
         session_duration: 30,
+        session_at: "2026-03-30T10:00:00.000Z",
         created_at: "2026-03-30T10:00:00.000Z",
         clients: [{ name: "Bob Stone" }],
       },
@@ -78,7 +82,24 @@ describe("session-formatting utils", () => {
   });
 
   it("formats date for valid ISO and handles invalid date", () => {
-    expect(formatSessionDate("2026-03-31T10:00:00.000Z").length > 0).toBe(true);
+    const utcDate = formatSessionDate("2026-03-31T10:00:00.000Z", "UTC");
+    const newYorkDate = formatSessionDate("2026-03-31T10:00:00.000Z", "America/New_York");
+    expect(utcDate.length > 0).toBe(true);
+    expect(newYorkDate.length > 0).toBe(true);
+    expect(newYorkDate).not.toBe(utcDate);
     expect(formatSessionDate("invalid-date")).toBe("Unknown date");
+  });
+
+  it("falls back to default reporting timezone for unsupported timezone values", () => {
+    const unsupportedTimezoneDate = formatSessionDate(
+      "2026-03-31T10:00:00.000Z",
+      "Mars/Phobos",
+    );
+    const defaultTimezoneDate = formatSessionDate(
+      "2026-03-31T10:00:00.000Z",
+      getDefaultReportingTimezone(),
+    );
+
+    expect(unsupportedTimezoneDate).toBe(defaultTimezoneDate);
   });
 });
