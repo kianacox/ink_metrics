@@ -13,24 +13,6 @@ interface ProfileEditRequestBody {
   commissionCapped?: unknown;
   commissionCapFrequency?: unknown;
   commissionCapAmountMinor?: unknown;
-  effectiveFrom?: unknown;
-}
-
-function parseEffectiveFrom(value: unknown): { value: string | null; error: string | null } {
-  if (value === undefined || value === null || value === "") {
-    return { value: null, error: null };
-  }
-
-  if (typeof value !== "string") {
-    return { value: null, error: "Effective from timestamp is invalid." };
-  }
-
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) {
-    return { value: null, error: "Effective from timestamp is invalid." };
-  }
-
-  return { value: new Date(timestamp).toISOString(), error: null };
 }
 
 export async function PUT(request: Request) {
@@ -95,64 +77,7 @@ export async function PUT(request: Request) {
     );
   }
 
-  const parsedEffectiveFrom = parseEffectiveFrom(body.effectiveFrom);
-  if (parsedEffectiveFrom.error) {
-    return NextResponse.json({ error: parsedEffectiveFrom.error }, { status: 400 });
-  }
-
-  const nowIso = new Date().toISOString();
-  const effectiveFrom = parsedEffectiveFrom.value ?? nowIso;
-  const nowTimestamp = Date.parse(nowIso);
-  const nextEffectiveFromTimestamp = Date.parse(effectiveFrom);
-  if (
-    Number.isFinite(nextEffectiveFromTimestamp) &&
-    Number.isFinite(nowTimestamp) &&
-    nextEffectiveFromTimestamp > nowTimestamp
-  ) {
-    return NextResponse.json(
-      { error: "Effective from timestamp cannot be in the future." },
-      { status: 400 },
-    );
-  }
-
-  const { data: activeRows, error: activeCompensationError } = await supabase
-    .from("artist_compensation_versions")
-    .select("compensation_version_id,effective_from")
-    .eq("user_id", user.id)
-    .is("effective_to", null)
-    .lte("effective_from", nowIso)
-    .order("effective_from", { ascending: false })
-    .limit(1);
-
-  if (activeCompensationError) {
-    return NextResponse.json(
-      { error: "Could not load active compensation settings." },
-      { status: 500 },
-    );
-  }
-
-  const activeVersion = activeRows?.[0];
-  if (!activeVersion?.compensation_version_id) {
-    return NextResponse.json(
-      { error: "Active compensation settings are missing." },
-      { status: 409 },
-    );
-  }
-
-  const activeEffectiveFromTimestamp = Date.parse(activeVersion.effective_from);
-  if (
-    Number.isFinite(activeEffectiveFromTimestamp) &&
-    Number.isFinite(nextEffectiveFromTimestamp) &&
-    nextEffectiveFromTimestamp <= activeEffectiveFromTimestamp
-  ) {
-    return NextResponse.json(
-      { error: "Effective from timestamp must be after the current active version start." },
-      { status: 400 },
-    );
-  }
-
   const { error: rolloverError } = await supabase.rpc("rollover_profile_compensation_version", {
-    p_effective_from: effectiveFrom,
     p_display_name: parsedPayload.displayName,
     p_reporting_timezone: parsedPayload.reportingTimezone,
     p_pay_chair_rent: parsedPayload.payChairRent,

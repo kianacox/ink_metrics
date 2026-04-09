@@ -1,4 +1,5 @@
 import { toMinorUnits } from "@/lib/currency";
+import { convertLocalDateTimeInTimezoneToUtcIso, isSupportedTimezone } from "@/lib/timezones";
 import {
   isDuplicateClientName,
   normalizeClientName,
@@ -14,6 +15,7 @@ interface SessionFormValidationInput {
   minutes: string;
   profit: string;
   sessionAtLocal: string;
+  reportingTimezone: string;
   clients: ClientOption[];
 }
 
@@ -69,8 +71,18 @@ export function validateSessionForm(
     };
   }
 
-  const sessionAtDate = new Date(normalizedSessionAtLocal);
-  if (!Number.isFinite(sessionAtDate.getTime())) {
+  if (!isSupportedTimezone(input.reportingTimezone)) {
+    return {
+      valid: false,
+      errorMessage: "Reporting timezone is invalid.",
+    };
+  }
+
+  const sessionAtIso = convertLocalDateTimeInTimezoneToUtcIso(
+    normalizedSessionAtLocal,
+    input.reportingTimezone,
+  );
+  if (!sessionAtIso) {
     return {
       valid: false,
       errorMessage: "Session date and time is invalid.",
@@ -84,7 +96,7 @@ export function validateSessionForm(
       normalizedClientName,
       sessionDurationMinutes: durationResult.totalMinutes,
       priceMinor,
-      sessionAtIso: sessionAtDate.toISOString(),
+      sessionAtIso,
     };
   } catch {
     return { valid: false, errorMessage: "Price must be a valid number." };

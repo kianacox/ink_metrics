@@ -10,6 +10,7 @@ import {
   Label,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { formatDateTimeLocalForTimezone, getDefaultReportingTimezone } from "@/lib/timezones";
 import {
   getFilteredClients,
   isDuplicateClientName,
@@ -22,12 +23,9 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
 
-function createDefaultSessionDateTimeValue(): string {
+function createDefaultSessionDateTimeValue(reportingTimezone: string): string {
   const now = new Date();
-  now.setSeconds(0, 0);
-  const timezoneOffsetMinutes = now.getTimezoneOffset();
-  const localDate = new Date(now.getTime() - timezoneOffsetMinutes * 60_000);
-  return localDate.toISOString().slice(0, 16);
+  return formatDateTimeLocalForTimezone(now, reportingTimezone);
 }
 
 export function AddSessionModal() {
@@ -40,17 +38,20 @@ export function AddSessionModal() {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
-  const [sessionDateTime, setSessionDateTime] = useState(createDefaultSessionDateTimeValue);
-  const [status, setStatus] = useState<SubmitStatus>(null);
-  const [toast, setToast] = useState<ToastStatus>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const {
     clients,
     isClientsLoading,
     defaultCurrency,
+    reportingTimezone,
     loadError,
     saveSession,
   } = useSessionFormData(open);
+  const [sessionDateTime, setSessionDateTime] = useState(() =>
+    createDefaultSessionDateTimeValue(getDefaultReportingTimezone()),
+  );
+  const [status, setStatus] = useState<SubmitStatus>(null);
+  const [toast, setToast] = useState<ToastStatus>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = useCallback((preserveStatus = false) => {
     setClientQuery("");
@@ -60,11 +61,11 @@ export function AddSessionModal() {
     setHours("");
     setMinutes("");
     setProfit("");
-    setSessionDateTime(createDefaultSessionDateTimeValue());
+    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
     if (!preserveStatus) {
       setStatus(null);
     }
-  }, []);
+  }, [reportingTimezone]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +87,13 @@ export function AddSessionModal() {
 
     return () => window.clearTimeout(timeout);
   }, [toast]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
+  }, [open, reportingTimezone]);
 
   useEffect(() => {
     if (loadError) {
@@ -132,6 +140,7 @@ export function AddSessionModal() {
       minutes,
       profit,
       sessionAtLocal: sessionDateTime,
+      reportingTimezone,
       clients,
     });
     if (!validationResult.valid) {
@@ -186,6 +195,7 @@ export function AddSessionModal() {
         onClick={() => {
           setOpen(true);
           setStatus(null);
+          setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
         }}
       >
         Add session

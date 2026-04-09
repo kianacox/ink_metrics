@@ -11,7 +11,7 @@ import {
 } from "@/components/ui";
 import { useSessions } from "@/components/dashboard/sessions/hooks/use-sessions";
 import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
-import type { SessionDateRangePreset } from "@/lib/sessions/fetch-sessions-page";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 import { SessionsCards } from "./sessions-cards";
 import { SessionsTable } from "./sessions-table";
 
@@ -48,6 +48,7 @@ export function SessionsView() {
     sessions,
     totalCount,
     defaultCurrency,
+    reportingTimezone,
     isLoading,
     isLoadingMore,
     hasNextPage,
@@ -167,8 +168,16 @@ export function SessionsView() {
 
       {!isLoading && hasSessions ? (
         <>
-          <SessionsCards sessions={sessions} currencyCode={defaultCurrency} />
-          <SessionsTable sessions={sessions} currencyCode={defaultCurrency} />
+          <SessionsCards
+            sessions={sessions}
+            currencyCode={defaultCurrency}
+            reportingTimezone={reportingTimezone}
+          />
+          <SessionsTable
+            sessions={sessions}
+            currencyCode={defaultCurrency}
+            reportingTimezone={reportingTimezone}
+          />
           {error ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : null}

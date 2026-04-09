@@ -52,71 +52,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const nowIso = new Date().toISOString();
-  const compensationPayload = {
-    user_id: user.id,
-    pay_chair_rent: payload.payChairRent,
-    rent_type: payload.rentType,
-    fixed_frequency: payload.fixedFrequency,
-    fixed_amount_minor: payload.fixedAmountMinor,
-    commission_rate_bps: payload.commissionRateBps,
-    commission_capped: payload.commissionCapped,
-    commission_cap_frequency: payload.commissionCapFrequency,
-    commission_cap_amount_minor: payload.commissionCapAmountMinor,
-    updated_at: nowIso,
-  };
-  const { data: existingCompensationRows, error: existingCompensationError } = await supabase
-    .from("artist_compensation_versions")
-    .select("compensation_version_id")
-    .eq("user_id", user.id)
-    .is("effective_to", null)
-    .limit(1);
+  const { error: setupError } = await supabase.rpc("complete_profile_setup", {
+    p_display_name: payload.displayName,
+    p_default_currency: payload.defaultCurrency,
+    p_reporting_timezone: payload.reportingTimezone,
+    p_pay_chair_rent: payload.payChairRent,
+    p_rent_type: payload.rentType,
+    p_fixed_frequency: payload.fixedFrequency,
+    p_fixed_amount_minor: payload.fixedAmountMinor,
+    p_commission_rate_bps: payload.commissionRateBps,
+    p_commission_capped: payload.commissionCapped,
+    p_commission_cap_frequency: payload.commissionCapFrequency,
+    p_commission_cap_amount_minor: payload.commissionCapAmountMinor,
+  });
 
-  if (existingCompensationError) {
-    return NextResponse.json(
-      { error: "Could not load current compensation state." },
-      { status: 500 },
-    );
-  }
-
-  const existingCompensationVersionId = existingCompensationRows?.[0]?.compensation_version_id;
-  const compensationError = existingCompensationVersionId
-    ? (
-        await supabase
-          .from("artist_compensation_versions")
-          .update(compensationPayload)
-          .eq("compensation_version_id", existingCompensationVersionId)
-      ).error
-    : (
-        await supabase
-          .from("artist_compensation_versions")
-          .insert({
-            ...compensationPayload,
-            effective_from: nowIso,
-            effective_to: null,
-          })
-      ).error;
-
-  if (compensationError) {
-    return NextResponse.json({ error: compensationError.message }, { status: 400 });
-  }
-
-  const { error: profileUpdateError } = await supabase.from("profiles").upsert(
-    {
-      user_id: user.id,
-      display_name: payload.displayName,
-      default_currency: payload.defaultCurrency,
-      reporting_timezone: payload.reportingTimezone,
-      is_profile_complete: true,
-      profile_completed_at: nowIso,
-    },
-    {
-      onConflict: "user_id",
-    },
-  );
-
-  if (profileUpdateError) {
-    return NextResponse.json({ error: profileUpdateError.message }, { status: 400 });
+  if (setupError) {
+    const status = setupError.message.includes("already been completed") ? 409 : 400;
+    return NextResponse.json({ error: setupError.message }, { status });
   }
 
   return NextResponse.json({ success: true });

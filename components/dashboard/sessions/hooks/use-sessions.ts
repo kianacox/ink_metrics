@@ -2,6 +2,11 @@
 
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
+import {
+  getEffectiveReportingTimezone,
+  getDefaultReportingTimezone,
+  type SessionDateRangePreset,
+} from "@/lib/timezones";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   mapSessionRowsToListItems,
@@ -12,7 +17,6 @@ import type {
 } from "@/components/dashboard/sessions/utils/session-listing";
 import {
   fetchSessionsPage,
-  type SessionDateRangePreset,
 } from "@/lib/sessions/fetch-sessions-page";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -28,6 +32,7 @@ interface UseSessionsResult {
   sessions: SessionListItem[];
   totalCount: number;
   defaultCurrency: string;
+  reportingTimezone: string;
   isLoading: boolean;
   isLoadingMore: boolean;
   hasNextPage: boolean;
@@ -45,6 +50,7 @@ export function useSessions({
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
+  const [reportingTimezone, setReportingTimezone] = useState(getDefaultReportingTimezone());
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -52,7 +58,9 @@ export function useSessions({
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const requestIdRef = useRef(0);
   const userIdRef = useRef<string | null>(null);
-  const didLoadCurrencyRef = useRef(false);
+  const defaultCurrencyRef = useRef(DEFAULT_CURRENCY);
+  const reportingTimezoneRef = useRef(getDefaultReportingTimezone());
+  const didLoadProfilePreferencesRef = useRef(false);
 
   const getUserId = useCallback(async () => {
     if (userIdRef.current) {
@@ -72,33 +80,59 @@ export function useSessions({
     return user.id;
   }, []);
 
-  const loadCurrency = useCallback(async () => {
-    if (didLoadCurrencyRef.current) {
-      return;
+  const loadProfilePreferences = useCallback(async () => {
+    if (didLoadProfilePreferencesRef.current) {
+      return {
+        defaultCurrency: defaultCurrencyRef.current,
+        reportingTimezone: reportingTimezoneRef.current,
+      };
     }
 
     const supabase = createClient();
     const userId = await getUserId();
     const { data: profileRows, error: profileError } = await supabase
       .from("profiles")
-      .select("default_currency")
+      .select("default_currency,reporting_timezone")
       .eq("user_id", userId)
       .limit(1);
 
+    const nextDefaultCurrency = profileRows?.[0]?.default_currency ?? DEFAULT_CURRENCY;
+    const candidateTimezone = profileRows?.[0]?.reporting_timezone;
+    const nextReportingTimezone = getEffectiveReportingTimezone(candidateTimezone);
+
     if (!profileError) {
-      setDefaultCurrency(profileRows?.[0]?.default_currency ?? DEFAULT_CURRENCY);
-      didLoadCurrencyRef.current = true;
+      setDefaultCurrency(nextDefaultCurrency);
+      setReportingTimezone(nextReportingTimezone);
+      defaultCurrencyRef.current = nextDefaultCurrency;
+      reportingTimezoneRef.current = nextReportingTimezone;
+      didLoadProfilePreferencesRef.current = true;
     }
+
+    return {
+      defaultCurrency: nextDefaultCurrency,
+      reportingTimezone: nextReportingTimezone,
+    };
   }, [getUserId]);
 
   const loadPage = useCallback(
-    async ({ pageIndex, append }: { pageIndex: number; append: boolean }) => {
+    async ({
+      pageIndex,
+      append,
+      reportingTimezoneOverride,
+    }: {
+      pageIndex: number;
+      append: boolean;
+      reportingTimezoneOverride?: string;
+    }) => {
       const currentRequestId = ++requestIdRef.current;
       const supabase = createClient();
       const userId = await getUserId();
+      const effectiveReportingTimezone =
+        reportingTimezoneOverride ?? reportingTimezoneRef.current;
       const pageResult = await fetchSessionsPage({
         supabase,
         userId,
+        reportingTimezone: effectiveReportingTimezone,
         searchQuery,
         sortField,
         dateRange,
@@ -123,19 +157,26 @@ export function useSessions({
     setIsLoading(true);
     setError(null);
     try {
-      await Promise.all([
-        loadPage({ pageIndex: 0, append: false }),
-        loadCurrency(),
-      ]);
-    } catch {
-      setError("Could not load sessions. Please try again.");
+      const profilePreferences = await loadProfilePreferences();
+      await loadPage({
+        pageIndex: 0,
+        append: false,
+        reportingTimezoneOverride: profilePreferences.reportingTimezone,
+      });
+    } catch (loadError) {
+      const nextErrorMessage =
+        loadError instanceof Error &&
+        loadError.message === "Could not compute date range boundaries."
+          ? "Could not load sessions for the selected reporting timezone. Please check your profile timezone and try again."
+          : "Could not load sessions. Please try again.";
+      setError(nextErrorMessage);
       setSessions([]);
       setTotalCount(0);
       setHasNextPage(false);
     } finally {
       setIsLoading(false);
     }
-  }, [loadCurrency, loadPage]);
+  }, [loadPage, loadProfilePreferences]);
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || isLoading || !hasNextPage) {
@@ -160,6 +201,7 @@ export function useSessions({
     sessions,
     totalCount,
     defaultCurrency,
+    reportingTimezone,
     isLoading,
     isLoadingMore,
     hasNextPage,

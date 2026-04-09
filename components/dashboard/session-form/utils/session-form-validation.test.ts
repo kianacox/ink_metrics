@@ -16,6 +16,7 @@ describe("validateSessionForm", () => {
       minutes: "0",
       profit: "100",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -34,6 +35,7 @@ describe("validateSessionForm", () => {
       minutes: "0",
       profit: "100",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -52,6 +54,7 @@ describe("validateSessionForm", () => {
       minutes: "0",
       profit: "100",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -71,6 +74,7 @@ describe("validateSessionForm", () => {
       minutes: "0",
       profit: "100",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -89,6 +93,7 @@ describe("validateSessionForm", () => {
       minutes: "30",
       profit: "abc",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -107,6 +112,7 @@ describe("validateSessionForm", () => {
       minutes: "30",
       profit: "12.34",
       sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "UTC",
       clients,
     });
 
@@ -115,7 +121,7 @@ describe("validateSessionForm", () => {
       expect(result.normalizedClientName).toBe("Alice Doe");
       expect(result.sessionDurationMinutes).toBe(90);
       expect(result.priceMinor).toBe(1234);
-      expect(Number.isFinite(Date.parse(result.sessionAtIso))).toBe(true);
+      expect(result.sessionAtIso).toBe("2026-04-08T10:30:00.000Z");
     }
   });
 
@@ -128,12 +134,51 @@ describe("validateSessionForm", () => {
       minutes: "30",
       profit: "12.34",
       sessionAtLocal: " ",
+      reportingTimezone: "UTC",
       clients,
     });
 
     expect(result).toEqual({
       valid: false,
       errorMessage: "Session date and time are required.",
+    });
+  });
+
+  it("fails when reporting timezone is invalid", () => {
+    const result = validateSessionForm({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice Doe",
+      hours: "1",
+      minutes: "30",
+      profit: "12.34",
+      sessionAtLocal: "2026-04-08T10:30",
+      reportingTimezone: "Mars/Phobos",
+      clients,
+    });
+
+    expect(result).toEqual({
+      valid: false,
+      errorMessage: "Reporting timezone is invalid.",
+    });
+  });
+
+  it("fails for nonexistent local wall-time during DST transition", () => {
+    const result = validateSessionForm({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice Doe",
+      hours: "1",
+      minutes: "30",
+      profit: "12.34",
+      sessionAtLocal: "2026-03-29T01:30",
+      reportingTimezone: "Europe/London",
+      clients,
+    });
+
+    expect(result).toEqual({
+      valid: false,
+      errorMessage: "Session date and time is invalid.",
     });
   });
 });

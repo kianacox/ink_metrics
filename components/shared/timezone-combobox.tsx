@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input, Label } from "@/components/ui";
 import { getSupportedTimezones } from "@/lib/timezones";
 
@@ -22,9 +22,19 @@ export function TimezoneCombobox({
   required = false,
 }: TimezoneComboboxProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState(value);
   const timezoneOptions = useMemo(() => getSupportedTimezones(), []);
+  const selectedTimezone = useMemo(
+    () => (timezoneOptions.includes(value) ? value : ""),
+    [timezoneOptions, value],
+  );
+
+  useEffect(() => {
+    setSearchValue(value);
+  }, [value]);
+
   const filteredTimezoneOptions = useMemo(() => {
-    const normalizedInput = value.trim().toLowerCase();
+    const normalizedInput = searchValue.trim().toLowerCase();
     if (!normalizedInput) {
       return timezoneOptions;
     }
@@ -32,7 +42,7 @@ export function TimezoneCombobox({
     return timezoneOptions.filter((timezone) =>
       timezone.toLowerCase().includes(normalizedInput),
     );
-  }, [value, timezoneOptions]);
+  }, [searchValue, timezoneOptions]);
 
   return (
     <div className="grid gap-2">
@@ -40,14 +50,18 @@ export function TimezoneCombobox({
       <div className="relative">
         <Input
           id={id}
-          value={value}
+          value={searchValue}
           onChange={(event) => {
-            onChange(event.target.value);
+            setSearchValue(event.target.value);
             setIsMenuOpen(true);
           }}
-          onFocus={() => setIsMenuOpen(true)}
+          onFocus={() => {
+            setSearchValue(selectedTimezone);
+            setIsMenuOpen(true);
+          }}
           onBlur={() => {
             window.setTimeout(() => {
+              setSearchValue(selectedTimezone);
               setIsMenuOpen(false);
             }, TIMEZONE_MENU_CLOSE_DELAY_MS);
           }}

@@ -5,6 +5,7 @@ import {
   mapSessionRowsToListItems,
   type SessionRow,
 } from "./session-formatting";
+import { getDefaultReportingTimezone } from "@/lib/timezones";
 
 describe("session-formatting utils", () => {
   it("maps session rows into list items", () => {
@@ -81,7 +82,24 @@ describe("session-formatting utils", () => {
   });
 
   it("formats date for valid ISO and handles invalid date", () => {
-    expect(formatSessionDate("2026-03-31T10:00:00.000Z").length > 0).toBe(true);
+    const utcDate = formatSessionDate("2026-03-31T10:00:00.000Z", "UTC");
+    const newYorkDate = formatSessionDate("2026-03-31T10:00:00.000Z", "America/New_York");
+    expect(utcDate.length > 0).toBe(true);
+    expect(newYorkDate.length > 0).toBe(true);
+    expect(newYorkDate).not.toBe(utcDate);
     expect(formatSessionDate("invalid-date")).toBe("Unknown date");
+  });
+
+  it("falls back to default reporting timezone for unsupported timezone values", () => {
+    const unsupportedTimezoneDate = formatSessionDate(
+      "2026-03-31T10:00:00.000Z",
+      "Mars/Phobos",
+    );
+    const defaultTimezoneDate = formatSessionDate(
+      "2026-03-31T10:00:00.000Z",
+      getDefaultReportingTimezone(),
+    );
+
+    expect(unsupportedTimezoneDate).toBe(defaultTimezoneDate);
   });
 });
