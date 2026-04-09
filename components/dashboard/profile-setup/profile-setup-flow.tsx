@@ -12,6 +12,12 @@ import {
   type RentFrequency,
   type RentType,
 } from "@/lib/profiles/profile-setup";
+import {
+  detectBrowserTimezone,
+  getDefaultReportingTimezone,
+  isSupportedTimezone,
+} from "@/lib/timezones";
+import { TimezoneCombobox } from "@/components/shared/timezone-combobox";
 import { ProfileSetupComplete } from "./profile-setup-complete";
 import {
   MOBILE_STEPS,
@@ -39,13 +45,25 @@ function ChoiceButton({
   );
 }
 
-export function ProfileSetupFlow({ initialCurrency }: ProfileSetupFlowProps) {
+export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSetupFlowProps) {
   const [displayName, setDisplayName] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState<ProfileCurrency>(() => {
     if (PROFILE_CURRENCIES.includes(initialCurrency as ProfileCurrency)) {
       return initialCurrency as ProfileCurrency;
     }
     return "GBP";
+  });
+  const [reportingTimezone, setReportingTimezone] = useState<string>(() => {
+    const browserTimezone = detectBrowserTimezone();
+    if (browserTimezone) {
+      return browserTimezone;
+    }
+
+    if (isSupportedTimezone(initialTimezone)) {
+      return initialTimezone;
+    }
+
+    return getDefaultReportingTimezone();
   });
   const [payChairRent, setPayChairRent] = useState<ChairRentChoice>(null);
   const [rentType, setRentType] = useState<RentType | null>(null);
@@ -93,6 +111,7 @@ export function ProfileSetupFlow({ initialCurrency }: ProfileSetupFlowProps) {
     return {
       displayName,
       defaultCurrency,
+      reportingTimezone,
       payChairRent,
       rentType: candidateRentType,
       fixedFrequency: candidateRentType === "fixed" ? fixedFrequency : null,
@@ -187,6 +206,14 @@ export function ProfileSetupFlow({ initialCurrency }: ProfileSetupFlowProps) {
           ))}
         </div>
       </div>
+
+      <TimezoneCombobox
+        id="reporting-timezone"
+        label="Reporting timezone"
+        value={reportingTimezone}
+        onChange={setReportingTimezone}
+        required
+      />
     </div>
   );
 

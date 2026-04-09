@@ -13,6 +13,7 @@ interface SessionFormValidationInput {
   hours: string;
   minutes: string;
   profit: string;
+  sessionAtLocal: string;
   clients: ClientOption[];
 }
 
@@ -22,6 +23,7 @@ type SessionFormValidationResult =
       normalizedClientName: string;
       sessionDurationMinutes: number;
       priceMinor: number;
+      sessionAtIso: string;
     }
   | {
       valid: false;
@@ -59,6 +61,22 @@ export function validateSessionForm(
     };
   }
 
+  const normalizedSessionAtLocal = input.sessionAtLocal.trim();
+  if (!normalizedSessionAtLocal) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time are required.",
+    };
+  }
+
+  const sessionAtDate = new Date(normalizedSessionAtLocal);
+  if (!Number.isFinite(sessionAtDate.getTime())) {
+    return {
+      valid: false,
+      errorMessage: "Session date and time is invalid.",
+    };
+  }
+
   try {
     const priceMinor = toMinorUnits(input.profit);
     return {
@@ -66,6 +84,7 @@ export function validateSessionForm(
       normalizedClientName,
       sessionDurationMinutes: durationResult.totalMinutes,
       priceMinor,
+      sessionAtIso: sessionAtDate.toISOString(),
     };
   } catch {
     return { valid: false, errorMessage: "Price must be a valid number." };

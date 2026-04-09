@@ -1,3 +1,5 @@
+import { isSupportedTimezone } from "@/lib/timezones";
+
 export const PROFILE_CURRENCIES = ["GBP", "USD", "EUR"] as const;
 export type ProfileCurrency = (typeof PROFILE_CURRENCIES)[number];
 
@@ -10,6 +12,7 @@ export type RentFrequency = (typeof RENT_FREQUENCIES)[number];
 export interface ProfileSetupPayload {
   displayName: string;
   defaultCurrency: ProfileCurrency;
+  reportingTimezone: string;
   payChairRent: boolean;
   rentType: RentType | null;
   fixedFrequency: RentFrequency | null;
@@ -23,6 +26,7 @@ export interface ProfileSetupPayload {
 interface ProfileSetupCandidate {
   displayName: string;
   defaultCurrency: unknown;
+  reportingTimezone: unknown;
   payChairRent: unknown;
   rentType: unknown;
   fixedFrequency: unknown;
@@ -85,6 +89,10 @@ function validateSharedFields(candidate: ProfileSetupCandidate): string | null {
 
   if (typeof candidate.payChairRent !== "boolean") {
     return "Chair rent selection is required.";
+  }
+
+  if (!isSupportedTimezone(candidate.reportingTimezone)) {
+    return "Reporting timezone is invalid.";
   }
 
   if (!isOptionalNonNegativeInteger(candidate.fixedAmountMinor)) {
@@ -193,6 +201,7 @@ export function parseProfileSetupPayload(input: unknown): {
   const candidate: ProfileSetupCandidate = {
     displayName,
     defaultCurrency: payload.defaultCurrency,
+    reportingTimezone: payload.reportingTimezone,
     payChairRent: payload.payChairRent,
     rentType: payload.rentType,
     fixedFrequency: payload.fixedFrequency,
@@ -221,6 +230,7 @@ export function parseProfileSetupPayload(input: unknown): {
     data: {
       displayName: candidate.displayName,
       defaultCurrency: candidate.defaultCurrency as ProfileCurrency,
+      reportingTimezone: candidate.reportingTimezone as string,
       payChairRent: candidate.payChairRent as boolean,
       rentType: isRentType(candidate.rentType) ? candidate.rentType : null,
       fixedFrequency: isFrequency(candidate.fixedFrequency) ? candidate.fixedFrequency : null,

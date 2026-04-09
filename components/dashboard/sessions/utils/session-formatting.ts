@@ -7,7 +7,8 @@ export interface SessionRow {
   session_id: string;
   price: number | null;
   session_duration: number | null;
-  created_at: string | null;
+  session_at: string | null;
+  created_at?: string | null;
   clients?:
     | {
         name?: string | null;
@@ -34,7 +35,7 @@ export function mapSessionRowsToListItems(rows: SessionRow[]): SessionListItem[]
     clientName: getClientName(row.clients),
     priceMinor: row.price ?? 0,
     durationMinutes: row.session_duration ?? 0,
-    createdAt: row.created_at ?? new Date(0).toISOString(),
+    createdAt: row.session_at ?? row.created_at ?? new Date(0).toISOString(),
   }));
 }
 

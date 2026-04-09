@@ -10,7 +10,7 @@ declare
   session_user_email text := 'seeded-session-user@example.com';
   incomplete_user_email text := 'seeded-incomplete-user@example.com';
 begin
-  delete from public.artist_compensation_settings
+  delete from public.artist_compensation_versions
   where user_id in (session_user_id, incomplete_user_id);
 
   delete from public.profiles
@@ -123,15 +123,20 @@ begin
     user_id,
     display_name,
     default_currency,
+    reporting_timezone,
+    week_starts_on,
     is_profile_complete,
     profile_completed_at
   )
   values
-    (session_user_id, 'Seeded Session User', 'GBP', true, now()),
-    (incomplete_user_id, null, 'GBP', false, null);
+    (session_user_id, 'Seeded Session User', 'GBP', 'Europe/London', 1, true, now()),
+    (incomplete_user_id, null, 'GBP', 'Europe/London', 1, false, null);
 
-  insert into public.artist_compensation_settings (
+  insert into public.artist_compensation_versions (
+    compensation_version_id,
     user_id,
+    effective_from,
+    effective_to,
     pay_chair_rent,
     rent_type,
     fixed_frequency,
@@ -144,7 +149,10 @@ begin
     updated_at
   )
   values (
+    gen_random_uuid(),
     session_user_id,
+    now(),
+    null,
     false,
     null,
     null,

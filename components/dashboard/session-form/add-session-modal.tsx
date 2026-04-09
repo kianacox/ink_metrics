@@ -22,6 +22,14 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
 
+function createDefaultSessionDateTimeValue(): string {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  const timezoneOffsetMinutes = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - timezoneOffsetMinutes * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 export function AddSessionModal() {
   const titleId = useId();
   const [open, setOpen] = useState(false);
@@ -32,6 +40,7 @@ export function AddSessionModal() {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
+  const [sessionDateTime, setSessionDateTime] = useState(createDefaultSessionDateTimeValue);
   const [status, setStatus] = useState<SubmitStatus>(null);
   const [toast, setToast] = useState<ToastStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +60,7 @@ export function AddSessionModal() {
     setHours("");
     setMinutes("");
     setProfit("");
+    setSessionDateTime(createDefaultSessionDateTimeValue());
     if (!preserveStatus) {
       setStatus(null);
     }
@@ -121,6 +131,7 @@ export function AddSessionModal() {
       hours,
       minutes,
       profit,
+      sessionAtLocal: sessionDateTime,
       clients,
     });
     if (!validationResult.valid) {
@@ -137,6 +148,7 @@ export function AddSessionModal() {
         clientContact: normalizedNewClientContact,
         priceMinor: validationResult.priceMinor,
         sessionDurationMinutes: validationResult.sessionDurationMinutes,
+        sessionAtIso: validationResult.sessionAtIso,
       });
 
       if (!result.success) {
@@ -345,6 +357,16 @@ export function AddSessionModal() {
                       />
                     </div>
                   </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="session-date-time">Session date and time</Label>
+                  <Input
+                    id="session-date-time"
+                    type="datetime-local"
+                    value={sessionDateTime}
+                    onChange={(event) => setSessionDateTime(event.target.value)}
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="profit">Price</Label>

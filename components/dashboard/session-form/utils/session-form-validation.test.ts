@@ -15,6 +15,7 @@ describe("validateSessionForm", () => {
       hours: "1",
       minutes: "0",
       profit: "100",
+      sessionAtLocal: "2026-04-08T10:30",
       clients,
     });
 
@@ -32,6 +33,7 @@ describe("validateSessionForm", () => {
       hours: "1",
       minutes: "0",
       profit: "100",
+      sessionAtLocal: "2026-04-08T10:30",
       clients,
     });
 
@@ -49,6 +51,7 @@ describe("validateSessionForm", () => {
       hours: "1",
       minutes: "0",
       profit: "100",
+      sessionAtLocal: "2026-04-08T10:30",
       clients,
     });
 
@@ -67,6 +70,7 @@ describe("validateSessionForm", () => {
       hours: "-1",
       minutes: "0",
       profit: "100",
+      sessionAtLocal: "2026-04-08T10:30",
       clients,
     });
 
@@ -84,6 +88,7 @@ describe("validateSessionForm", () => {
       hours: "1",
       minutes: "30",
       profit: "abc",
+      sessionAtLocal: "2026-04-08T10:30",
       clients,
     });
 
@@ -101,14 +106,34 @@ describe("validateSessionForm", () => {
       hours: "1",
       minutes: "30",
       profit: "12.34",
+      sessionAtLocal: "2026-04-08T10:30",
+      clients,
+    });
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.normalizedClientName).toBe("Alice Doe");
+      expect(result.sessionDurationMinutes).toBe(90);
+      expect(result.priceMinor).toBe(1234);
+      expect(Number.isFinite(Date.parse(result.sessionAtIso))).toBe(true);
+    }
+  });
+
+  it("fails when session date and time is missing", () => {
+    const result = validateSessionForm({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice Doe",
+      hours: "1",
+      minutes: "30",
+      profit: "12.34",
+      sessionAtLocal: " ",
       clients,
     });
 
     expect(result).toEqual({
-      valid: true,
-      normalizedClientName: "Alice Doe",
-      sessionDurationMinutes: 90,
-      priceMinor: 1234,
+      valid: false,
+      errorMessage: "Session date and time are required.",
     });
   });
 });

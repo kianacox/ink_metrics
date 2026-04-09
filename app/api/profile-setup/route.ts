@@ -16,7 +16,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json()) as unknown;
+  let body: unknown;
+  try {
+    body = (await request.json()) as unknown;
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
   const { data: payload, error: validationError } = parseProfileSetupPayload(body);
 
   if (!payload || validationError) {
@@ -47,23 +52,50 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: compensationError } = await supabase
-    .from("artist_compensation_settings")
-    .upsert(
-      {
-        user_id: user.id,
-        pay_chair_rent: payload.payChairRent,
-        rent_type: payload.rentType,
-        fixed_frequency: payload.fixedFrequency,
-        fixed_amount_minor: payload.fixedAmountMinor,
-        commission_rate_bps: payload.commissionRateBps,
-        commission_capped: payload.commissionCapped,
-        commission_cap_frequency: payload.commissionCapFrequency,
-        commission_cap_amount_minor: payload.commissionCapAmountMinor,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
+  const nowIso = new Date().toISOString();
+  const compensationPayload = {
+    user_id: user.id,
+    pay_chair_rent: payload.payChairRent,
+    rent_type: payload.rentType,
+    fixed_frequency: payload.fixedFrequency,
+    fixed_amount_minor: payload.fixedAmountMinor,
+    commission_rate_bps: payload.commissionRateBps,
+    commission_capped: payload.commissionCapped,
+    commission_cap_frequency: payload.commissionCapFrequency,
+    commission_cap_amount_minor: payload.commissionCapAmountMinor,
+    updated_at: nowIso,
+  };
+  const { data: existingCompensationRows, error: existingCompensationError } = await supabase
+    .from("artist_compensation_versions")
+    .select("compensation_version_id")
+    .eq("user_id", user.id)
+    .is("effective_to", null)
+    .limit(1);
+
+  if (existingCompensationError) {
+    return NextResponse.json(
+      { error: "Could not load current compensation state." },
+      { status: 500 },
     );
+  }
+
+  const existingCompensationVersionId = existingCompensationRows?.[0]?.compensation_version_id;
+  const compensationError = existingCompensationVersionId
+    ? (
+        await supabase
+          .from("artist_compensation_versions")
+          .update(compensationPayload)
+          .eq("compensation_version_id", existingCompensationVersionId)
+      ).error
+    : (
+        await supabase
+          .from("artist_compensation_versions")
+          .insert({
+            ...compensationPayload,
+            effective_from: nowIso,
+            effective_to: null,
+          })
+      ).error;
 
   if (compensationError) {
     return NextResponse.json({ error: compensationError.message }, { status: 400 });
@@ -74,8 +106,9 @@ export async function POST(request: Request) {
       user_id: user.id,
       display_name: payload.displayName,
       default_currency: payload.defaultCurrency,
+      reporting_timezone: payload.reportingTimezone,
       is_profile_complete: true,
-      profile_completed_at: new Date().toISOString(),
+      profile_completed_at: nowIso,
     },
     {
       onConflict: "user_id",

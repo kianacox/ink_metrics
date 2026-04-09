@@ -30,17 +30,19 @@ describe("app-nav-utils", () => {
     expect(isNavItemActive(sessionsItem, "/dashboard")).toBe(false);
   });
 
-  it("clients placeholder and logout action are never active", () => {
-    const clientsItem = APP_NAV_ITEMS.find((item) => item.key === "clients");
+  it("profile is active on profile route and logout is never active", () => {
+    const profileItem = APP_NAV_ITEMS.find((item) => item.key === "profile");
     const logoutItem = APP_NAV_ITEMS.find((item) => item.key === "logout");
-    expect(clientsItem).toBeTruthy();
+    expect(profileItem).toBeTruthy();
     expect(logoutItem).toBeTruthy();
 
-    if (!clientsItem || !logoutItem) {
+    if (!profileItem || !logoutItem) {
       return;
     }
 
-    expect(isNavItemActive(clientsItem, "/dashboard")).toBe(false);
+    expect(isNavItemActive(profileItem, "/dashboard/profile")).toBe(true);
+    expect(isNavItemActive(profileItem, "/dashboard/profile/details")).toBe(true);
+    expect(isNavItemActive(profileItem, "/dashboard")).toBe(false);
     expect(isNavItemActive(logoutItem, "/dashboard")).toBe(false);
   });
 

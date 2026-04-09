@@ -12,6 +12,7 @@ interface SaveSessionParams {
   clientContact: string;
   priceMinor: number;
   sessionDurationMinutes: number;
+  sessionAtIso: string;
 }
 
 interface SaveSessionResult {
@@ -94,6 +95,7 @@ export function useSessionFormData(open: boolean) {
       clientContact,
       priceMinor,
       sessionDurationMinutes,
+      sessionAtIso,
     }: SaveSessionParams): Promise<SaveSessionResult> => {
       const supabase = createClient();
       const {
@@ -180,6 +182,7 @@ export function useSessionFormData(open: boolean) {
         client_id: clientId,
         price: priceMinor,
         session_duration: sessionDurationMinutes,
+        session_at: sessionAtIso,
       });
 
       if (sessionError) {

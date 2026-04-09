@@ -21,7 +21,7 @@ export interface FetchSessionsPageResult {
 }
 
 const SORT_FIELD_TO_COLUMN: Record<SessionSortField, string> = {
-  date: "created_at",
+  date: "session_at",
   duration: "session_duration",
   profit: "price",
 };
@@ -64,7 +64,7 @@ export async function fetchSessionsPage({
 
   let rowsQuery = supabase
     .from("sessions")
-    .select("session_id,price,session_duration,created_at,clients!inner(name)")
+    .select("session_id,price,session_duration,session_at,created_at,clients!inner(name)")
     .eq("user_id", userId)
     .order(sortColumn, { ascending: false })
     .order("session_id", { ascending: false });
@@ -75,8 +75,8 @@ export async function fetchSessionsPage({
     .eq("user_id", userId);
 
   if (dateRangeStart) {
-    rowsQuery = rowsQuery.gte("created_at", dateRangeStart);
-    totalCountQuery = totalCountQuery.gte("created_at", dateRangeStart);
+    rowsQuery = rowsQuery.gte("session_at", dateRangeStart);
+    totalCountQuery = totalCountQuery.gte("session_at", dateRangeStart);
   }
 
   if (normalizedQuery.length > 0) {

@@ -10,6 +10,7 @@ interface SessionInput {
   hours: string;
   minutes: string;
   price: string;
+  sessionDateTime?: string;
 }
 
 const SUCCESS_TOAST_TEXT = "Session saved successfully.";
@@ -25,11 +26,14 @@ export async function openAddSessionModal(page: Page): Promise<void> {
 
 export async function fillSessionFields(
   page: Page,
-  { clientName, hours, minutes, price }: SessionInput,
+  { clientName, hours, minutes, price, sessionDateTime }: SessionInput,
 ): Promise<void> {
   await page.getByLabel("Client (type to search existing or create new)").fill(clientName);
   await page.getByLabel("Hours").fill(hours);
   await page.getByLabel("Minutes").fill(minutes);
+  if (sessionDateTime) {
+    await page.getByLabel("Session date and time").fill(sessionDateTime);
+  }
   await page.getByLabel("Price").fill(price);
 }
 
