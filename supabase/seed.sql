@@ -151,7 +151,7 @@ begin
   values (
     gen_random_uuid(),
     session_user_id,
-    now(),
+    now() - interval '6 months',
     null,
     false,
     null,

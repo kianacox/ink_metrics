@@ -1,5 +1,5 @@
 import { validateSessionForm } from "./session-form-validation";
-import type { ClientOption } from "./client-selection";
+import type { ClientOption } from "../models";
 
 const clients: ClientOption[] = [
   { client_id: "client-1", name: "Alice Doe" },

@@ -14,6 +14,8 @@ interface SessionInput {
 }
 
 const SUCCESS_TOAST_TEXT = "Session saved successfully.";
+const UPDATED_TOAST_TEXT = "Session updated successfully.";
+const DELETED_TOAST_TEXT = "Session deleted successfully.";
 
 function getSessionDialog(page: Page) {
   return page.getByRole("dialog", { name: /log a session/i });
@@ -103,4 +105,64 @@ export async function expectSessionVisible(
   await expect(sessionRow).toContainText(session.clientName);
   await expect(sessionRow).toContainText(durationText);
   await expect(sessionRow).toContainText(profitText);
+}
+
+export async function expectSessionNotVisible(
+  page: Page,
+  session: { clientName: string },
+): Promise<void> {
+  const sessionRow = page.locator("tbody tr", { hasText: session.clientName }).first();
+  await expect(sessionRow).toHaveCount(0);
+}
+
+export async function editSessionFromSessionsPage(
+  page: Page,
+  input: {
+    clientName: string;
+    hours: string;
+    minutes: string;
+    price: string;
+    sessionDateTime: string;
+  },
+): Promise<void> {
+  const row = page.locator("tbody tr", { hasText: input.clientName }).first();
+  await expect(row).toBeVisible();
+
+  await row.getByRole("button", { name: `Edit session for ${input.clientName}` }).click();
+
+  const dialog = page.getByRole("dialog", { name: /edit session/i });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Client")).toBeDisabled();
+
+  await dialog.getByLabel("Hours").fill(input.hours);
+  await dialog.getByLabel("Minutes").fill(input.minutes);
+  await dialog.getByLabel("Session date and time").fill(input.sessionDateTime);
+  await dialog.getByLabel("Price").fill(input.price);
+  await dialog.getByRole("button", { name: /^confirm$/i }).click();
+
+  await expect(page.getByRole("status")).toContainText(UPDATED_TOAST_TEXT);
+  await expect(dialog).not.toBeVisible();
+}
+
+export async function openDeleteSessionModalFromSessionsPage(
+  page: Page,
+  clientName: string,
+): Promise<void> {
+  const row = page.locator("tbody tr", { hasText: clientName }).first();
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: `Delete session for ${clientName}` }).click();
+  await expect(page.getByRole("dialog", { name: /delete session/i })).toBeVisible();
+}
+
+export async function cancelDeleteSession(page: Page): Promise<void> {
+  const dialog = page.getByRole("dialog", { name: /delete session/i });
+  await dialog.getByRole("button", { name: /^cancel$/i }).click();
+  await expect(dialog).not.toBeVisible();
+}
+
+export async function confirmDeleteSession(page: Page): Promise<void> {
+  const dialog = page.getByRole("dialog", { name: /delete session/i });
+  await dialog.getByRole("button", { name: /^confirm$/i }).click();
+  await expect(page.getByRole("status")).toContainText(DELETED_TOAST_TEXT);
+  await expect(dialog).not.toBeVisible();
 }

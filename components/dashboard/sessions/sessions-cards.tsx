@@ -4,6 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Button,
 } from "@/components/ui";
 import {
   formatSessionDate,
@@ -16,22 +17,50 @@ interface SessionsCardsProps {
   sessions: SessionListItem[];
   currencyCode: string;
   reportingTimezone: string;
+  onEditSession: (session: SessionListItem) => void;
+  onDeleteSession: (session: SessionListItem) => void;
 }
 
 export function SessionsCards({
   sessions,
   currencyCode,
   reportingTimezone,
+  onEditSession,
+  onDeleteSession,
 }: SessionsCardsProps) {
   return (
     <div className="grid gap-3 sm:hidden">
       {sessions.map((session) => (
         <Card key={session.id} className="border-border">
           <CardHeader className="p-4 pb-3">
-            <CardTitle className="text-base">{session.clientName}</CardTitle>
-            <CardDescription>
-              {formatSessionDate(session.createdAt, reportingTimezone)}
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">{session.clientName}</CardTitle>
+                <CardDescription>
+                  {formatSessionDate(session.createdAt, reportingTimezone)}
+                </CardDescription>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEditSession(session)}
+                  aria-label={`Edit session for ${session.clientName}`}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDeleteSession(session)}
+                  aria-label={`Delete session for ${session.clientName}`}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
             {session.throughAds ? (

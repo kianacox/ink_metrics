@@ -4,19 +4,10 @@ import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
 import { getDefaultReportingTimezone, getEffectiveReportingTimezone } from "@/lib/timezones";
 import { useCallback, useRef, useState } from "react";
-
-interface LoadedSessionPreferences {
-  userId: string;
-  defaultCurrency: string;
-  reportingTimezone: string;
-}
-
-interface UseSessionPreferencesResult {
-  defaultCurrency: string;
-  reportingTimezone: string;
-  ensureLoaded: () => Promise<LoadedSessionPreferences>;
-  getCurrentReportingTimezone: () => string;
-}
+import type {
+  LoadedSessionPreferences,
+  UseSessionPreferencesResult,
+} from "@/components/dashboard/sessions/models";
 
 export function useSessionPreferences(): UseSessionPreferencesResult {
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);

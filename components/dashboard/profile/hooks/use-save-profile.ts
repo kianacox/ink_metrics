@@ -1,24 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-export interface SaveProfilePayload {
-  displayName: string;
-  reportingTimezone: string;
-  payChairRent: boolean;
-  rentType: "fixed" | "commission" | null;
-  fixedFrequency: "weekly" | "monthly" | null;
-  fixedAmountMinor: number | null;
-  commissionRateBps: number | null;
-  commissionCapped: boolean | null;
-  commissionCapFrequency: "weekly" | "monthly" | null;
-  commissionCapAmountMinor: number | null;
-}
-
-interface SaveProfileResult {
-  success: boolean;
-  error?: string;
-}
+import type {
+  SaveProfileApiResponse,
+  SaveProfilePayload,
+  SaveProfileResult,
+} from "@/components/dashboard/profile/models";
+export type { SaveProfilePayload, SaveProfileResult };
 
 export function useSaveProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +21,7 @@ export function useSaveProfile() {
         },
         body: JSON.stringify(payload),
       });
-      const responseBody = (await response.json()) as { error?: string };
+      const responseBody = (await response.json()) as SaveProfileApiResponse;
       if (!response.ok) {
         return {
           success: false,

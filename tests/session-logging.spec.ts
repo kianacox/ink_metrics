@@ -1,15 +1,31 @@
 import { expect, test } from "@playwright/test";
+import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import { loginAsSeededUser } from "./auth-helpers";
 import {
+  cancelDeleteSession,
+  confirmDeleteSession,
   createSessionWithExistingClient,
   createSessionWithNewClient,
+  editSessionFromSessionsPage,
+  expectSessionNotVisible,
   expectSessionVisible,
   goToSessionsPage,
+  openDeleteSessionModalFromSessionsPage,
   openAddSessionModal,
 } from "./session-helpers";
 
 function uniqueClientName(prefix: string): string {
   return `${prefix}-${Date.now()}`;
+}
+
+function sessionDateTimeMinutesAgo(minutes: number): string {
+  const timestamp = Date.now() - minutes * 60_000;
+  return formatDateTimeLocalForTimezone(new Date(timestamp), "Europe/London");
+}
+
+function sessionDateTimeDaysAgo(days: number): string {
+  const timestamp = Date.now() - days * 24 * 60 * 60_000;
+  return formatDateTimeLocalForTimezone(new Date(timestamp), "Europe/London");
 }
 
 test.beforeEach(async ({ page }) => {
@@ -25,6 +41,27 @@ test("creates a session from dashboard", async ({ page }) => {
     hours: "1",
     minutes: "30",
     price: "125.50",
+  });
+});
+
+test("creates a session backdated within six months", async ({ page }) => {
+  const clientName = uniqueClientName("client-backdate");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "5",
+    price: "130.00",
+    sessionDateTime: sessionDateTimeDaysAgo(120),
+  });
+
+  await goToSessionsPage(page);
+  await page.getByRole("button", { name: /date range:/i }).click();
+  await page.getByRole("menuitem", { name: /^all time$/i }).click();
+  await expectSessionVisible(page, {
+    clientName,
+    durationMinutes: 65,
+    priceMinor: 13_000,
   });
 });
 
@@ -79,4 +116,104 @@ test("views a created session on the sessions page", async ({ page }) => {
     durationMinutes: 150,
     priceMinor: 34_050,
   });
+});
+
+test("edits a session from the sessions page", async ({ page }) => {
+  const clientName = uniqueClientName("client-edit");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "30",
+    price: "150.00",
+  });
+
+  await goToSessionsPage(page);
+  await editSessionFromSessionsPage(page, {
+    clientName,
+    hours: "2",
+    minutes: "0",
+    price: "220.00",
+    sessionDateTime: sessionDateTimeMinutesAgo(5),
+  });
+  await expectSessionVisible(page, {
+    clientName,
+    durationMinutes: 120,
+    priceMinor: 22_000,
+  });
+});
+
+test("cancels delete from the sessions page", async ({ page }) => {
+  const clientName = uniqueClientName("client-delete-cancel");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "10",
+    price: "95.00",
+  });
+
+  await goToSessionsPage(page);
+  await openDeleteSessionModalFromSessionsPage(page, clientName);
+  await cancelDeleteSession(page);
+  await expectSessionVisible(page, {
+    clientName,
+    durationMinutes: 70,
+    priceMinor: 9_500,
+  });
+});
+
+test("deletes a session from the sessions page", async ({ page }) => {
+  const clientName = uniqueClientName("client-delete-confirm");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "0",
+    minutes: "55",
+    price: "110.00",
+  });
+
+  await goToSessionsPage(page);
+  await openDeleteSessionModalFromSessionsPage(page, clientName);
+  await confirmDeleteSession(page);
+  await expectSessionNotVisible(page, { clientName });
+});
+
+test("shows mobile session card actions for edit and delete", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const clientName = uniqueClientName("client-mobile-actions");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "20",
+    price: "140.00",
+  });
+
+  await goToSessionsPage(page);
+  await expect(
+    page.getByRole("button", { name: `Edit session for ${clientName}` }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: `Delete session for ${clientName}` }).first(),
+  ).toBeVisible();
+});
+
+test("keeps create session modal within mobile viewport bounds", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openAddSessionModal(page);
+  await expect(page.getByText("You can backdate sessions by up to 6 months.")).toBeVisible();
+  await expect(page.getByLabel("Session date and time")).toBeVisible();
+
+  const viewportMetrics = await page.evaluate(() => {
+    return {
+      viewportWidth: window.innerWidth,
+      htmlScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+    };
+  });
+
+  expect(Math.max(viewportMetrics.htmlScrollWidth, viewportMetrics.bodyScrollWidth)).toBeLessThanOrEqual(
+    viewportMetrics.viewportWidth + 1,
+  );
 });

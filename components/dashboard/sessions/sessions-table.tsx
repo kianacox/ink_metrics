@@ -4,17 +4,23 @@ import {
   formatSessionProfit,
 } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
+import { Button } from "@/components/ui";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface SessionsTableProps {
   sessions: SessionListItem[];
   currencyCode: string;
   reportingTimezone: string;
+  onEditSession: (session: SessionListItem) => void;
+  onDeleteSession: (session: SessionListItem) => void;
 }
 
 export function SessionsTable({
   sessions,
   currencyCode,
   reportingTimezone,
+  onEditSession,
+  onDeleteSession,
 }: SessionsTableProps) {
   return (
     <div className="hidden overflow-hidden rounded-lg border border-border sm:block">
@@ -25,6 +31,7 @@ export function SessionsTable({
             <th className="px-4 py-3 font-medium">Date</th>
             <th className="px-4 py-3 font-medium">Session length</th>
             <th className="px-4 py-3 font-medium">Session profit</th>
+            <th className="px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -46,6 +53,28 @@ export function SessionsTable({
               </td>
               <td className="px-4 py-3 text-sm text-foreground">
                 {formatSessionProfit(session.priceMinor, currencyCode)}
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onEditSession(session)}
+                    aria-label={`Edit session for ${session.clientName}`}
+                  >
+                    <Pencil aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onDeleteSession(session)}
+                    aria-label={`Delete session for ${session.clientName}`}
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}

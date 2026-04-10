@@ -10,10 +10,15 @@ import {
   Input,
 } from "@/components/ui";
 import { useSessions } from "@/components/dashboard/sessions/hooks/use-sessions";
-import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
+import type {
+  SessionListItem,
+  SessionSortField,
+} from "@/components/dashboard/sessions/utils/session-listing";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { SessionsCards } from "./sessions-cards";
 import { SessionsTable } from "./sessions-table";
+import { SessionDeleteModal } from "./session-delete-modal";
+import { SessionEditModal } from "./session-edit-modal";
 
 const SORT_FIELDS: Array<{ label: string; value: SessionSortField }> = [
   { label: "Date", value: "date" },
@@ -44,6 +49,9 @@ export function SessionsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SessionSortField>(DEFAULT_SORT_FIELD);
   const [dateRange, setDateRange] = useState<SessionDateRangePreset>(DEFAULT_DATE_RANGE);
+  const [editingSession, setEditingSession] = useState<SessionListItem | null>(null);
+  const [deletingSession, setDeletingSession] = useState<SessionListItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const {
     sessions,
     totalCount,
@@ -71,6 +79,18 @@ export function SessionsView() {
     };
   }, [searchInput]);
 
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toastMessage]);
+
   const selectedSortLabel =
     SORT_FIELDS.find((option) => option.value === sortField)?.label ?? "Date";
   const selectedDateRangeLabel =
@@ -82,6 +102,15 @@ export function SessionsView() {
 
   return (
     <section className="flex flex-col gap-4 sm:gap-6">
+      {toastMessage ? (
+        <div
+          className="fixed right-4 top-4 z-[60] max-w-xs rounded-md border border-border bg-background px-4 py-3 text-sm shadow-lg sm:right-6 sm:top-6"
+          role="status"
+          aria-live="polite"
+        >
+          {toastMessage}
+        </div>
+      ) : null}
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-foreground sm:text-lg">
           All sessions
@@ -172,11 +201,15 @@ export function SessionsView() {
             sessions={sessions}
             currencyCode={defaultCurrency}
             reportingTimezone={reportingTimezone}
+            onEditSession={setEditingSession}
+            onDeleteSession={setDeletingSession}
           />
           <SessionsTable
             sessions={sessions}
             currencyCode={defaultCurrency}
             reportingTimezone={reportingTimezone}
+            onEditSession={setEditingSession}
+            onDeleteSession={setDeletingSession}
           />
           {error ? (
             <p className="text-sm text-destructive">{error}</p>
@@ -199,6 +232,27 @@ export function SessionsView() {
           )}
         </>
       ) : null}
+
+      <SessionEditModal
+        open={editingSession !== null}
+        session={editingSession}
+        reportingTimezone={reportingTimezone}
+        currencyCode={defaultCurrency}
+        onClose={() => setEditingSession(null)}
+        onUpdated={async () => {
+          await reload();
+          setToastMessage("Session updated successfully.");
+        }}
+      />
+      <SessionDeleteModal
+        open={deletingSession !== null}
+        session={deletingSession}
+        onClose={() => setDeletingSession(null)}
+        onDeleted={async () => {
+          await reload();
+          setToastMessage("Session deleted successfully.");
+        }}
+      />
     </section>
   );
 }

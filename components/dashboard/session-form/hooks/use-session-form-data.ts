@@ -4,31 +4,12 @@ import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
 import { getDefaultReportingTimezone, getEffectiveReportingTimezone } from "@/lib/timezones";
 import { useCallback, useEffect, useState } from "react";
-import type { ClientOption } from "@/components/dashboard/session-form/utils/client-selection";
-
-interface SaveSessionParams {
-  selectedClientId: string | null;
-  createNewClient: boolean;
-  clientName: string;
-  clientContact: string;
-  priceMinor: number;
-  sessionDurationMinutes: number;
-  sessionAtIso: string;
-  throughAds: boolean | null;
-}
-
-interface SaveSessionResult {
-  success: boolean;
-  message?: string;
-}
-
-interface SaveSessionApiResponse {
-  error?: string;
-  client?: {
-    client_id: string;
-    name: string;
-  } | null;
-}
+import type {
+  ClientOption,
+  SaveSessionApiResponse,
+  SaveSessionParams,
+  SaveSessionResult,
+} from "@/components/dashboard/session-form/models";
 
 export function useSessionFormData(open: boolean) {
   const [clients, setClients] = useState<ClientOption[]>([]);
