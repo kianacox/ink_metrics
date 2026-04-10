@@ -27,6 +27,7 @@ describe("session-formatting utils", () => {
         priceMinor: 5000,
         durationMinutes: 75,
         createdAt: "2026-03-31T10:00:00.000Z",
+        throughAds: false,
       },
     ]);
   });
@@ -48,6 +49,7 @@ describe("session-formatting utils", () => {
     expect(mapped[0]?.priceMinor).toBe(0);
     expect(mapped[0]?.durationMinutes).toBe(0);
     expect(typeof mapped[0]?.createdAt).toBe("string");
+    expect(mapped[0]?.throughAds).toBe(false);
   });
 
   it("supports mapping when clients relation is an array", () => {
@@ -63,6 +65,21 @@ describe("session-formatting utils", () => {
     ];
 
     expect(mapSessionRowsToListItems(rows)[0]?.clientName).toBe("Bob Stone");
+  });
+
+  it("maps through_ads to throughAds list item field", () => {
+    const rows: SessionRow[] = [
+      {
+        session_id: "s4",
+        price: 2200,
+        session_duration: 45,
+        session_at: "2026-03-30T11:00:00.000Z",
+        through_ads: true,
+        clients: { name: "Ari" },
+      },
+    ];
+
+    expect(mapSessionRowsToListItems(rows)[0]?.throughAds).toBe(true);
   });
 
   it("formats duration for mixed and zero values", () => {

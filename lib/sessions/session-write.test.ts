@@ -18,6 +18,7 @@ describe("parseSessionCreatePayload", () => {
       priceMinor: 5000,
       sessionDurationMinutes: 90,
       sessionAtIso: "2026-04-09T10:30:00.000Z",
+      throughAds: true,
     });
 
     expect(result.error).toBeNull();
@@ -29,6 +30,7 @@ describe("parseSessionCreatePayload", () => {
       priceMinor: 5000,
       sessionDurationMinutes: 90,
       sessionAtIso: "2026-04-09T10:30:00.000Z",
+      throughAds: true,
     });
   });
 
@@ -56,6 +58,7 @@ describe("parseSessionCreatePayload", () => {
       priceMinor: 5000,
       sessionDurationMinutes: 90,
       sessionAtIso: "not-a-date",
+      throughAds: null,
     });
 
     expect(result.error).toBe("Session date and time is invalid.");
@@ -71,9 +74,26 @@ describe("parseSessionCreatePayload", () => {
       priceMinor: 5000,
       sessionDurationMinutes: 90,
       sessionAtIso: "2026-04-09T11:30:00.000Z",
+      throughAds: false,
     });
 
     expect(result.error).toBe("Session date and time cannot be in the future.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects throughAds when it is not a boolean or null", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDurationMinutes: 90,
+      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      throughAds: "yes",
+    });
+
+    expect(result.error).toBe("Advertising selection is invalid.");
     expect(result.data).toBeNull();
   });
 });

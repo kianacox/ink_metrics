@@ -14,6 +14,7 @@ interface SaveSessionParams {
   priceMinor: number;
   sessionDurationMinutes: number;
   sessionAtIso: string;
+  throughAds: boolean | null;
 }
 
 interface SaveSessionResult {
@@ -34,6 +35,7 @@ export function useSessionFormData(open: boolean) {
   const [isClientsLoading, setIsClientsLoading] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [reportingTimezone, setReportingTimezone] = useState(getDefaultReportingTimezone());
+  const [displayAdvertCheckbox, setDisplayAdvertCheckbox] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function useSessionFormData(open: boolean) {
             .order("name", { ascending: true }),
           supabase
             .from("profiles")
-            .select("default_currency,reporting_timezone")
+            .select("default_currency,reporting_timezone,display_advert_checkbox")
             .eq("user_id", user.id)
             .limit(1),
         ]);
@@ -89,6 +91,7 @@ export function useSessionFormData(open: boolean) {
       setDefaultCurrency(profileRows?.[0]?.default_currency ?? DEFAULT_CURRENCY);
       const candidateTimezone = profileRows?.[0]?.reporting_timezone;
       setReportingTimezone(getEffectiveReportingTimezone(candidateTimezone));
+      setDisplayAdvertCheckbox(profileRows?.[0]?.display_advert_checkbox === true);
       setIsClientsLoading(false);
     };
 
@@ -108,6 +111,7 @@ export function useSessionFormData(open: boolean) {
       priceMinor,
       sessionDurationMinutes,
       sessionAtIso,
+      throughAds,
     }: SaveSessionParams): Promise<SaveSessionResult> => {
       const response = await fetch("/api/sessions", {
         method: "POST",
@@ -122,6 +126,7 @@ export function useSessionFormData(open: boolean) {
           priceMinor,
           sessionDurationMinutes,
           sessionAtIso,
+          throughAds,
         }),
       });
       const responseBody = (await response.json()) as SaveSessionApiResponse;
@@ -154,6 +159,7 @@ export function useSessionFormData(open: boolean) {
     isClientsLoading,
     defaultCurrency,
     reportingTimezone,
+    displayAdvertCheckbox,
     loadError,
     saveSession,
   };

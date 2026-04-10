@@ -32,6 +32,11 @@ export function SessionsTable({
             <tr key={session.id} className="border-t border-border">
               <td className="px-4 py-3 text-sm font-medium text-foreground">
                 {session.clientName}
+                {session.throughAds ? (
+                  <span className="ml-2 inline-flex rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    Advertising
+                  </span>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
                 {formatSessionDate(session.createdAt, reportingTimezone)}

@@ -34,6 +34,11 @@ export function SessionsCards({
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 p-4 pt-0">
+            {session.throughAds ? (
+              <p className="col-span-2 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
+                Through Ads
+              </p>
+            ) : null}
             <div>
               <p className="text-xs text-muted-foreground">Length</p>
               <p className="text-sm font-medium text-foreground">

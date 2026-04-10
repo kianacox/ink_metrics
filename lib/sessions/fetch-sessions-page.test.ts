@@ -89,16 +89,19 @@ describe("fetchSessionsPage", () => {
         price: 5000,
         session_duration: 60,
         session_at: "2026-03-12T10:00:00.000Z",
+        through_ads: true,
         created_at: "2026-03-12T10:00:00.000Z",
         clients: { name: "Alice" },
       },
     ]);
     const countQuery = createCountQuery(1);
+    const rowsSelect = jest.fn(() => rowsQuery);
+    const countSelect = jest.fn(() => countQuery);
 
     const from = jest
       .fn()
-      .mockReturnValueOnce({ select: jest.fn(() => rowsQuery) })
-      .mockReturnValueOnce({ select: jest.fn(() => countQuery) });
+      .mockReturnValueOnce({ select: rowsSelect })
+      .mockReturnValueOnce({ select: countSelect });
 
     const supabase = { from } as never;
 
@@ -117,6 +120,7 @@ describe("fetchSessionsPage", () => {
       preset: "last30Days",
       timezone: "Europe/London",
     });
+    expect(rowsSelect).toHaveBeenCalledWith(expect.stringContaining("through_ads"));
     expect(rowsQuery.gte).toHaveBeenCalledWith("session_at", "2026-03-01T00:00:00.000Z");
     expect(countQuery.gte).toHaveBeenCalledWith("session_at", "2026-03-01T00:00:00.000Z");
     expect(result.totalCount).toBe(1);
