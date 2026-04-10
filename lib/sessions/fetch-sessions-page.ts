@@ -1,24 +1,11 @@
 import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
 import type { SessionRow } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getDateRangeStartUtcIso, type SessionDateRangePreset } from "@/lib/timezones";
-
-export interface FetchSessionsPageParams {
-  supabase: SupabaseClient;
-  userId: string;
-  reportingTimezone: string;
-  searchQuery: string;
-  sortField: SessionSortField;
-  pageIndex: number;
-  pageSize: number;
-  dateRange: SessionDateRangePreset;
-}
-
-export interface FetchSessionsPageResult {
-  rows: SessionRow[];
-  hasNextPage: boolean;
-  totalCount: number;
-}
+import { getDateRangeStartUtcIso } from "@/lib/timezones";
+import type {
+  FetchSessionsPageParams,
+  FetchSessionsPageResult,
+} from "@/lib/sessions/models";
 
 const SORT_FIELD_TO_COLUMN: Record<SessionSortField, string> = {
   date: "session_at",

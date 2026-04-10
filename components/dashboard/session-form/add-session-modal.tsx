@@ -18,7 +18,9 @@ import {
 } from "@/components/dashboard/session-form/utils/client-selection";
 import { useSessionFormData } from "@/components/dashboard/session-form/hooks/use-session-form-data";
 import { validateSessionForm } from "@/components/dashboard/session-form/utils/session-form-validation";
+import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { Info } from "lucide-react";
 
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
@@ -114,20 +116,6 @@ export function AddSessionModal() {
     normalizedClientName.length >= 1 && !selectedClientId && !createNewClient;
   const shouldShowCreateOption =
     showClientDropdown && !isDuplicateClientName(clients, normalizedClientName);
-  const currencySymbol = useMemo(() => {
-    try {
-      const currencyPart = new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: defaultCurrency,
-      })
-        .formatToParts(0)
-        .find((part) => part.type === "currency");
-      return currencyPart?.value ?? defaultCurrency;
-    } catch {
-      return defaultCurrency;
-    }
-  }, [defaultCurrency]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus(null);
@@ -207,13 +195,13 @@ export function AddSessionModal() {
 
       {open ? (
         <div
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-[70] flex items-end justify-center overflow-x-hidden bg-black/50 p-0 sm:items-center sm:p-4"
           role="presentation"
           onClick={() => setOpen(false)}
         >
           <Card
             className={cn(
-              "max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-1rem))] w-full overflow-y-auto rounded-b-none rounded-t-2xl border-border shadow-lg sm:max-h-[min(90dvh,40rem)] sm:max-w-md sm:rounded-xl",
+              "max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-1rem))] min-w-0 w-full max-w-full overflow-x-hidden overflow-y-auto rounded-b-none rounded-t-2xl border-border shadow-lg sm:max-h-[min(90dvh,40rem)] sm:max-w-md sm:rounded-xl",
               "pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:pt-0",
             )}
             role="dialog"
@@ -234,15 +222,19 @@ export function AddSessionModal() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-1 sm:p-6 sm:pt-1">
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="grid gap-2 pb-1">
+              <form onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-4">
+                <p className="flex items-center gap-2 rounded-md border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-xs text-sky-800 dark:border-sky-300/60 dark:bg-sky-400/20 dark:text-sky-100">
+                  <Info aria-hidden="true" className="size-4 shrink-0" />
+                  <span>You can backdate sessions by up to 6 months.</span>
+                </p>
+                <div className="grid min-w-0 gap-2 pb-1">
                   <Label htmlFor="client-combobox">
                     Client{" "}
                     <span className="text-muted-foreground font-normal">
                       (type to search existing or create new)
                     </span>
                   </Label>
-                  <div className="relative">
+                  <div className="relative min-w-0">
                     <Input
                       id="client-combobox"
                       value={clientQuery}
@@ -325,7 +317,7 @@ export function AddSessionModal() {
                   ) : null}
                 </div>
                 {createNewClient ? (
-                  <div className="grid gap-2">
+                  <div className="grid min-w-0 gap-2">
                     <Label htmlFor="client-contact">
                       Client contact{" "}
                       <span className="text-muted-foreground font-normal">
@@ -341,72 +333,18 @@ export function AddSessionModal() {
                   </div>
                 ) : null}
 
-                <div className="grid gap-2">
-                  <Label>Session length</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="session-hours" className="text-muted-foreground">
-                        Hours
-                      </Label>
-                      <Input
-                        id="session-hours"
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={hours}
-                        onChange={(e) => setHours(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="session-minutes" className="text-muted-foreground">
-                        Minutes
-                      </Label>
-                      <Input
-                        id="session-minutes"
-                        type="number"
-                        min={0}
-                        max={59}
-                        step={1}
-                        value={minutes}
-                        onChange={(e) => setMinutes(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="session-date-time">Session date and time</Label>
-                  <Input
-                    id="session-date-time"
-                    type="datetime-local"
-                    value={sessionDateTime}
-                    onChange={(event) => setSessionDateTime(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="profit">Price</Label>
-                  <div className="relative">
-                    <span
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
-                      aria-hidden
-                    >
-                      {currencySymbol}
-                    </span>
-                    <Input
-                      id="profit"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="0.01"
-                      value={profit}
-                      onChange={(e) => setProfit(e.target.value)}
-                      className="pl-8"
-                      required
-                    />
-                  </div>
-                </div>
+                <SessionEditableFields
+                  fieldIdPrefix="create"
+                  hours={hours}
+                  minutes={minutes}
+                  sessionDateTime={sessionDateTime}
+                  profit={profit}
+                  currencyCode={defaultCurrency}
+                  onHoursChange={setHours}
+                  onMinutesChange={setMinutes}
+                  onSessionDateTimeChange={setSessionDateTime}
+                  onProfitChange={setProfit}
+                />
                 {displayAdvertCheckbox && createNewClient ? (
                   <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
                     <input

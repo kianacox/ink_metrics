@@ -1,13 +1,8 @@
-export interface ClientOption {
-  client_id: string;
-  name: string;
-}
-
-interface DurationValidationResult {
-  valid: boolean;
-  totalMinutes: number;
-  errorMessage: string;
-}
+import type {
+  ClientOption,
+  DurationValidationResult,
+} from "@/components/dashboard/session-form/models";
+export type { ClientOption, DurationValidationResult };
 
 const MINUTES_PER_HOUR = 60;
 

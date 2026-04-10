@@ -1,37 +1,14 @@
 "use client";
 
 import { mapSessionRowsToListItems } from "@/components/dashboard/sessions/utils/session-formatting";
-import type {
-  SessionListItem,
-  SessionSortField,
-} from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
 import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
-import type { SessionDateRangePreset } from "@/lib/timezones";
 import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface UseSessionsPaginationParams {
-  searchQuery: string;
-  sortField: SessionSortField;
-  dateRange: SessionDateRangePreset;
-  pageSize: number;
-  ensureSessionPreferencesLoaded: () => Promise<{
-    userId: string;
-    reportingTimezone: string;
-  }>;
-  getCurrentReportingTimezone: () => string;
-}
-
-interface UseSessionsPaginationResult {
-  sessions: SessionListItem[];
-  totalCount: number;
-  isLoading: boolean;
-  isLoadingMore: boolean;
-  hasNextPage: boolean;
-  error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
-}
+import type {
+  UseSessionsPaginationParams,
+  UseSessionsPaginationResult,
+} from "@/components/dashboard/sessions/models";
 
 export function useSessionsPagination({
   searchQuery,

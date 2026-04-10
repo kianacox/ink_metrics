@@ -3,8 +3,8 @@ import {
   isDuplicateClientName,
   normalizeClientName,
   validateDuration,
-  type ClientOption,
 } from "./client-selection";
+import type { ClientOption } from "../models";
 
 const clients: ClientOption[] = [
   { client_id: "1", name: "Alice Doe" },

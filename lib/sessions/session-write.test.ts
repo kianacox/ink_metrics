@@ -1,4 +1,4 @@
-import { parseSessionCreatePayload } from "./session-write";
+import { parseSessionCreatePayload, parseSessionUpdatePayload } from "./session-write";
 
 describe("parseSessionCreatePayload", () => {
   beforeEach(() => {
@@ -94,6 +94,65 @@ describe("parseSessionCreatePayload", () => {
     });
 
     expect(result.error).toBe("Advertising selection is invalid.");
+    expect(result.data).toBeNull();
+  });
+});
+
+describe("parseSessionUpdatePayload", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ now: Date.parse("2026-04-09T10:30:00.000Z") });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("accepts a valid update payload", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data).toEqual({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+    });
+  });
+
+  it("rejects payloads that include non-editable fields", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      clientId: "client-1",
+    });
+
+    expect(result.error).toBe("Only price, session duration, and session date/time can be updated.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects invalid duration", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 0,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+    });
+
+    expect(result.error).toBe("Session duration is invalid.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects future session date and time", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T11:00:00.000Z",
+    });
+
+    expect(result.error).toBe("Session date and time cannot be in the future.");
     expect(result.data).toBeNull();
   });
 });

@@ -1,24 +1,17 @@
-export interface SessionCreatePayload {
-  selectedClientId: string | null;
-  createNewClient: boolean;
-  clientName: string;
-  clientContact: string;
-  priceMinor: number;
-  sessionDurationMinutes: number;
-  sessionAtIso: string;
-  throughAds: boolean | null;
-}
+import type {
+  SessionCreatePayload,
+  SessionCreatePayloadCandidate,
+  SessionUpdatePayload,
+  SessionUpdatePayloadCandidate,
+} from "@/lib/sessions/models";
 
-interface SessionCreatePayloadCandidate {
-  selectedClientId?: unknown;
-  createNewClient?: unknown;
-  clientName?: unknown;
-  clientContact?: unknown;
-  priceMinor?: unknown;
-  sessionDurationMinutes?: unknown;
-  sessionAtIso?: unknown;
-  throughAds?: unknown;
-}
+export type { SessionCreatePayload, SessionUpdatePayload };
+
+const SESSION_UPDATE_ALLOWED_KEYS = new Set([
+  "priceMinor",
+  "sessionDurationMinutes",
+  "sessionAtIso",
+]);
 
 function parseIsoTimestamp(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -112,6 +105,58 @@ export function parseSessionCreatePayload(input: unknown): {
       sessionDurationMinutes,
       sessionAtIso,
       throughAds: throughAds ?? null,
+    },
+    error: null,
+  };
+}
+
+export function parseSessionUpdatePayload(input: unknown): {
+  data: SessionUpdatePayload | null;
+  error: string | null;
+} {
+  if (!input || typeof input !== "object") {
+    return { data: null, error: "Session update payload is invalid." };
+  }
+
+  const candidate = input as SessionUpdatePayloadCandidate;
+  const candidateKeys = Object.keys(candidate);
+  const hasUnexpectedKeys = candidateKeys.some(
+    (key) => !SESSION_UPDATE_ALLOWED_KEYS.has(key),
+  );
+  if (hasUnexpectedKeys) {
+    return {
+      data: null,
+      error: "Only price, session duration, and session date/time can be updated.",
+    };
+  }
+
+  const priceMinor = candidate.priceMinor;
+  if (typeof priceMinor !== "number" || !Number.isInteger(priceMinor) || priceMinor < 0) {
+    return { data: null, error: "Price is invalid." };
+  }
+
+  const sessionDurationMinutes = candidate.sessionDurationMinutes;
+  if (
+    typeof sessionDurationMinutes !== "number" ||
+    !Number.isInteger(sessionDurationMinutes) ||
+    sessionDurationMinutes <= 0
+  ) {
+    return { data: null, error: "Session duration is invalid." };
+  }
+
+  const sessionAtIso = parseIsoTimestamp(candidate.sessionAtIso);
+  if (!sessionAtIso) {
+    return { data: null, error: "Session date and time is invalid." };
+  }
+  if (isFutureTimestamp(sessionAtIso)) {
+    return { data: null, error: "Session date and time cannot be in the future." };
+  }
+
+  return {
+    data: {
+      priceMinor,
+      sessionDurationMinutes,
+      sessionAtIso,
     },
     error: null,
   };
