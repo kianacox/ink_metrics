@@ -9,6 +9,7 @@ export interface SessionRow {
   price: number | null;
   session_duration: number | null;
   session_at: string | null;
+  through_ads?: boolean | null;
   created_at?: string | null;
   compensation_version_id?: string | null;
   artist_compensation_versions?:
@@ -62,6 +63,7 @@ export function mapSessionRowsToListItems(rows: SessionRow[]): SessionListItem[]
     priceMinor: row.price ?? 0,
     durationMinutes: row.session_duration ?? 0,
     createdAt: row.session_at ?? row.created_at ?? new Date(0).toISOString(),
+    throughAds: row.through_ads === true,
   }));
 }
 

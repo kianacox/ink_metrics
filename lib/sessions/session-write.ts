@@ -6,6 +6,7 @@ export interface SessionCreatePayload {
   priceMinor: number;
   sessionDurationMinutes: number;
   sessionAtIso: string;
+  throughAds: boolean | null;
 }
 
 interface SessionCreatePayloadCandidate {
@@ -16,6 +17,7 @@ interface SessionCreatePayloadCandidate {
   priceMinor?: unknown;
   sessionDurationMinutes?: unknown;
   sessionAtIso?: unknown;
+  throughAds?: unknown;
 }
 
 function parseIsoTimestamp(value: unknown): string | null {
@@ -95,6 +97,10 @@ export function parseSessionCreatePayload(input: unknown): {
   if (isFutureTimestamp(sessionAtIso)) {
     return { data: null, error: "Session date and time cannot be in the future." };
   }
+  const throughAds = candidate.throughAds;
+  if (throughAds !== null && throughAds !== undefined && typeof throughAds !== "boolean") {
+    return { data: null, error: "Advertising selection is invalid." };
+  }
 
   return {
     data: {
@@ -105,6 +111,7 @@ export function parseSessionCreatePayload(input: unknown): {
       priceMinor,
       sessionDurationMinutes,
       sessionAtIso,
+      throughAds: throughAds ?? null,
     },
     error: null,
   };

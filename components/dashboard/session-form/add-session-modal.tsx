@@ -38,11 +38,13 @@ export function AddSessionModal() {
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
+  const [throughAds, setThroughAds] = useState(false);
   const {
     clients,
     isClientsLoading,
     defaultCurrency,
     reportingTimezone,
+    displayAdvertCheckbox,
     loadError,
     saveSession,
   } = useSessionFormData(open);
@@ -61,6 +63,7 @@ export function AddSessionModal() {
     setHours("");
     setMinutes("");
     setProfit("");
+    setThroughAds(false);
     setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
     if (!preserveStatus) {
       setStatus(null);
@@ -158,6 +161,7 @@ export function AddSessionModal() {
         priceMinor: validationResult.priceMinor,
         sessionDurationMinutes: validationResult.sessionDurationMinutes,
         sessionAtIso: validationResult.sessionAtIso,
+        throughAds: displayAdvertCheckbox && createNewClient ? throughAds : null,
       });
 
       if (!result.success) {
@@ -246,6 +250,7 @@ export function AddSessionModal() {
                         setClientQuery(e.target.value);
                         setSelectedClientId(null);
                         setCreateNewClient(false);
+                        setThroughAds(false);
                       }}
                       placeholder="Type client name to search or create"
                       autoComplete="off"
@@ -272,6 +277,7 @@ export function AddSessionModal() {
                                       onClick={() => {
                                         setSelectedClientId(client.client_id);
                                         setCreateNewClient(false);
+                                        setThroughAds(false);
                                         setClientQuery(client.name);
                                         setStatus(null);
                                       }}
@@ -296,6 +302,7 @@ export function AddSessionModal() {
                                 onClick={() => {
                                   setSelectedClientId(null);
                                   setCreateNewClient(true);
+                                  setThroughAds(false);
                                   setClientQuery(normalizedClientName);
                                   setStatus(null);
                                 }}
@@ -400,6 +407,20 @@ export function AddSessionModal() {
                     />
                   </div>
                 </div>
+                {displayAdvertCheckbox && createNewClient ? (
+                  <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
+                    <input
+                      id="through-ads"
+                      type="checkbox"
+                      checked={throughAds}
+                      onChange={(event) => setThroughAds(event.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border border-input"
+                    />
+                    <Label htmlFor="through-ads" className="cursor-pointer leading-5">
+                      Through Ads?
+                    </Label>
+                  </div>
+                ) : null}
 
                 {status ? (
                   <p

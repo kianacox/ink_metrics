@@ -7,6 +7,7 @@ export interface SessionListItem {
   priceMinor: number;
   durationMinutes: number;
   createdAt: string;
+  throughAds: boolean;
 }
 
 export interface SessionSortState {
