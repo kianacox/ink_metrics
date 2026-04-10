@@ -44,7 +44,8 @@ export function SessionsCards({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
+                  className="border-emerald-500/70 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-400/70 dark:text-emerald-300 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200"
                   onClick={() => onEditSession(session)}
                   aria-label={`Edit session for ${session.clientName}`}
                 >
@@ -53,7 +54,7 @@ export function SessionsCards({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
+                  variant="destructive"
                   onClick={() => onDeleteSession(session)}
                   aria-label={`Delete session for ${session.clientName}`}
                 >

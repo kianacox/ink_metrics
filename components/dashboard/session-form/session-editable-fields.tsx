@@ -1,6 +1,7 @@
 "use client";
 
 import { Input, Label } from "@/components/ui";
+import { Clock3 } from "lucide-react";
 
 interface SessionEditableFieldsProps {
   fieldIdPrefix: string;
@@ -85,14 +86,20 @@ export function SessionEditableFields({
       </div>
       <div className="grid min-w-0 gap-2">
         <Label htmlFor={dateTimeId}>Session date and time</Label>
-        <Input
-          id={dateTimeId}
-          type="datetime-local"
-          value={sessionDateTime}
-          onChange={(event) => onSessionDateTimeChange(event.target.value)}
-          className="min-w-0 max-w-full"
-          required
-        />
+        <div className="relative">
+          <Clock3
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            id={dateTimeId}
+            type="datetime-local"
+            value={sessionDateTime}
+            onChange={(event) => onSessionDateTimeChange(event.target.value)}
+            className="min-w-0 max-w-full pl-8"
+            required
+          />
+        </div>
       </div>
       <div className="grid min-w-0 gap-2">
         <Label htmlFor={priceId}>Price</Label>

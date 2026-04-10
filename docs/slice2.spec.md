@@ -313,3 +313,4 @@ Historical session-to-compensation linkage remains stable because compensation e
 - Timezone selection only accepts predefined IANA values and rejects invalid timezone input.
 - Session creation requires date/time and stores `session_at`.
 - Historical sessions continue to calculate using compensation effective at session time.
+- Users should be able to delete their account and data from db via the profile edit page from a dedicated section at the bottom of the form. This section should house the delete button, which when clicked will present a popup modal confirming they want to delete as this action is irreversible. We already have a delete confirm popup on the sessions page so this is an opportunity to extract a modal component for the ui library.
