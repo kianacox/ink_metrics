@@ -1,11 +1,6 @@
 "use client";
 import {
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
 } from "@/components/ui";
@@ -19,6 +14,7 @@ import {
 import { useSessionFormData } from "@/components/dashboard/session-form/hooks/use-session-form-data";
 import { validateSessionForm } from "@/components/dashboard/session-form/utils/session-form-validation";
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
+import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Info } from "lucide-react";
 
@@ -194,35 +190,14 @@ export function AddSessionModal() {
       </Button>
 
       {open ? (
-        <div
-          className="fixed inset-0 z-[70] flex items-end justify-center overflow-x-hidden bg-black/50 p-0 sm:items-center sm:p-4"
-          role="presentation"
-          onClick={() => setOpen(false)}
+        <SessionModalShell
+          open={open}
+          titleId={titleId}
+          title="Log a session"
+          description="Client and session details are saved to your workspace."
+          onClose={() => setOpen(false)}
         >
-          <Card
-            className={cn(
-              "max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-1rem))] min-w-0 w-full max-w-full overflow-x-hidden overflow-y-auto rounded-b-none rounded-t-2xl border-border shadow-lg sm:max-h-[min(90dvh,40rem)] sm:max-w-md sm:rounded-xl",
-              "pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:pt-0",
-            )}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/25 sm:hidden"
-              aria-hidden
-            />
-            <CardHeader className="space-y-1.5 p-4 pb-3 sm:p-6 sm:pb-3">
-              <CardTitle id={titleId} className="text-lg sm:text-xl">
-                Log a session
-              </CardTitle>
-              <CardDescription className="text-pretty">
-                Client and session details are saved to your workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-1 sm:p-6 sm:pt-1">
-              <form onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-4">
                 <p className="flex items-center gap-2 rounded-md border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-xs text-sky-800 dark:border-sky-300/60 dark:bg-sky-400/20 dark:text-sky-100">
                   <Info aria-hidden="true" className="size-4 shrink-0" />
                   <span>You can backdate sessions by up to 6 months.</span>
@@ -394,10 +369,8 @@ export function AddSessionModal() {
                     {isLoading ? "Saving…" : "Save session"}
                   </Button>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+          </form>
+        </SessionModalShell>
       ) : null}
     </>
   );

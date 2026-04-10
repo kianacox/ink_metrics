@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { useEffect, useId, useState } from "react";
+import { Button, Input, Label } from "@/components/ui";
 import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
 import { validateEditableSessionFields } from "@/components/dashboard/session-form/utils/session-form-validation";
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
+import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import type { UpdateSessionApiResponse } from "@/components/dashboard/sessions/models";
 
 interface SessionEditModalProps {
@@ -37,6 +37,7 @@ export function SessionEditModal({
   onClose,
   onUpdated,
 }: SessionEditModalProps) {
+  const titleId = useId();
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
@@ -108,73 +109,50 @@ export function SessionEditModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
-      role="presentation"
-      onClick={onClose}
+    <SessionModalShell
+      open={open}
+      titleId={titleId}
+      title="Edit Session"
+      description="Update session details. Client details are locked for existing sessions."
+      onClose={onClose}
     >
-      <Card
-        className={cn(
-          "max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-top)-1rem))] w-full overflow-y-auto rounded-b-none rounded-t-2xl border-border shadow-lg sm:max-h-[min(90dvh,40rem)] sm:max-w-md sm:rounded-xl",
-          "pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:pt-0",
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-session-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div
-          className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/25 sm:hidden"
-          aria-hidden
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="edit-client-name">Client</Label>
+          <Input id="edit-client-name" value={session.clientName} disabled />
+        </div>
+        <SessionEditableFields
+          fieldIdPrefix="edit"
+          hours={hours}
+          minutes={minutes}
+          sessionDateTime={sessionDateTime}
+          profit={profit}
+          currencyCode={currencyCode}
+          onHoursChange={setHours}
+          onMinutesChange={setMinutes}
+          onSessionDateTimeChange={setSessionDateTime}
+          onProfitChange={setProfit}
         />
-        <CardHeader className="space-y-1.5 p-4 pb-3 sm:p-6 sm:pb-3">
-          <CardTitle id="edit-session-title" className="text-lg sm:text-xl">
-            Edit Session
-          </CardTitle>
-          <CardDescription className="text-pretty">
-            Update session details. Client details are locked for existing sessions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 pt-1 sm:p-6 sm:pt-1">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-client-name">Client</Label>
-              <Input id="edit-client-name" value={session.clientName} disabled />
-            </div>
-            <SessionEditableFields
-              fieldIdPrefix="edit"
-              hours={hours}
-              minutes={minutes}
-              sessionDateTime={sessionDateTime}
-              profit={profit}
-              currencyCode={currencyCode}
-              onHoursChange={setHours}
-              onMinutesChange={setMinutes}
-              onSessionDateTimeChange={setSessionDateTime}
-              onProfitChange={setProfit}
-            />
-            {error ? (
-              <p className="text-sm text-destructive" role="status">
-                {error}
-              </p>
-            ) : null}
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Close
-              </Button>
-              <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Confirm"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        {error ? (
+          <p className="text-sm text-destructive" role="status">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Close
+          </Button>
+          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Confirm"}
+          </Button>
+        </div>
+      </form>
+    </SessionModalShell>
   );
 }
