@@ -15,7 +15,11 @@ import { cn } from "@/lib/utils";
 import { useUpdateEmail } from "@/components/dashboard/profile/hooks/use-update-email";
 import { DeleteAccountModal } from "@/components/dashboard/profile/delete-account-modal";
 
-export function ProfileSettingsView() {
+interface ProfileSettingsViewProps {
+  currentEmail: string;
+}
+
+export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) {
   const [newEmail, setNewEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<{
     type: "success" | "error";
@@ -28,6 +32,12 @@ export function ProfileSettingsView() {
   async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailStatus(null);
+
+    if (newEmail.trim().toLowerCase() === currentEmail.toLowerCase()) {
+      setEmailStatus({ type: "error", message: "This is already your current email address." });
+      return;
+    }
+
     const result = await updateEmail(newEmail);
     if (!result.success) {
       setEmailStatus({ type: "error", message: result.error ?? "Could not update email." });
@@ -46,12 +56,22 @@ export function ProfileSettingsView() {
         <CardHeader>
           <CardTitle className="text-lg sm:text-xl">Email address</CardTitle>
           <CardDescription>
-            Update the email address associated with your account. A confirmation
-            link will be sent to the new address before the change takes effect.
+            Update the email address associated with your account. Your address
+            will not change until you click the confirmation link sent to the
+            new address.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4" onSubmit={(event) => void handleEmailSubmit(event)}>
+            <div className="grid gap-2">
+              <Label htmlFor="settings-current-email">Current email address</Label>
+              <p
+                id="settings-current-email"
+                className="rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
+              >
+                {currentEmail}
+              </p>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="settings-new-email">New email address</Label>
               <Input

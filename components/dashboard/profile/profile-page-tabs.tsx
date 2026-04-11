@@ -14,6 +14,7 @@ const TABS: Array<{ id: ProfileTab; label: string }> = [
 ];
 
 interface ProfilePageTabsProps {
+  initialEmail: string;
   initialDisplayName: string;
   initialDefaultCurrency: ProfileCurrency;
   initialReportingTimezone: string;
@@ -28,6 +29,7 @@ interface ProfilePageTabsProps {
 }
 
 export function ProfilePageTabs({
+  initialEmail,
   initialDisplayName,
   initialDefaultCurrency,
   initialReportingTimezone,
@@ -99,7 +101,7 @@ export function ProfilePageTabs({
         aria-labelledby="tab-settings"
         hidden={activeTab !== "settings"}
       >
-        {activeTab === "settings" ? <ProfileSettingsView /> : null}
+        {activeTab === "settings" ? <ProfileSettingsView currentEmail={initialEmail} /> : null}
       </div>
     </div>
   );

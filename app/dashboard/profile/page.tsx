@@ -58,6 +58,7 @@ export default async function ProfilePage() {
       </div>
 
       <ProfilePageTabs
+        initialEmail={user.email ?? ""}
         initialDisplayName={profile.display_name ?? ""}
         initialDefaultCurrency={profile.default_currency}
         initialReportingTimezone={
