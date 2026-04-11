@@ -38,6 +38,22 @@ async function createProfileCompleteUser(
 }
 
 test.describe("profile settings", () => {
+  // -------------------------------------------------------------------------
+  // Email display
+  // -------------------------------------------------------------------------
+
+  test("displays the user's current email address", async ({ page }) => {
+    const email = await createProfileCompleteUser(page, "settings-display");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+    await expect(settingsPanel.locator("#settings-current-email")).toContainText(email);
+  });
+
+  // -------------------------------------------------------------------------
+  // Email update — happy path
+  // -------------------------------------------------------------------------
+
   test("submits update email request and shows success feedback", async ({
     page,
   }) => {
@@ -59,6 +75,66 @@ test.describe("profile settings", () => {
     );
     await expect(newEmailField).toHaveValue("");
   });
+
+  test("email address is not updated until the confirmation link is clicked", async ({
+    page,
+  }) => {
+    const currentEmail = await createProfileCompleteUser(page, "settings-pending");
+    const nextEmail = makeDisposableEmail("settings-pending-new");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+
+    // Request the email change
+    await settingsPanel.locator("#settings-new-email").fill(nextEmail);
+    await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
+    await expect(settingsPanel.getByRole("status")).toContainText(
+      /check your inbox/i,
+    );
+
+    // Reload and revisit settings — the displayed email must still be the original
+    await openSettingsTab(page);
+    await expect(settingsPanel.locator("#settings-current-email")).toContainText(currentEmail);
+    await expect(settingsPanel.locator("#settings-current-email")).not.toContainText(nextEmail);
+  });
+
+  // -------------------------------------------------------------------------
+  // Email update — validation edge cases
+  // -------------------------------------------------------------------------
+
+  test("shows error when submitting the current email address", async ({
+    page,
+  }) => {
+    const currentEmail = await createProfileCompleteUser(page, "settings-same");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+    await settingsPanel.locator("#settings-new-email").fill(currentEmail);
+    await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
+
+    await expect(settingsPanel.getByRole("status")).toContainText(
+      /this is already your current email address/i,
+    );
+  });
+
+  test("shows error when submitting the current email address with different casing", async ({
+    page,
+  }) => {
+    const currentEmail = await createProfileCompleteUser(page, "settings-case");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+    await settingsPanel.locator("#settings-new-email").fill(currentEmail.toUpperCase());
+    await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
+
+    await expect(settingsPanel.getByRole("status")).toContainText(
+      /this is already your current email address/i,
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Account deletion
+  // -------------------------------------------------------------------------
 
   test("deletes account, signs out, and blocks future access", async ({
     page,
