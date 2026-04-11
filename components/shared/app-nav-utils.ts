@@ -1,4 +1,4 @@
-export type AppNavItemKey = "dashboard" | "sessions" | "profile" | "logout";
+export type AppNavItemKey = "dashboard" | "sessions" | "clients" | "profile" | "logout";
 export type AppNavItemAction = "logout";
 
 export interface AppNavItemDefinition {
@@ -26,6 +26,12 @@ export const APP_NAV_ITEMS: AppNavItemDefinition[] = [
     label: "Sessions",
     href: "/dashboard/sessions",
     matchPrefixes: ["/dashboard/sessions"],
+  },
+  {
+    key: "clients",
+    label: "Clients",
+    href: "/dashboard/clients",
+    matchPrefixes: ["/dashboard/clients"],
   },
   {
     key: "profile",
