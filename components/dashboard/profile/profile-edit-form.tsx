@@ -345,24 +345,26 @@ export function ProfileEditForm({
             </div>
           ) : null}
 
-          <div className="min-h-5">
-            {status ? (
-              <p
-                className={cn(
-                  "text-sm",
-                  status.type === "success" ? "text-primary" : "text-destructive",
-                )}
-                role="status"
-              >
-                {status.message}
-              </p>
-            ) : null}
-          </div>
+          <div className="grid gap-2">
+            <div className="min-h-4">
+              {status ? (
+                <p
+                  className={cn(
+                    "text-sm",
+                    status.type === "success" ? "text-primary" : "text-destructive",
+                  )}
+                  role="status"
+                >
+                  {status.message}
+                </p>
+              ) : null}
+            </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save changes"}
-            </Button>
+            <div className="flex justify-end">
+              <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
           </div>
         </form>
       </CardContent>

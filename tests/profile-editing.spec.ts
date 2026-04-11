@@ -1,9 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { loginAsSeededUser } from "./auth-helpers";
 import {
   expectProfileStatus,
   expectProfileSuccess,
   goToProfilePage,
+  openProfileTab,
   saveProfileChanges,
   selectCapFrequency,
   selectChairRent,
@@ -15,6 +16,10 @@ import {
 const SEEDED_DISPLAY_NAME = "Seeded Session User";
 const SEEDED_CURRENCY = "GBP";
 const SEEDED_TIMEZONE = "Europe/London";
+
+function getProfilePanel(page: Page) {
+  return page.locator("#tabpanel-profile");
+}
 
 // ---------------------------------------------------------------------------
 // Access control — no shared beforeEach; these test unauthenticated and
@@ -61,20 +66,27 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
-    await expect(page.locator("#profile-display-name")).toHaveValue(
+    await expect(profilePanel.locator("#profile-display-name")).toHaveValue(
       SEEDED_DISPLAY_NAME,
     );
 
     // All three currency buttons are disabled (locked after setup)
-    await expect(page.getByRole("button", { name: /^GBP$/i })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /^USD$/i })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /^EUR$/i })).toBeDisabled();
+    await expect(
+      profilePanel.getByRole("button", { name: /^GBP$/i }),
+    ).toBeDisabled();
+    await expect(
+      profilePanel.getByRole("button", { name: /^USD$/i }),
+    ).toBeDisabled();
+    await expect(
+      profilePanel.getByRole("button", { name: /^EUR$/i }),
+    ).toBeDisabled();
 
     // Seeded currency is GBP
     expect(SEEDED_CURRENCY).toBe("GBP");
 
-    await expect(page.locator("#profile-reporting-timezone")).toHaveValue(
+    await expect(profilePanel.locator("#profile-reporting-timezone")).toHaveValue(
       SEEDED_TIMEZONE,
     );
   });
@@ -84,8 +96,9 @@ test.describe("profile editing", () => {
   // -------------------------------------------------------------------------
   test("updates display name and shows success message", async ({ page }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
-    await page.locator("#profile-display-name").fill("Updated Artist Name");
+    await profilePanel.locator("#profile-display-name").fill("Updated Artist Name");
     await saveProfileChanges(page);
 
     await expectProfileSuccess(page);
@@ -95,8 +108,9 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
-    await page.locator("#profile-display-name").fill("X");
+    await profilePanel.locator("#profile-display-name").fill("X");
     await saveProfileChanges(page);
 
     await expectProfileStatus(page, "Name must be at least 2 characters.");
@@ -108,6 +122,7 @@ test.describe("profile editing", () => {
   // -------------------------------------------------------------------------
   test("saves successfully with no chair rent selected", async ({ page }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     // Explicitly select No to be independent of prior test state
     await selectChairRent(page, "no");
@@ -116,8 +131,10 @@ test.describe("profile editing", () => {
     await expectProfileSuccess(page);
 
     // Compensation fields should not be visible
-    await expect(page.locator("#profile-fixed-amount")).not.toBeVisible();
-    await expect(page.locator("#profile-commission-rate")).not.toBeVisible();
+    await expect(profilePanel.locator("#profile-fixed-amount")).not.toBeVisible();
+    await expect(
+      profilePanel.locator("#profile-commission-rate"),
+    ).not.toBeVisible();
   });
 
   // -------------------------------------------------------------------------
@@ -127,11 +144,12 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     await selectChairRent(page, "yes");
     await selectRentType(page, "fixed");
     await selectFixedFrequency(page, "weekly");
-    await page.locator("#profile-fixed-amount").fill("150.00");
+    await profilePanel.locator("#profile-fixed-amount").fill("150.00");
 
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
@@ -141,11 +159,12 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     await selectChairRent(page, "yes");
     await selectRentType(page, "fixed");
     await selectFixedFrequency(page, "monthly");
-    await page.locator("#profile-fixed-amount").fill("600.00");
+    await profilePanel.locator("#profile-fixed-amount").fill("600.00");
 
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
@@ -156,17 +175,18 @@ test.describe("profile editing", () => {
   // -------------------------------------------------------------------------
   test("saves commission uncapped and shows success", async ({ page }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     await selectChairRent(page, "yes");
     await selectRentType(page, "commission");
-    await page.locator("#profile-commission-rate").fill("30.00");
+    await profilePanel.locator("#profile-commission-rate").fill("30.00");
     await selectCommissionCapped(page, "no");
 
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
 
     await expect(
-      page.locator("#profile-commission-cap-amount"),
+      profilePanel.locator("#profile-commission-cap-amount"),
     ).not.toBeVisible();
   });
 
@@ -174,13 +194,14 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     await selectChairRent(page, "yes");
     await selectRentType(page, "commission");
-    await page.locator("#profile-commission-rate").fill("25.00");
+    await profilePanel.locator("#profile-commission-rate").fill("25.00");
     await selectCommissionCapped(page, "yes");
     await selectCapFrequency(page, "weekly");
-    await page.locator("#profile-commission-cap-amount").fill("500.00");
+    await profilePanel.locator("#profile-commission-cap-amount").fill("500.00");
 
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
@@ -193,34 +214,38 @@ test.describe("profile editing", () => {
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     await selectChairRent(page, "yes");
     await selectRentType(page, "fixed");
 
-    await expect(page.locator("#profile-fixed-amount")).toBeVisible();
+    await expect(profilePanel.locator("#profile-fixed-amount")).toBeVisible();
 
     await selectRentType(page, "commission");
 
-    await expect(page.locator("#profile-fixed-amount")).not.toBeVisible();
-    await expect(page.locator("#profile-commission-rate")).toBeVisible();
+    await expect(profilePanel.locator("#profile-fixed-amount")).not.toBeVisible();
+    await expect(profilePanel.locator("#profile-commission-rate")).toBeVisible();
   });
 
   test("switching to no chair rent clears all compensation fields", async ({
     page,
   }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     // First build up a fixed rate state
     await selectChairRent(page, "yes");
     await selectRentType(page, "fixed");
     await selectFixedFrequency(page, "weekly");
-    await page.locator("#profile-fixed-amount").fill("100.00");
+    await profilePanel.locator("#profile-fixed-amount").fill("100.00");
 
     // Switch to no chair rent — form calls resetRentDetails(false)
     await selectChairRent(page, "no");
 
-    await expect(page.locator("#profile-fixed-amount")).not.toBeVisible();
-    await expect(page.locator("#profile-commission-rate")).not.toBeVisible();
+    await expect(profilePanel.locator("#profile-fixed-amount")).not.toBeVisible();
+    await expect(
+      profilePanel.locator("#profile-commission-rate"),
+    ).not.toBeVisible();
 
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
@@ -231,15 +256,19 @@ test.describe("profile editing", () => {
   // -------------------------------------------------------------------------
   test("persisted values are shown after page reload", async ({ page }) => {
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
     const newName = `Persisted-${Date.now()}`;
-    await page.locator("#profile-display-name").fill(newName);
+    await profilePanel.locator("#profile-display-name").fill(newName);
     await saveProfileChanges(page);
     await expectProfileSuccess(page);
 
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard\/profile/);
-    await expect(page.locator("#profile-display-name")).toHaveValue(newName);
+    await openProfileTab(page);
+    await expect(profilePanel.locator("#profile-display-name")).toHaveValue(
+      newName,
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -250,11 +279,12 @@ test.describe("profile editing", () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await goToProfilePage(page);
+    const profilePanel = getProfilePanel(page);
 
-    await expect(page.locator("#profile-display-name")).toBeVisible();
-    await expect(page.locator("#profile-reporting-timezone")).toBeVisible();
+    await expect(profilePanel.locator("#profile-display-name")).toBeVisible();
+    await expect(profilePanel.locator("#profile-reporting-timezone")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /^save changes$/i }),
+      profilePanel.getByRole("button", { name: /^save changes$/i }),
     ).toBeVisible();
 
     const viewportMetrics = await page.evaluate(() => ({

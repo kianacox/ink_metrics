@@ -13,6 +13,7 @@ const sessions: SessionListItem[] = [
     priceMinor: 8000,
     durationMinutes: 45,
     createdAt: "2026-03-30T10:00:00.000Z",
+    throughAds: false,
   },
   {
     id: "s2",
@@ -20,6 +21,7 @@ const sessions: SessionListItem[] = [
     priceMinor: 12000,
     durationMinutes: 90,
     createdAt: "2026-03-31T10:00:00.000Z",
+    throughAds: false,
   },
   {
     id: "s3",
@@ -27,6 +29,7 @@ const sessions: SessionListItem[] = [
     priceMinor: 12000,
     durationMinutes: 30,
     createdAt: "2026-03-29T10:00:00.000Z",
+    throughAds: true,
   },
 ];
 

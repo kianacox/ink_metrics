@@ -64,23 +64,25 @@ export function ProfileSettingsView() {
                 autoComplete="email"
               />
             </div>
-            <div className="min-h-5">
-              {emailStatus ? (
-                <p
-                  className={cn(
-                    "text-sm",
-                    emailStatus.type === "success" ? "text-primary" : "text-destructive",
-                  )}
-                  role="status"
-                >
-                  {emailStatus.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit" className="w-full sm:w-auto" disabled={isUpdatingEmail}>
-                {isUpdatingEmail ? "Sending..." : "Send confirmation"}
-              </Button>
+            <div className="grid gap-2">
+              <div className="min-h-4">
+                {emailStatus ? (
+                  <p
+                    className={cn(
+                      "text-sm",
+                      emailStatus.type === "success" ? "text-primary" : "text-destructive",
+                    )}
+                    role="status"
+                  >
+                    {emailStatus.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex justify-end">
+                <Button type="submit" className="w-full sm:w-auto" disabled={isUpdatingEmail}>
+                  {isUpdatingEmail ? "Sending..." : "Send confirmation"}
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
@@ -91,7 +93,7 @@ export function ProfileSettingsView() {
           <CardTitle className="text-lg text-destructive sm:text-xl">Danger zone</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-4 text-sm text-muted-foreground">
+          <p className="mb-3 text-sm text-muted-foreground">
             Permanently delete your account and all associated data. This action cannot be undone.
           </p>
           <Button
