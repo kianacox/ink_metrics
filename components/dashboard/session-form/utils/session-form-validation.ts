@@ -36,6 +36,16 @@ type SessionFormValidationResult =
       errorMessage: string;
     };
 
+const MAX_SESSION_BACKDATE_MONTHS = 6;
+const BACKDATE_LIMIT_ERROR_MESSAGE =
+  "Session date and time cannot be more than 6 months in the past.";
+
+function getBackdateLimitTimestamp(nowTimestamp: number): number {
+  const backdateLimit = new Date(nowTimestamp);
+  backdateLimit.setUTCMonth(backdateLimit.getUTCMonth() - MAX_SESSION_BACKDATE_MONTHS);
+  return backdateLimit.getTime();
+}
+
 export function validateEditableSessionFields(
   input: EditableSessionFieldsInput,
 ): EditableSessionFieldsResult {
@@ -76,6 +86,15 @@ export function validateEditableSessionFields(
     return {
       valid: false,
       errorMessage: "Session date and time cannot be in the future.",
+    };
+  }
+  if (
+    Number.isFinite(sessionTimestamp) &&
+    sessionTimestamp < getBackdateLimitTimestamp(Date.now())
+  ) {
+    return {
+      valid: false,
+      errorMessage: BACKDATE_LIMIT_ERROR_MESSAGE,
     };
   }
 
