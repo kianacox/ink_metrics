@@ -33,9 +33,3 @@ export const MOBILE_STEPS: MobileStepKey[] = [
   "rentType",
   "rentDetails",
 ];
-
-export interface ChoiceButtonProps {
-  selected: boolean;
-  label: string;
-  onClick: () => void;
-}

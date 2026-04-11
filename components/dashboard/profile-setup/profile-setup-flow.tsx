@@ -18,32 +18,15 @@ import {
   isSupportedTimezone,
 } from "@/lib/timezones";
 import { TimezoneCombobox } from "@/components/shared/timezone-combobox";
+import { ChoiceButton } from "@/components/dashboard/profile/components/choice-button";
 import { ProfileSetupComplete } from "./profile-setup-complete";
 import {
   MOBILE_STEPS,
   type CappedChoice,
   type ChairRentChoice,
-  type ChoiceButtonProps,
   type ProfileSetupCandidate,
   type ProfileSetupFlowProps,
 } from "./profile-setup-models";
-
-function ChoiceButton({
-  selected,
-  label,
-  onClick,
-}: ChoiceButtonProps) {
-  return (
-    <Button
-      type="button"
-      variant={selected ? "default" : "outline"}
-      className="w-full"
-      onClick={onClick}
-    >
-      {label}
-    </Button>
-  );
-}
 
 export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSetupFlowProps) {
   const [displayName, setDisplayName] = useState("");
