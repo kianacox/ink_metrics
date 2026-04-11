@@ -199,6 +199,7 @@ Settings tab requirements:
 - Session creation must require session datetime input and persist UTC `session_at`.
 - API input must validate timezone and timestamp values.
 - Backfill migration is required for seeded/legacy session rows.
+- We need the creation of account deletion and email update endpoints. Remember we use supabase auth so we need to use their setup.
 
 ## 12) Rollout Constraints
 
