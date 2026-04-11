@@ -208,4 +208,23 @@ describe("validateSessionForm", () => {
       errorMessage: "Session date and time cannot be in the future.",
     });
   });
+
+  it("fails when session date and time is more than six months in the past", () => {
+    const result = validateSessionForm({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice Doe",
+      hours: "1",
+      minutes: "30",
+      profit: "12.34",
+      sessionAtLocal: "2025-10-08T10:29",
+      reportingTimezone: "UTC",
+      clients,
+    });
+
+    expect(result).toEqual({
+      valid: false,
+      errorMessage: "Session date and time cannot be more than 6 months in the past.",
+    });
+  });
 });

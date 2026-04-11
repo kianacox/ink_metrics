@@ -73,7 +73,27 @@ jobs:
           EOF
 
       - name: Reset local database
-        run: supabase db reset --local --yes
+        run: |
+          attempts=0
+          max_attempts=3
+          until [ "$attempts" -ge "$max_attempts" ]
+          do
+            attempts=$((attempts + 1))
+            echo "Running Supabase DB reset (attempt ${attempts}/${max_attempts})..."
+            if supabase db reset --local --yes; then
+              echo "Supabase DB reset succeeded."
+              exit 0
+            fi
+
+            if [ "$attempts" -lt "$max_attempts" ]; then
+              echo "Supabase DB reset failed. Retrying after brief wait..."
+              sleep 15
+            fi
+          done
+
+          echo "Supabase DB reset failed after ${max_attempts} attempts. Capturing debug output..."
+          supabase db reset --local --yes --debug
+          exit 1
 
       - name: Install Playwright browser and system deps
         if: steps.playwright-cache.outputs.cache-hit != 'true'
