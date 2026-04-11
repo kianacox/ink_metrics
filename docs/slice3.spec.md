@@ -154,3 +154,5 @@ Cover core journeys:
 - edit client details
 - delete client with confirmation
 - range filter behavior and aggregate rendering
+
+Users should be able to access the clients page from the bottom nav bar on mobile and the left side nav on desktop. Unauthenticated users should be blocked from these routes.
