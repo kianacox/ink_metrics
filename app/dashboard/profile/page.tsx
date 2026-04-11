@@ -1,4 +1,4 @@
-import { ProfileEditForm } from "@/components/dashboard/profile/profile-edit-form";
+import { ProfilePageTabs } from "@/components/dashboard/profile/profile-page-tabs";
 import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
 import { requireAuthenticatedUser } from "@/lib/supabase/require-authenticated-user";
 import { createClient } from "@/lib/supabase/server";
@@ -53,11 +53,11 @@ export default async function ProfilePage() {
           Profile
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Update your display name, compensation settings, and reporting timezone.
+          Manage your profile, compensation settings, and account preferences.
         </p>
       </div>
 
-      <ProfileEditForm
+      <ProfilePageTabs
         initialDisplayName={profile.display_name ?? ""}
         initialDefaultCurrency={profile.default_currency}
         initialReportingTimezone={
