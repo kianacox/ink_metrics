@@ -1,5 +1,11 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 
-export default function Page() {
+export default async function Page() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/dashboard");
+
   return <SignUpForm />;
 }
