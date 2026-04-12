@@ -90,8 +90,17 @@ jobs:
         if: steps.supabase-docker-cache.outputs.cache-hit == 'true'
         run: |
           echo "Loading Supabase Docker images from cache..."
-          docker load -i /tmp/supabase-docker-cache/images.tar
+          docker load -i /tmp/supabase-docker-cache/images.tar.gz
           echo "Images loaded."
+
+      # Snapshot the image list before supabase start so we can diff afterwards
+      # and only cache the images Supabase actually pulled (not the runner's
+      # pre-installed images like node, ubuntu, buildpack-deps, etc.).
+      - name: Record pre-existing Docker images
+        if: steps.supabase-docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker images --format "{{.Repository}}:{{.Tag}}" | sort > /tmp/pre-supabase-images.txt
+          echo "Pre-existing images: $(wc -l < /tmp/pre-supabase-images.txt)"
 
       # supabase start has its own internal health check; we just need retries for
       # transient Docker failures. No separate health-check loop required.
@@ -115,24 +124,23 @@ jobs:
           echo "Supabase failed to start after ${max_attempts} attempts."
           exit 1
 
-      # Persist images to cache after a successful first-time start
+      # Diff against the pre-start snapshot so we only save images Supabase pulled.
+      # Pipe through gzip to keep the cache entry well under 2 GB.
       - name: Save Supabase Docker images
         if: steps.supabase-docker-cache.outputs.cache-hit != 'true'
         run: |
-          echo "Saving Supabase Docker images to cache..."
           mkdir -p /tmp/supabase-docker-cache
-          # Collect every image that is now present on the runner (the runner
-          # starts clean, so everything here was pulled by supabase start).
-          IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" \
+          docker images --format "{{.Repository}}:{{.Tag}}" | sort > /tmp/post-supabase-images.txt
+          NEW_IMAGES=$(comm -13 /tmp/pre-supabase-images.txt /tmp/post-supabase-images.txt \
             | grep -v "^<none>" \
-            | sort -u \
             | tr '\n' ' ')
-          if [ -n "$IMAGES" ]; then
+          if [ -n "$NEW_IMAGES" ]; then
+            echo "Saving Supabase images: $NEW_IMAGES"
             # shellcheck disable=SC2086
-            docker save $IMAGES -o /tmp/supabase-docker-cache/images.tar
-            echo "Saved images: $IMAGES"
+            docker save $NEW_IMAGES | gzip -c > /tmp/supabase-docker-cache/images.tar.gz
+            echo "Cache size: $(du -sh /tmp/supabase-docker-cache/images.tar.gz | cut -f1)"
           else
-            echo "No images found to cache."
+            echo "No new images to cache."
           fi
 
       # ---------------------------------------------------------------------------
