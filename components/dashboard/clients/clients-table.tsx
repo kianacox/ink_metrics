@@ -52,13 +52,13 @@ export function ClientsTable({
             return (
               <tr key={client.id} className="border-t border-border">
                 <td className="px-4 py-3 text-sm font-medium text-foreground">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span>{client.name}</span>
+                  <div className="flex flex-col items-start gap-1">
                     {isReturning ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                         Returning client
                       </span>
                     ) : null}
+                    <span>{client.name}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -80,38 +80,31 @@ export function ClientsTable({
                   {formatSessionProfit(client.lifetimeTotalValueMinor, currencyCode)}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onEditClient(client)}
-                        aria-label={`Edit client ${client.name}`}
-                      >
-                        <Pencil aria-hidden="true" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onDeleteClient(client)}
-                        aria-label={`Delete client ${client.name}`}
-                        disabled={client.lifetimeSessionCount > 0}
-                        title={
-                          client.lifetimeSessionCount > 0
-                            ? "This client is linked to sessions and cannot be deleted."
-                            : undefined
-                        }
-                      >
-                        <Trash2 aria-hidden="true" />
-                      </Button>
-                    </div>
-                    {client.lifetimeSessionCount > 0 ? (
-                      <p className="max-w-56 text-right text-xs text-muted-foreground">
-                        This client is linked to at least one session.
-                      </p>
-                    ) : null}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onEditClient(client)}
+                      aria-label={`Edit client ${client.name}`}
+                    >
+                      <Pencil aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onDeleteClient(client)}
+                      aria-label={`Delete client ${client.name}`}
+                      disabled={client.lifetimeSessionCount > 0}
+                      title={
+                        client.lifetimeSessionCount > 0
+                          ? "This client is linked to sessions and cannot be deleted."
+                          : undefined
+                      }
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
                   </div>
                 </td>
               </tr>
