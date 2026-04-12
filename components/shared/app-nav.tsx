@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, LogOut, Syringe, UserRound, Users } from "lucide-react";
+import { BarChart3, LogOut, Receipt, Syringe, UserRound, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -12,12 +12,13 @@ import {
 } from "./app-nav-utils";
 import { useLogout } from "@/components/auth/hooks/use-logout";
 
-const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions", "/dashboard/clients", "/dashboard/profile"] as const;
+const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions", "/dashboard/clients", "/dashboard/expenses", "/dashboard/profile"] as const;
 
 const navIcons: Record<AppNavItemKey, React.ComponentType<{ className?: string }>> = {
   dashboard: BarChart3,
   sessions: Syringe,
   clients: Users,
+  expenses: Receipt,
   profile: UserRound,
   logout: LogOut,
 };
@@ -181,7 +182,7 @@ export function MobileBottomNav() {
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto grid w-full max-w-5xl grid-cols-5 gap-2">
+      <ul className="mx-auto grid w-full max-w-5xl grid-cols-6 gap-2">
         {navItems.map((item) => (
           <li key={item.key}>
             <MobileNavItem item={item} onLogout={logout} />
