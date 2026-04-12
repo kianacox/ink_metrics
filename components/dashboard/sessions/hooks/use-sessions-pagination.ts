@@ -2,13 +2,12 @@
 
 import { mapSessionRowsToListItems } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
-import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
-import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   UseSessionsPaginationParams,
   UseSessionsPaginationResult,
 } from "@/components/dashboard/sessions/models";
+import type { FetchSessionsPageResult } from "@/lib/sessions/models";
 
 export function useSessionsPagination({
   searchQuery,
@@ -26,39 +25,36 @@ export function useSessionsPagination({
   const [error, setError] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const requestIdRef = useRef(0);
-  const userIdRef = useRef<string | null>(null);
 
   const loadPage = useCallback(
     async ({
       pageIndex,
       append,
       reportingTimezoneOverride,
-      userIdOverride,
     }: {
       pageIndex: number;
       append: boolean;
       reportingTimezoneOverride?: string;
-      userIdOverride?: string;
     }) => {
       const currentRequestId = ++requestIdRef.current;
-      const supabase = createClient();
-      const effectiveUserId = userIdOverride ?? userIdRef.current;
-      if (!effectiveUserId) {
-        throw new Error("You must be signed in to view sessions.");
+      const effectiveTimezone = reportingTimezoneOverride ?? getCurrentReportingTimezone();
+
+      const params = new URLSearchParams({
+        search: searchQuery,
+        sort: sortField,
+        dateRange,
+        page: String(pageIndex),
+        pageSize: String(pageSize),
+        tz: effectiveTimezone,
+      });
+
+      const res = await fetch(`/api/sessions?${params.toString()}`);
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string };
+        throw new Error(body.error ?? "Could not load sessions.");
       }
 
-      const effectiveReportingTimezone =
-        reportingTimezoneOverride ?? getCurrentReportingTimezone();
-      const pageResult = await fetchSessionsPage({
-        supabase,
-        userId: effectiveUserId,
-        reportingTimezone: effectiveReportingTimezone,
-        searchQuery,
-        sortField,
-        dateRange,
-        pageIndex,
-        pageSize,
-      });
+      const pageResult = (await res.json()) as FetchSessionsPageResult;
 
       if (requestIdRef.current !== currentRequestId) {
         return;
@@ -80,12 +76,10 @@ export function useSessionsPagination({
     setError(null);
     try {
       const sessionPreferences = await ensureSessionPreferencesLoaded();
-      userIdRef.current = sessionPreferences.userId;
       await loadPage({
         pageIndex: 0,
         append: false,
         reportingTimezoneOverride: sessionPreferences.reportingTimezone,
-        userIdOverride: sessionPreferences.userId,
       });
     } catch (loadError) {
       const nextErrorMessage =

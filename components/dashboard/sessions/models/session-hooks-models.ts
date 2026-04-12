@@ -2,7 +2,6 @@ import type { SessionListItem, SessionSortField } from "@/components/dashboard/s
 import type { SessionDateRangePreset } from "@/lib/timezones";
 
 export interface LoadedSessionPreferences {
-  userId: string;
   defaultCurrency: string;
   reportingTimezone: string;
 }
@@ -40,7 +39,7 @@ export interface UseSessionsPaginationParams {
   dateRange: SessionDateRangePreset;
   pageSize: number;
   ensureSessionPreferencesLoaded: () => Promise<
-    Pick<LoadedSessionPreferences, "userId" | "reportingTimezone">
+    Pick<LoadedSessionPreferences, "reportingTimezone">
   >;
   getCurrentReportingTimezone: () => string;
 }

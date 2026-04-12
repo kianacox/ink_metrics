@@ -1,6 +1,77 @@
+import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
+import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
+
+const VALID_SORT_FIELDS = new Set<SessionSortField>(["date", "duration", "profit"]);
+const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
+  "last30Days",
+  "last90Days",
+  "yearToDate",
+  "allTime",
+]);
+const DEFAULT_PAGE_SIZE = 25;
+
+export async function GET(request: Request) {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to view sessions.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to view sessions." },
+      { status: 401 },
+    );
+  }
+
+  const url = new URL(request.url);
+  const params = url.searchParams;
+
+  const searchQuery = params.get("search") ?? "";
+  const rawSort = params.get("sort") ?? "date";
+  const sortField: SessionSortField = VALID_SORT_FIELDS.has(rawSort as SessionSortField)
+    ? (rawSort as SessionSortField)
+    : "date";
+
+  const rawDateRange = params.get("dateRange") ?? "last30Days";
+  const dateRange: SessionDateRangePreset = VALID_DATE_RANGES.has(
+    rawDateRange as SessionDateRangePreset,
+  )
+    ? (rawDateRange as SessionDateRangePreset)
+    : "last30Days";
+
+  const pageIndex = Math.max(0, Number.parseInt(params.get("page") ?? "0", 10) || 0);
+  const pageSize = Math.max(
+    1,
+    Math.min(
+      100,
+      Number.parseInt(params.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10) ||
+        DEFAULT_PAGE_SIZE,
+    ),
+  );
+  const reportingTimezone = params.get("tz") ?? "UTC";
+
+  try {
+    const result = await fetchSessionsPage({
+      supabase,
+      userId: user.id,
+      reportingTimezone,
+      searchQuery,
+      sortField,
+      pageIndex,
+      pageSize,
+      dateRange,
+    });
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not load sessions.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 function getRpcErrorStatus(message: string): number {
   if (
