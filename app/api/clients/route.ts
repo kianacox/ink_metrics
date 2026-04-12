@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 
 const VALID_SORT_FIELDS = new Set<ClientSortField>(["session_count", "total_value"]);
 const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
+  "thisMonth",
   "last30Days",
   "last90Days",
   "yearToDate",

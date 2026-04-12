@@ -10,6 +10,7 @@ import {
   Input,
 } from "@/components/ui";
 import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
+import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { Plus } from "lucide-react";
@@ -63,6 +64,7 @@ export function ClientsView() {
     clients,
     totalCount,
     defaultCurrency,
+    topClientThisMonth,
     isLoading,
     isLoadingMore,
     hasNextPage,
@@ -104,6 +106,24 @@ export function ClientsView() {
           aria-live="polite"
         >
           {toastMessage}
+        </div>
+      ) : null}
+
+      {topClientThisMonth ? (
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
+          <p className="text-sm text-muted-foreground">
+            Top client this month:{" "}
+            <span className="font-semibold text-foreground">{topClientThisMonth.name}</span>
+            {topClientThisMonth.rangeTotalValueMinor > 0 ? (
+              <>
+                {" "}
+                &mdash;{" "}
+                <span className="font-semibold text-foreground">
+                  {formatSessionProfit(topClientThisMonth.rangeTotalValueMinor, defaultCurrency)}
+                </span>
+              </>
+            ) : null}
+          </p>
         </div>
       ) : null}
 

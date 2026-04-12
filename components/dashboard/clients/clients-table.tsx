@@ -11,6 +11,17 @@ interface ClientsTableProps {
   onDeleteClient: (client: ClientListItem) => void;
 }
 
+function formatLastSessionDate(isoDate: string | null): string | null {
+  if (!isoDate) {
+    return null;
+  }
+  return new Date(isoDate).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function ClientsTable({
   clients,
   currencyCode,
@@ -25,6 +36,7 @@ export function ClientsTable({
           <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
             <th className="px-4 py-3 font-medium">Client</th>
             <th className="px-4 py-3 font-medium">Contact</th>
+            <th className="px-4 py-3 font-medium">Last session</th>
             <th className="px-4 py-3 font-medium">Sessions ({dateRangeLabel})</th>
             <th className="px-4 py-3 font-medium">Value ({dateRangeLabel})</th>
             <th className="px-4 py-3 font-medium">Lifetime sessions</th>
@@ -33,63 +45,78 @@ export function ClientsTable({
           </tr>
         </thead>
         <tbody>
-          {clients.map((client) => (
-            <tr key={client.id} className="border-t border-border">
-              <td className="px-4 py-3 text-sm font-medium text-foreground">
-                {client.name}
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {client.contactInfo ?? "—"}
-              </td>
-              <td className="px-4 py-3 text-sm text-foreground">
-                {client.rangeSessionCount}
-              </td>
-              <td className="px-4 py-3 text-sm text-foreground">
-                {formatSessionProfit(client.rangeTotalValueMinor, currencyCode)}
-              </td>
-              <td className="px-4 py-3 text-sm text-foreground">
-                {client.lifetimeSessionCount}
-              </td>
-              <td className="px-4 py-3 text-sm text-foreground">
-                {formatSessionProfit(client.lifetimeTotalValueMinor, currencyCode)}
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onEditClient(client)}
-                      aria-label={`Edit client ${client.name}`}
-                    >
-                      <Pencil aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onDeleteClient(client)}
-                      aria-label={`Delete client ${client.name}`}
-                      disabled={client.lifetimeSessionCount > 0}
-                      title={
-                        client.lifetimeSessionCount > 0
-                          ? "This client is linked to sessions and cannot be deleted."
-                          : undefined
-                      }
-                    >
-                      <Trash2 aria-hidden="true" />
-                    </Button>
+          {clients.map((client) => {
+            const isReturning = client.lifetimeSessionCount > 1;
+            const lastSessionLabel = formatLastSessionDate(client.lastSessionAt);
+
+            return (
+              <tr key={client.id} className="border-t border-border">
+                <td className="px-4 py-3 text-sm font-medium text-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{client.name}</span>
+                    {isReturning ? (
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                        Returning
+                      </span>
+                    ) : null}
                   </div>
-                  {client.lifetimeSessionCount > 0 ? (
-                    <p className="max-w-56 text-right text-xs text-muted-foreground">
-                      This client is linked to at least one session.
-                    </p>
-                  ) : null}
-                </div>
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {client.contactInfo ?? "—"}
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {lastSessionLabel ?? "—"}
+                </td>
+                <td className="px-4 py-3 text-sm text-foreground">
+                  {client.rangeSessionCount}
+                </td>
+                <td className="px-4 py-3 text-sm text-foreground">
+                  {formatSessionProfit(client.rangeTotalValueMinor, currencyCode)}
+                </td>
+                <td className="px-4 py-3 text-sm text-foreground">
+                  {client.lifetimeSessionCount}
+                </td>
+                <td className="px-4 py-3 text-sm text-foreground">
+                  {formatSessionProfit(client.lifetimeTotalValueMinor, currencyCode)}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onEditClient(client)}
+                        aria-label={`Edit client ${client.name}`}
+                      >
+                        <Pencil aria-hidden="true" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onDeleteClient(client)}
+                        aria-label={`Delete client ${client.name}`}
+                        disabled={client.lifetimeSessionCount > 0}
+                        title={
+                          client.lifetimeSessionCount > 0
+                            ? "This client is linked to sessions and cannot be deleted."
+                            : undefined
+                        }
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    </div>
+                    {client.lifetimeSessionCount > 0 ? (
+                      <p className="max-w-56 text-right text-xs text-muted-foreground">
+                        This client is linked to at least one session.
+                      </p>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
