@@ -38,6 +38,7 @@ const DATE_RANGE_OPTIONS: Array<{ label: string; value: SessionDateRangePreset }
 ];
 
 const TOTAL_LABEL_BY_DATE_RANGE: Record<SessionDateRangePreset, string> = {
+  thisMonth: "Sessions this month",
   last30Days: "Sessions in the last 30 days",
   last90Days: "Sessions in the last 90 days",
   yearToDate: "Sessions year to date",

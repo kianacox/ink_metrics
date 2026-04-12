@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
 
-export async function DELETE(_request: Request) {
+export async function DELETE() {
   const { user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to delete your account.",
   );
