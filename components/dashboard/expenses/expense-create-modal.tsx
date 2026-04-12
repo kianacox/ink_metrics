@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -8,6 +8,11 @@ import {
   EXPENSE_CATEGORY_LABELS,
 } from "@/lib/expenses/models";
 import { toMinorAmount } from "@/lib/profiles/profile-setup";
+import {
+  isUploadError,
+  uploadExpenseReceipt,
+  validateReceiptFile,
+} from "@/lib/expenses/upload-expense-receipt";
 
 export interface ExpenseCreateModalProps {
   open: boolean;
@@ -31,6 +36,8 @@ export function ExpenseCreateModal({
   const [datePurchased, setDatePurchased] = useState(today);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function resetForm() {
     setItem("");
@@ -38,6 +45,8 @@ export function ExpenseCreateModal({
     setAmount("");
     setDatePurchased(today);
     setError(null);
+    setReceiptWarning(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function handleClose() {
@@ -66,8 +75,20 @@ export function ExpenseCreateModal({
       return;
     }
 
+    // Validate receipt file before submitting if one is selected
+    const receiptFile = fileInputRef.current?.files?.[0] ?? null;
+    if (receiptFile) {
+      const fileError = validateReceiptFile(receiptFile);
+      if (fileError) {
+        setError(fileError);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
+    setReceiptWarning(null);
     try {
+      // Step 1: create the expense row
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,10 +101,36 @@ export function ExpenseCreateModal({
         }),
       });
 
-      const body = (await response.json()) as { error?: string };
+      const body = (await response.json()) as { error?: string; expenseId?: string };
       if (!response.ok) {
         setError(body.error ?? "Could not log expense.");
         return;
+      }
+
+      const expenseId = body.expenseId;
+
+      // Step 2 (optional): upload receipt and patch
+      if (receiptFile && expenseId) {
+        const uploadResult = await uploadExpenseReceipt({ expenseId, file: receiptFile });
+
+        if (isUploadError(uploadResult)) {
+          // Non-blocking: expense was saved but receipt upload failed
+          const warning = `Expense logged, but receipt could not be uploaded: ${uploadResult.error}`;
+          setReceiptWarning(warning);
+          await onCreated();
+          return; // keep modal open for retry
+        } else {
+          // Step 3: patch with receipt metadata
+          await fetch(`/api/expenses/${expenseId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              receiptPath: uploadResult.path,
+              receiptMimeType: uploadResult.mimeType,
+              receiptSizeBytes: uploadResult.sizeBytes,
+            }),
+          });
+        }
       }
 
       await onCreated();
@@ -161,6 +208,26 @@ export function ExpenseCreateModal({
             aria-required="true"
           />
         </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="expense-receipt">
+            Receipt{" "}
+            <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+          </Label>
+          <Input
+            id="expense-receipt"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            ref={fileInputRef}
+          />
+          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF. Max 5 MB.</p>
+        </div>
+
+        {receiptWarning ? (
+          <p className="rounded-md border border-amber-400/60 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:border-amber-300/60 dark:bg-amber-400/20 dark:text-amber-100" role="status">
+            {receiptWarning}
+          </p>
+        ) : null}
 
         {error ? (
           <p className="text-sm text-destructive" role="status">
