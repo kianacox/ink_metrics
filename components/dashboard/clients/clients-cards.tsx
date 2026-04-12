@@ -39,14 +39,12 @@ export function ClientsCards({
             <CardHeader className="p-4 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <CardTitle className="truncate text-base">{client.name}</CardTitle>
-                    {isReturning ? (
-                      <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        Returning client
-                      </span>
-                    ) : null}
-                  </div>
+                  {isReturning ? (
+                    <span className="mb-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      Returning client
+                    </span>
+                  ) : null}
+                  <CardTitle className="truncate text-base">{client.name}</CardTitle>
                   {client.contactInfo ? (
                     <p className="mt-0.5 truncate text-sm text-muted-foreground">
                       {client.contactInfo}

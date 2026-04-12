@@ -56,7 +56,7 @@ export function ClientsTable({
                     <span>{client.name}</span>
                     {isReturning ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        Returning
+                        Returning client
                       </span>
                     ) : null}
                   </div>

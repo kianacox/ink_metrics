@@ -1,5 +1,9 @@
 -- Slice 3 extension: add last_session_at to fetch_clients_page
 -- Returns the most recent session_at for each client (null if no sessions).
+--
+-- PostgreSQL does not allow CREATE OR REPLACE to change a function's return
+-- type, so we drop the existing function first.
+DROP FUNCTION IF EXISTS fetch_clients_page(uuid, timestamptz, text, text, integer, integer);
 
 CREATE OR REPLACE FUNCTION fetch_clients_page(
   p_user_id          uuid,
