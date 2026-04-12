@@ -18,9 +18,8 @@ function isValidExpenseDate(value: string): boolean {
 }
 
 function isFutureDate(value: string): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Date.parse(value) > today.getTime();
+  const today = new Date().toISOString().slice(0, 10);
+  return value > today;
 }
 
 function isExpenseCategory(value: unknown): value is ExpenseCategory {
