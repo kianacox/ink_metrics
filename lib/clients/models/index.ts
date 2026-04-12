@@ -10,6 +10,7 @@ export interface ClientListItem {
   name: string;
   contactInfo: string | null;
   createdAt: string;
+  lastSessionAt: string | null;
   lifetimeSessionCount: number;
   lifetimeTotalValueMinor: number;
   rangeSessionCount: number;

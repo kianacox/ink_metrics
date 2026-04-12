@@ -172,7 +172,7 @@ export function getEffectiveReportingTimezone(value: unknown): string {
   return DEFAULT_REPORTING_TIMEZONE;
 }
 
-export type SessionDateRangePreset = "last30Days" | "last90Days" | "yearToDate" | "allTime";
+export type SessionDateRangePreset = "thisMonth" | "last30Days" | "last90Days" | "yearToDate" | "allTime";
 
 export function convertLocalDateTimeInTimezoneToUtcIso(
   localDateTime: string,
@@ -239,6 +239,10 @@ export function getDateRangeStartUtcIso({
   const nowInTimezone = DateTime.fromJSDate(now, { zone: "UTC" }).setZone(effectiveTimezone);
   if (!nowInTimezone.isValid) {
     return null;
+  }
+
+  if (preset === "thisMonth") {
+    return toUtcIso(nowInTimezone.startOf("month"));
   }
 
   if (preset === "yearToDate") {

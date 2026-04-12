@@ -10,6 +10,7 @@ interface RpcRow {
   name: string;
   contact_info: string | null;
   created_at: string;
+  last_session_at: string | null;
   lifetime_session_count: number;
   lifetime_total_value_minor: number;
   range_session_count: number;
@@ -23,6 +24,7 @@ function mapRpcRow(row: RpcRow): ClientListItem {
     name: row.name,
     contactInfo: row.contact_info ?? null,
     createdAt: row.created_at,
+    lastSessionAt: row.last_session_at ?? null,
     lifetimeSessionCount: Number(row.lifetime_session_count),
     lifetimeTotalValueMinor: Number(row.lifetime_total_value_minor),
     rangeSessionCount: Number(row.range_session_count),
