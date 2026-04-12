@@ -64,6 +64,7 @@ export function ClientsView() {
     clients,
     totalCount,
     defaultCurrency,
+    reportingTimezone,
     topClientThisMonth,
     isLoading,
     isLoadingMore,
@@ -72,6 +73,12 @@ export function ClientsView() {
     reload,
     loadMore,
   } = useClients({ searchQuery, sortField, dateRange });
+
+  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+    timeZone: reportingTimezone,
+  });
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -112,7 +119,7 @@ export function ClientsView() {
       {topClientThisMonth ? (
         <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
           <p className="text-sm text-muted-foreground">
-            Top client this month:{" "}
+            Top client {currentMonthLabel}:{" "}
             <span className="font-semibold text-foreground">{topClientThisMonth.name}</span>
             {topClientThisMonth.rangeTotalValueMinor > 0 ? (
               <>
