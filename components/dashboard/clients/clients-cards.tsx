@@ -31,32 +31,39 @@ export function ClientsCards({
                   </p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-emerald-500/70 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-400/70 dark:text-emerald-300 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200"
-                  onClick={() => onEditClient(client)}
-                  aria-label={`Edit client ${client.name}`}
-                >
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onDeleteClient(client)}
-                  aria-label={`Delete client ${client.name}`}
-                  disabled={client.lifetimeSessionCount > 0}
-                  title={
-                    client.lifetimeSessionCount > 0
-                      ? "This client is linked to sessions and cannot be deleted."
-                      : undefined
-                  }
-                >
-                  Delete
-                </Button>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-emerald-500/70 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-400/70 dark:text-emerald-300 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200"
+                    onClick={() => onEditClient(client)}
+                    aria-label={`Edit client ${client.name}`}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => onDeleteClient(client)}
+                    aria-label={`Delete client ${client.name}`}
+                    disabled={client.lifetimeSessionCount > 0}
+                    title={
+                      client.lifetimeSessionCount > 0
+                        ? "This client is linked to sessions and cannot be deleted."
+                        : undefined
+                    }
+                  >
+                    Delete
+                  </Button>
+                </div>
+                {client.lifetimeSessionCount > 0 ? (
+                  <p className="max-w-44 text-right text-xs text-muted-foreground">
+                    This client is linked to at least one session.
+                  </p>
+                ) : null}
               </div>
             </div>
           </CardHeader>
