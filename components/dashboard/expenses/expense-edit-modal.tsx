@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -9,6 +9,11 @@ import {
 } from "@/lib/expenses/models";
 import type { ExpenseListItem } from "@/lib/expenses/models";
 import { toMinorAmount } from "@/lib/profiles/profile-setup";
+import {
+  isUploadError,
+  uploadExpenseReceipt,
+  validateReceiptFile,
+} from "@/lib/expenses/upload-expense-receipt";
 import { Paperclip } from "lucide-react";
 
 export interface ExpenseEditModalProps {
@@ -35,6 +40,8 @@ export function ExpenseEditModal({
   const [datePurchased, setDatePurchased] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open || !expense) {
@@ -72,7 +79,18 @@ export function ExpenseEditModal({
       return;
     }
 
+    // Validate receipt if one is selected
+    const receiptFile = fileInputRef.current?.files?.[0] ?? null;
+    if (receiptFile) {
+      const fileError = validateReceiptFile(receiptFile);
+      if (fileError) {
+        setError(fileError);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
+    setReceiptWarning(null);
     try {
       const response = await fetch(`/api/expenses/${expense.id}`, {
         method: "PATCH",
@@ -90,6 +108,29 @@ export function ExpenseEditModal({
       if (!response.ok) {
         setError(body.error ?? "Could not update expense.");
         return;
+      }
+
+      // Handle optional receipt replacement
+      if (receiptFile) {
+        const uploadResult = await uploadExpenseReceipt({ expenseId: expense.id, file: receiptFile });
+
+        if (isUploadError(uploadResult)) {
+          setReceiptWarning(
+            `Expense saved, but receipt could not be uploaded: ${uploadResult.error}`,
+          );
+          await onUpdated();
+          return; // keep modal open for retry
+        }
+
+        await fetch(`/api/expenses/${expense.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receiptPath: uploadResult.path,
+            receiptMimeType: uploadResult.mimeType,
+            receiptSizeBytes: uploadResult.sizeBytes,
+          }),
+        });
       }
 
       await onUpdated();
@@ -161,10 +202,33 @@ export function ExpenseEditModal({
           />
         </div>
 
-        {expense.receiptPath ? (
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Paperclip aria-hidden="true" className="size-4 shrink-0" />
-            Receipt attached
+        <div className="grid gap-2">
+          <Label htmlFor="edit-expense-receipt">
+            {expense.receiptPath ? (
+              <span className="flex items-center gap-1.5">
+                <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+                Replace receipt{" "}
+                <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+              </span>
+            ) : (
+              <span>
+                Attach receipt{" "}
+                <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+              </span>
+            )}
+          </Label>
+          <Input
+            id="edit-expense-receipt"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            ref={fileInputRef}
+          />
+          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF. Max 5 MB.</p>
+        </div>
+
+        {receiptWarning ? (
+          <p className="rounded-md border border-amber-400/60 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:border-amber-300/60 dark:bg-amber-400/20 dark:text-amber-100" role="status">
+            {receiptWarning}
           </p>
         ) : null}
 
