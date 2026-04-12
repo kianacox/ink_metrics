@@ -70,6 +70,12 @@ export function ClientsTable({
                     variant="ghost"
                     onClick={() => onDeleteClient(client)}
                     aria-label={`Delete client ${client.name}`}
+                    disabled={client.lifetimeSessionCount > 0}
+                    title={
+                      client.lifetimeSessionCount > 0
+                        ? "This client is linked to sessions and cannot be deleted."
+                        : undefined
+                    }
                   >
                     <Trash2 aria-hidden="true" />
                   </Button>

@@ -95,6 +95,12 @@ export async function DELETE(
     .select("client_id");
 
   if (error) {
+    if ((error as { code?: string }).code === "23503") {
+      return NextResponse.json(
+        { error: "This client is linked to sessions and cannot be deleted." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: "Could not delete client." }, { status: 500 });
   }
 
