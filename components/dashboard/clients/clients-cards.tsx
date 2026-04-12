@@ -48,6 +48,12 @@ export function ClientsCards({
                   variant="destructive"
                   onClick={() => onDeleteClient(client)}
                   aria-label={`Delete client ${client.name}`}
+                  disabled={client.lifetimeSessionCount > 0}
+                  title={
+                    client.lifetimeSessionCount > 0
+                      ? "This client is linked to sessions and cannot be deleted."
+                      : undefined
+                  }
                 >
                   Delete
                 </Button>
