@@ -90,21 +90,26 @@ export function ClientsTable({
                     >
                       <Pencil aria-hidden="true" />
                     </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onDeleteClient(client)}
-                      aria-label={`Delete client ${client.name}`}
-                      disabled={client.lifetimeSessionCount > 0}
+                    <span
                       title={
                         client.lifetimeSessionCount > 0
                           ? "This client is linked to sessions and cannot be deleted."
                           : undefined
                       }
+                      className={client.lifetimeSessionCount > 0 ? "cursor-not-allowed" : undefined}
                     >
-                      <Trash2 aria-hidden="true" />
-                    </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onDeleteClient(client)}
+                        aria-label={`Delete client ${client.name}`}
+                        disabled={client.lifetimeSessionCount > 0}
+                        className={client.lifetimeSessionCount > 0 ? "pointer-events-none" : undefined}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    </span>
                   </div>
                 </td>
               </tr>
