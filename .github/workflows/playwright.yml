@@ -9,11 +9,6 @@ concurrency:
   group: playwright-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Pin the Supabase CLI to a known-good version. Update this intentionally
-# rather than riding `latest`, which can introduce breaking behaviour.
-env:
-  SUPABASE_CLI_VERSION: "2.23.4"
-
 jobs:
   playwright-e2e:
     name: Run full Playwright suite with local Supabase
@@ -67,22 +62,29 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # ---------------------------------------------------------------------------
-      # Supabase — cache Docker images so `supabase start` skips the multi-GB pull
-      # on every run. Cache key is keyed on the CLI version so a version bump
-      # automatically busts it.
+      # Supabase — use latest CLI so it always matches config.toml, then derive
+      # the actual installed version for the Docker image cache key. This means
+      # the cache busts automatically on every CLI update without manual pinning.
       # ---------------------------------------------------------------------------
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: ${{ env.SUPABASE_CLI_VERSION }}
+          version: latest
+
+      - name: Get installed Supabase CLI version
+        id: supabase-version
+        run: |
+          VERSION=$(supabase --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Supabase CLI version: $VERSION"
 
       - name: Cache Supabase Docker images
         id: supabase-docker-cache
         uses: actions/cache@v4
         with:
           path: /tmp/supabase-docker-cache
-          key: ${{ runner.os }}-supabase-docker-${{ env.SUPABASE_CLI_VERSION }}
+          key: ${{ runner.os }}-supabase-docker-${{ steps.supabase-version.outputs.version }}
 
       - name: Load cached Supabase Docker images
         if: steps.supabase-docker-cache.outputs.cache-hit == 'true'
