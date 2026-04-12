@@ -26,9 +26,30 @@ function createDefaultSessionDateTimeValue(reportingTimezone: string): string {
   return formatDateTimeLocalForTimezone(now, reportingTimezone);
 }
 
-export function AddSessionModal() {
+interface AddSessionModalProps {
+  /** When provided, the component operates in controlled mode and hides its internal trigger button. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Called after a session is saved successfully. */
+  onSaved?: () => void;
+}
+
+export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }: AddSessionModalProps = {}) {
   const titleId = useId();
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (isControlled) {
+        onOpenChange?.(value);
+      } else {
+        setInternalOpen(value);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isControlled],
+  );
   const [clientQuery, setClientQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [newClientContact, setNewClientContact] = useState("");
@@ -75,7 +96,7 @@ export function AddSessionModal() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     if (!toast) {
@@ -160,6 +181,7 @@ export function AddSessionModal() {
       setOpen(false);
       resetForm();
       setToast({ message: "Session saved successfully." });
+      onSaved?.();
     } finally {
       setIsLoading(false);
     }
@@ -176,18 +198,20 @@ export function AddSessionModal() {
           {toast.message}
         </div>
       ) : null}
-      <Button
-        type="button"
-        size="lg"
-        className="w-full sm:w-auto"
-        onClick={() => {
-          setOpen(true);
-          setStatus(null);
-          setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
-        }}
-      >
-        Add session
-      </Button>
+      {!isControlled ? (
+        <Button
+          type="button"
+          size="lg"
+          className="w-full sm:w-auto"
+          onClick={() => {
+            setOpen(true);
+            setStatus(null);
+            setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
+          }}
+        >
+          Add session
+        </Button>
+      ) : null}
 
       {open ? (
         <SessionModalShell
