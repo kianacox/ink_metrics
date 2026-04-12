@@ -9,11 +9,18 @@ concurrency:
   group: playwright-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Pin the Supabase CLI to a known-good version. Update this intentionally
+# rather than riding `latest`, which can introduce breaking behaviour.
+env:
+  SUPABASE_CLI_VERSION: "2.23.4"
+
 jobs:
   playwright-e2e:
     name: Run full Playwright suite with local Supabase
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # First run (no Docker cache) pulls ~1-2 GB of images and can take ~20 min;
+    # subsequent cached runs complete in ~10 min. 45 min covers both safely.
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -27,6 +34,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # ---------------------------------------------------------------------------
+      # Playwright — resolve version from lockfile so the cache key is exact
+      # ---------------------------------------------------------------------------
 
       - name: Get Playwright version
         id: playwright-version
@@ -50,44 +61,81 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
+      # Install browser early so it overlaps with the Supabase setup below
+      - name: Install Playwright browser and system deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # ---------------------------------------------------------------------------
+      # Supabase — cache Docker images so `supabase start` skips the multi-GB pull
+      # on every run. Cache key is keyed on the CLI version so a version bump
+      # automatically busts it.
+      # ---------------------------------------------------------------------------
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
+      - name: Cache Supabase Docker images
+        id: supabase-docker-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/supabase-docker-cache
+          key: ${{ runner.os }}-supabase-docker-${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Load cached Supabase Docker images
+        if: steps.supabase-docker-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Loading Supabase Docker images from cache..."
+          docker load -i /tmp/supabase-docker-cache/images.tar
+          echo "Images loaded."
+
+      # supabase start has its own internal health check; we just need retries for
+      # transient Docker failures. No separate health-check loop required.
       - name: Start local Supabase stack
-        run: supabase start
-
-      - name: Wait for Supabase services to be ready
         run: |
           attempts=0
-          max_attempts=30
-          sleep_seconds=5
-
-          until [ "$attempts" -ge "$max_attempts" ]
-          do
+          max_attempts=3
+          until [ "$attempts" -ge "$max_attempts" ]; do
             attempts=$((attempts + 1))
-            echo "Checking Supabase health (attempt ${attempts}/${max_attempts})..."
-
-            if env_output="$(supabase status -o env 2>/dev/null)"; then
-              api_url="$(printf '%s\n' "$env_output" | awk -F= '/^API_URL=/{print $2}')"
-              if [ -n "$api_url" ]; then
-                http_status="$(curl -s -o /dev/null -w "%{http_code}" "${api_url}/rest/v1/" || true)"
-                if [ "$http_status" = "200" ] || [ "$http_status" = "401" ]; then
-                  echo "Supabase API is reachable (HTTP ${http_status})."
-                  exit 0
-                fi
-              fi
+            echo "Starting Supabase (attempt ${attempts}/${max_attempts})..."
+            if supabase start; then
+              echo "Supabase started successfully."
+              exit 0
             fi
-
             if [ "$attempts" -lt "$max_attempts" ]; then
-              sleep "$sleep_seconds"
+              echo "Start failed. Stopping containers and retrying in 15 s..."
+              supabase stop --no-backup 2>/dev/null || true
+              sleep 15
             fi
           done
-
-          echo "Supabase services did not become ready in time."
-          supabase status
+          echo "Supabase failed to start after ${max_attempts} attempts."
           exit 1
+
+      # Persist images to cache after a successful first-time start
+      - name: Save Supabase Docker images
+        if: steps.supabase-docker-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Saving Supabase Docker images to cache..."
+          mkdir -p /tmp/supabase-docker-cache
+          # Collect every image that is now present on the runner (the runner
+          # starts clean, so everything here was pulled by supabase start).
+          IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" \
+            | grep -v "^<none>" \
+            | sort -u \
+            | tr '\n' ' ')
+          if [ -n "$IMAGES" ]; then
+            # shellcheck disable=SC2086
+            docker save $IMAGES -o /tmp/supabase-docker-cache/images.tar
+            echo "Saved images: $IMAGES"
+          else
+            echo "No images found to cache."
+          fi
+
+      # ---------------------------------------------------------------------------
+      # Environment — export Supabase URLs and write the app .env.local
+      # ---------------------------------------------------------------------------
 
       - name: Export local Supabase env vars
         run: supabase status -o env >> "$GITHUB_ENV"
@@ -104,12 +152,15 @@ jobs:
           E2E_MAILBOX_DOMAIN=example.com
           EOF
 
+      # ---------------------------------------------------------------------------
+      # Database — apply migrations and seed with retries
+      # ---------------------------------------------------------------------------
+
       - name: Reset local database
         run: |
           attempts=0
           max_attempts=3
-          until [ "$attempts" -ge "$max_attempts" ]
-          do
+          until [ "$attempts" -ge "$max_attempts" ]; do
             attempts=$((attempts + 1))
             echo "Running Supabase DB reset (attempt ${attempts}/${max_attempts})..."
             if supabase db reset --local --yes; then
@@ -127,9 +178,9 @@ jobs:
           supabase db reset --local --yes --debug
           exit 1
 
-      - name: Install Playwright browser and system deps
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+      # ---------------------------------------------------------------------------
+      # Tests
+      # ---------------------------------------------------------------------------
 
       - name: Run Playwright test suite
         run: npm run test:e2e
