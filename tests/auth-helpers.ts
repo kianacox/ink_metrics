@@ -102,7 +102,7 @@ export async function completeProfileSetupMinimal(
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
-async function clearMailbox(email: string): Promise<void> {
+export async function clearMailbox(email: string): Promise<void> {
   const mailbox = localMailboxName(email);
   const response = await fetch(
     `${inbucketBaseUrl}/api/v1/mailbox/${encodeURIComponent(mailbox)}`,
@@ -116,7 +116,7 @@ async function clearMailbox(email: string): Promise<void> {
   }
 }
 
-async function fetchConfirmationLink(
+export async function fetchConfirmationLink(
   email: string,
   timeoutMs = 30_000,
 ): Promise<string> {

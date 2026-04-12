@@ -4,7 +4,9 @@ import {
   DEFAULT_SIGN_UP_PASSWORD,
 } from "./constants";
 import {
+  clearMailbox,
   completeProfileSetupMinimal,
+  fetchConfirmationLink,
   loginAsUser,
   signUpAndConfirmUserOnly,
 } from "./auth-helpers";
@@ -57,7 +59,7 @@ test.describe("profile settings", () => {
   test("submits update email request and shows success feedback", async ({
     page,
   }) => {
-    const currentEmail = await createProfileCompleteUser(page, "settings-email");
+    await createProfileCompleteUser(page, "settings-email");
     const nextEmail = makeDisposableEmail("settings-email-new");
     await openSettingsTab(page);
 
@@ -96,6 +98,37 @@ test.describe("profile settings", () => {
     await openSettingsTab(page);
     await expect(settingsPanel.locator("#settings-current-email")).toContainText(currentEmail);
     await expect(settingsPanel.locator("#settings-current-email")).not.toContainText(nextEmail);
+  });
+
+  test("updates email after confirming both change links", async ({ page }) => {
+    const currentEmail = await createProfileCompleteUser(page, "email-confirm");
+    const nextEmail = makeDisposableEmail("email-confirm-new");
+
+    // Clear inboxes so we only find the change-confirmation emails
+    await clearMailbox(currentEmail);
+    await clearMailbox(nextEmail);
+
+    await openSettingsTab(page);
+    const settingsPanel = page.locator("#tabpanel-settings");
+
+    // Request email change
+    await settingsPanel.locator("#settings-new-email").fill(nextEmail);
+    await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
+    await expect(settingsPanel.getByRole("status")).toContainText(
+      /check your inbox/i,
+    );
+
+    // Click the link in the new email's inbox first
+    const newEmailLink = await fetchConfirmationLink(nextEmail);
+    await page.goto(newEmailLink);
+
+    // Click the link in the old email's inbox (required by double_confirm_changes)
+    const oldEmailLink = await fetchConfirmationLink(currentEmail);
+    await page.goto(oldEmailLink);
+
+    // Email should now be updated
+    await openSettingsTab(page);
+    await expect(settingsPanel.locator("#settings-current-email")).toContainText(nextEmail);
   });
 
   // -------------------------------------------------------------------------
