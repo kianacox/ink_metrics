@@ -8,6 +8,7 @@ import {
   expectClientVisibleInTable,
   goToClientsPage,
 } from "./client-helpers";
+import { createSessionWithNewClient } from "./session-helpers";
 
 function uniqueClientName(prefix: string): string {
   return `${prefix}-${Date.now()}`;
@@ -130,6 +131,30 @@ test("redirects unauthenticated users away from clients page", async ({ page }) 
   await page.context().clearCookies();
   await page.goto("/dashboard/clients");
   await expect(page).not.toHaveURL(/\/dashboard\/clients/);
+});
+
+test("delete button is disabled for clients linked to sessions", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const clientName = uniqueClientName("client-has-session");
+
+  // Create a session (with a new client) from the dashboard
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100",
+  });
+
+  // Navigate to clients page and show all time so the client is visible
+  await goToClientsPage(page);
+  await page.getByRole("button", { name: /date range:/i }).click();
+  await page.getByRole("menuitem", { name: /^all time$/i }).click();
+
+  // The delete button should be disabled because the client has a linked session
+  const deleteButton = page
+    .getByRole("button", { name: `Delete client ${clientName}` })
+    .first();
+  await expect(deleteButton).toBeDisabled();
 });
 
 test("changes date range filter and updates client count label", async ({ page }) => {
