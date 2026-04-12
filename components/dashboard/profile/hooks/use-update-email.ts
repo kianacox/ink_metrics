@@ -15,7 +15,10 @@ export function useUpdateEmail() {
     setIsSubmitting(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      const { error } = await supabase.auth.updateUser(
+        { email: newEmail },
+        { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+      );
       if (error) {
         return { success: false, error: error.message };
       }
