@@ -58,6 +58,37 @@ jobs:
       - name: Start local Supabase stack
         run: supabase start
 
+      - name: Wait for Supabase services to be ready
+        run: |
+          attempts=0
+          max_attempts=30
+          sleep_seconds=5
+
+          until [ "$attempts" -ge "$max_attempts" ]
+          do
+            attempts=$((attempts + 1))
+            echo "Checking Supabase health (attempt ${attempts}/${max_attempts})..."
+
+            if env_output="$(supabase status -o env 2>/dev/null)"; then
+              api_url="$(printf '%s\n' "$env_output" | awk -F= '/^API_URL=/{print $2}')"
+              if [ -n "$api_url" ]; then
+                http_status="$(curl -s -o /dev/null -w "%{http_code}" "${api_url}/rest/v1/" || true)"
+                if [ "$http_status" = "200" ] || [ "$http_status" = "401" ]; then
+                  echo "Supabase API is reachable (HTTP ${http_status})."
+                  exit 0
+                fi
+              fi
+            fi
+
+            if [ "$attempts" -lt "$max_attempts" ]; then
+              sleep "$sleep_seconds"
+            fi
+          done
+
+          echo "Supabase services did not become ready in time."
+          supabase status
+          exit 1
+
       - name: Export local Supabase env vars
         run: supabase status -o env >> "$GITHUB_ENV"
 
