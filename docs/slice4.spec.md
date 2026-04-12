@@ -1,71 +1,278 @@
-Slice 4: Tracking Expenses
+# Slice 4 Spec: Expense Tracking
 
-Database
-Artists should be able to track expenses so that these can be subtracted from artist profit after compensation values have been applied. To do this we will need to create a new expenses table. Each artist will have multiple rows. We will need to link expenses to users via user_id as a foreign key from the auth table. Other columns:
+## 1) Purpose
 
-expense_id (unique identifier - is this needed?)
-item
-category
-price
-date_purchased (to help when calculating actual take home for time ranges)
-receipt (optional image upload? is this possible with supabase? I'm thinking for receipts, so users can export data for taxes)
+Give artists a dedicated expense workflow so supply and business costs can be tracked and later subtracted from profit in analytics/reporting slices.
 
-We need to consider if we need to add any functions for transactional updates to prevent partial writes. We will need a migration file to update the db schema.
+## 2) Goals
 
-API/backend
-We will need new routes for
+- Add a dedicated expenses experience that matches sessions/clients UX patterns.
+- Support expense CRUD with strict per-user ownership.
+- Support optional receipt attachments using Supabase Storage.
+- Support category filtering (single, multi-select, clear all).
+- Keep data tax/export friendly with stable date and money contracts.
 
-- getting expenses
-- adding an expense
-- updating an expense
-- deleting an expense
+## 3) Scope
 
-Frontend
-We need a new view for expenses, accessible via the bottom nav and mobile and the left side nav on desktop.
-We should use the same card structure as the sessions and client pages. For each expense we need to see:
+### 3.1 In Scope
 
-- the item(s)
-- item category
-- price
+- New `expenses` data model and migration.
+- New expenses page accessible from:
+  - mobile bottom nav
+  - desktop left sidebar nav
+- Expenses list view:
+  - mobile cards
+  - desktop table
+- Create expense modal opened from pinned floating action button.
+- Edit and delete expense actions.
+- Category filter pills with multi-select and clear-all support.
+- Optional receipt upload.
+- Unit tests for parsing/validation/filter logic.
+- e2e coverage for key journeys and auth guards.
+- Add a matching pinned floating action button to sessions view for consistency.
+
+### 3.2 Out of Scope
+
+- Expense analytics rollups and profit deduction logic in dashboards.
+- OCR/automatic receipt data extraction.
+- Multi-currency conversions.
+
+## 4) Decisions and Data Contracts
+
+### 4.1 Expense table (required)
+
+Create `public.expenses` with:
+
+- `expense_id uuid primary key default gen_random_uuid()`
+- `user_id uuid not null references auth.users(id) on delete cascade`
+- `item text not null`
+- `category text not null`
+- `amount_minor bigint not null`
+- `currency_code text not null`
+- `date_purchased date not null`
+- `receipt_path text null`
+- `receipt_mime_type text null`
+- `receipt_size_bytes integer null`
+- `created_at timestamptz not null default now()`
+- `updated_at timestamptz not null default now()`
+
+### 4.2 Category contract
+
+Allowed category values:
+
+- `ink`
+- `cartridges`
+- `needles`
+- `machines`
+- `other_equipment`
+- `travel`
+- `miscellaneous`
+
+Use a DB check constraint to enforce allowed values.
+
+### 4.3 Money contract
+
+- Persist expense amounts as integer minor units in `amount_minor` (for example, 12.34 GBP -> 1234).
+- Use `currency_code` snapshot at write time to avoid ambiguity if profile currency changes later.
+
+### 4.4 Receipt contract
+
+- Receipt upload is supported via Supabase Storage.
+- Use a private bucket (for example: `expense-receipts`).
+- Store only metadata + `receipt_path` in Postgres.
+- Do not use public URLs for receipts; use signed URLs when needed.
+
+### 4.5 Storage path contract
+
+Use deterministic path format:
+
+- `{user_id}/{expense_id}/{timestamp}-{sanitized_file_name}`
+
+This ensures easy ownership policy enforcement and cleanup.
+
+### 4.6 Indexes
+
+Add:
+
+- index on `(user_id, date_purchased desc)`
+- index on `(user_id, category, date_purchased desc)`
+
+## 5) Security and Authorization
+
+### 5.1 RLS
+
+Enable RLS on `public.expenses` and add policies:
+
+- `select` own rows only
+- `insert` own rows only
+- `update` own rows only
+- `delete` own rows only
+
+Policy rule pattern: `auth.uid() = user_id`
+
+### 5.2 Storage policies
+
+For receipt bucket:
+
+- authenticated users can only read/write objects under their own prefix (`auth.uid()` rooted path).
+- no cross-user file access.
+
+## 6) API Requirements
+
+Add routes:
+
+- `GET /api/expenses`
+- `POST /api/expenses`
+- `PATCH /api/expenses/[expenseId]`
+- `DELETE /api/expenses/[expenseId]`
+
+### 6.1 Read/list behavior
+
+`GET /api/expenses` supports:
+
+- pagination
+- category filtering (0..n selected categories)
+- default sort by `date_purchased desc`, then `expense_id desc`
+
+### 6.2 Create behavior
+
+`POST /api/expenses` accepts:
+
+- `item`
+- `category`
+- `amountMinor`
+- `datePurchased`
+- optional receipt metadata/path fields
+
+Reject invalid payloads with clear 400 errors.
+
+### 6.3 Update behavior
+
+`PATCH /api/expenses/[expenseId]` allows updates for:
+
+- `item`
+- `category`
+- `amountMinor`
+- `datePurchased`
+- receipt fields
+
+Must reject unknown/uneditable fields.
+
+### 6.4 Delete behavior
+
+`DELETE /api/expenses/[expenseId]`:
+
+- deletes owned expense row only
+- returns success with deleted flag
+- if receipt exists, remove storage object best-effort
+
+### 6.5 Auth guard behavior
+
+All expense API routes require authenticated users. Unauthenticated requests return 401.
+
+## 7) Receipt Upload Flow
+
+Use a resilient two-step flow:
+
+1. Create expense row first (without receipt path).
+2. Upload receipt to storage using the resolved `expense_id`.
+3. Patch expense with `receipt_path` and file metadata.
+
+If upload fails, keep expense row and surface a non-blocking error allowing user retry.
+
+Note: DB transactions cannot atomically include Supabase Storage object writes, so this explicit flow is required.
+
+## 8) Frontend Requirements
+
+### 8.1 Navigation
+
+- Add Expenses nav entry in mobile bottom nav and desktop sidebar.
+- Route: `/dashboard/expenses`.
+
+### 8.2 Expenses page layout
+
+- Reuse sessions/clients visual patterns.
+- Mobile: cards.
+- Desktop: table.
+
+Each expense row/card shows:
+
+- item
+- category
+- formatted amount
 - date purchased
-- if a receipt is attached or not (if possible using supabase)
+- receipt attached status
 
-For each expense we also need to be able to:
+Each row/card supports:
 
-- edit all fields
-- delete expense
+- edit action
+- delete action
 
-We need to be able to filter expenses by category. The categories will be:
+### 8.3 Filtering UX
 
-ink
-cartridges
-needles
-machines
-other equipment (chairs)
-travel
-miscellaneous (paper towels, cling film, second skin, cleaning supplies)
+- Category filter pills displayed above list.
+- Users can select one, many, or all categories.
+- Include `Clear all` action.
 
-I suggest using filter "pills" above the cards to do this. Users should be able to apply one, multiple or all filters. Users should be able to clear all selected filters
+### 8.4 Create expense UX
 
-We need to be able to add a new expense via a circle pinned to the bottom right of the screen with a plus icon (like on the clients view). Clicking this should open an add expense modal following the styling of other modals. It should take input for
+- Floating circular plus button pinned bottom-right.
+- Opens create-expense modal.
+- Modal fields:
+  - item name (required)
+  - category (required select)
+  - amount (required)
+  - date purchased (required)
+  - receipt upload (optional)
+- Save disabled or blocked until required validation passes.
 
-- item name ()
-- category (dropdown select)
-- price
-- date purchased
-- receipt upload (optional - we need to know if we can do this on supabase. If we can we need to figure out how we will take file uploads - is there a library we can use? or is there already exsiting api signatures for next/react?)
+### 8.5 Sessions view consistency
 
-The form should take validation which ensures the form cannot be saved without all required fields.
+Add a matching floating circular plus button to sessions page for UI consistency.
 
-While we're implementing this add functionality, we may as well add the same pinned circle to the sessions page to add a session, which ensures consistency across views.
+## 9) Validation Rules
 
-We will need unit tests for any programmatic logic.
-We will need new e2e tests for this feature covering key user journeys and edge cases
+### 9.1 Required fields
+
+- `item` required and trimmed non-empty
+- `category` required and in allowed set
+- `amountMinor` required integer and `>= 0`
+- `datePurchased` required valid date
+
+### 9.2 Receipt validation
+
+- Receipt is optional.
+- If provided, enforce allowed mime types and max size limit.
+- Persist mime and size metadata for export/audit needs.
+
+## 10) Testing Requirements
+
+### 10.1 Unit tests
+
+Cover:
+
+- expense create/update payload parsing
+- required field validation and error messages
+- category filter parsing (single, multi, clear all)
+- amount conversion to minor units
+
+### 10.2 E2E tests
+
+Cover:
 
 - user can log an expense
-- user can view an expense
+- user can view expenses
 - user can modify an expense
 - user can delete an expense
-- user cannot log an invalid expense (multiple branches from this one)
-- logged out users cannot log an expense
+- user cannot log invalid expense payloads (multiple invalid branches)
+- user can filter by one category
+- user can filter by multiple categories
+- user can clear all category filters
+- logged out users cannot log expenses
 - logged out users cannot view expenses
+
+## 11) Implementation Notes
+
+- Add migration for `expenses` schema + constraints + indexes + RLS + grants.
+- Follow existing API pattern used by sessions/clients for auth guard and payload parsing.
+- Prefer deterministic error messages so UI and tests remain stable.
