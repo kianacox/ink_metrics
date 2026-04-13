@@ -67,7 +67,8 @@ describe("parseExpenseCreatePayload", () => {
   });
 
   it("rejects a missing category", () => {
-    const { category: _c, ...rest } = VALID_CREATE;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { category, ...rest } = VALID_CREATE;
     const result = parseExpenseCreatePayload(rest);
     expect(result.error).toBe("Category is invalid.");
     expect(result.data).toBeNull();

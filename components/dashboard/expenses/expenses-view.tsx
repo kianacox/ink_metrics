@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
 import {
@@ -22,6 +22,11 @@ export function ExpensesView() {
   const [deletingExpense, setDeletingExpense] = useState<ExpenseListItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const selectedCategoriesArray = useMemo(
+    () => Array.from(selectedCategories),
+    [selectedCategories],
+  );
+
   const {
     expenses,
     totalCount,
@@ -32,7 +37,7 @@ export function ExpensesView() {
     error,
     reload,
     loadMore,
-  } = useExpenses({ selectedCategories: Array.from(selectedCategories) });
+  } = useExpenses({ selectedCategories: selectedCategoriesArray });
 
   useEffect(() => {
     if (!toastMessage) {
