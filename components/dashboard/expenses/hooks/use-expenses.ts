@@ -12,6 +12,7 @@ interface UseExpensesParams {
 interface UseExpensesResult {
   expenses: ExpenseListItem[];
   totalCount: number;
+  currentMonthTotalMinor: number;
   defaultCurrency: string;
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -30,6 +31,7 @@ interface ExpensesApiResponse {
   expenses: ExpenseListItem[];
   totalCount: number;
   hasNextPage: boolean;
+  currentMonthTotalMinor: number;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -40,6 +42,7 @@ export function useExpenses({
 }: UseExpensesParams): UseExpensesResult {
   const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [currentMonthTotalMinor, setCurrentMonthTotalMinor] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -99,6 +102,10 @@ export function useExpenses({
       setTotalCount(data.totalCount);
       setHasNextPage(data.hasNextPage);
       setCurrentPageIndex(pageIndex);
+      // Always reflect the latest month total from page 0 responses
+      if (!append) {
+        setCurrentMonthTotalMinor(data.currentMonthTotalMinor ?? 0);
+      }
     },
     [pageSize, selectedCategories],
   );
@@ -113,6 +120,7 @@ export function useExpenses({
       setError("Could not load expenses. Please try again.");
       setExpenses([]);
       setTotalCount(0);
+      setCurrentMonthTotalMinor(0);
       setHasNextPage(false);
     } finally {
       setIsLoading(false);
@@ -141,6 +149,7 @@ export function useExpenses({
   return {
     expenses,
     totalCount,
+    currentMonthTotalMinor,
     defaultCurrency,
     isLoading,
     isLoadingMore,
