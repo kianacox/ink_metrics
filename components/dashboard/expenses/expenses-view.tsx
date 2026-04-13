@@ -102,8 +102,8 @@ export function ExpensesView() {
                 onClick={() => toggleCategory(category)}
                 className={
                   isActive
-                    ? "inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-700 transition-colors dark:text-emerald-300"
-                    : "inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    ? "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors bg-primary text-primary-foreground"
+                    : "inline-flex items-center rounded-full border border-emerald-600/40 bg-transparent px-3 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:border-emerald-400/40 dark:text-emerald-300"
                 }
                 aria-pressed={isActive}
               >
