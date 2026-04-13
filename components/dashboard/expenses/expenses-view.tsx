@@ -14,6 +14,7 @@ import { ExpensesTable } from "./expenses-table";
 import { ExpenseCreateModal } from "./expense-create-modal";
 import { ExpenseEditModal } from "./expense-edit-modal";
 import { ExpenseDeleteModal } from "./expense-delete-modal";
+import { formatExpenseAmount } from "./utils/expense-formatting";
 
 export function ExpensesView() {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
@@ -30,6 +31,7 @@ export function ExpensesView() {
   const {
     expenses,
     totalCount,
+    currentMonthTotalMinor,
     defaultCurrency,
     isLoading,
     isLoadingMore,
@@ -38,6 +40,11 @@ export function ExpensesView() {
     reload,
     loadMore,
   } = useExpenses({ selectedCategories: selectedCategoriesArray });
+
+  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 
   useEffect(() => {
     if (!toastMessage) {
@@ -74,31 +81,42 @@ export function ExpensesView() {
         </div>
       ) : null}
 
+      <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
+        <p className="text-sm text-muted-foreground">
+          Expenses {currentMonthLabel}:{" "}
+          <span className="font-semibold text-foreground">
+            {isLoading ? "…" : formatExpenseAmount(currentMonthTotalMinor, defaultCurrency)}
+          </span>
+        </p>
+      </div>
+
       {/* Category filter pills */}
-      <div className="flex flex-wrap items-center gap-2">
-        {EXPENSE_CATEGORIES.map((category) => {
-          const isActive = selectedCategories.has(category);
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => toggleCategory(category)}
-              className={
-                isActive
-                  ? "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors bg-primary text-primary-foreground"
-                  : "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              }
-              aria-pressed={isActive}
-            >
-              {EXPENSE_CATEGORY_LABELS[category]}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
+          {EXPENSE_CATEGORIES.map((category) => {
+            const isActive = selectedCategories.has(category);
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => toggleCategory(category)}
+                className={
+                  isActive
+                    ? "inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-700 transition-colors dark:text-emerald-300"
+                    : "inline-flex items-center rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                }
+                aria-pressed={isActive}
+              >
+                {EXPENSE_CATEGORY_LABELS[category]}
+              </button>
+            );
+          })}
+        </div>
         {selectedCategories.size > 0 ? (
           <button
             type="button"
             onClick={() => setSelectedCategories(new Set())}
-            className="text-sm text-muted-foreground underline hover:text-foreground"
+            className="self-start text-sm text-muted-foreground underline hover:text-foreground"
           >
             Clear all
           </button>
