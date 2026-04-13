@@ -51,6 +51,7 @@ export async function GET(request: Request) {
       expenses: result.rows,
       totalCount: result.totalCount,
       hasNextPage: result.hasNextPage,
+      currentMonthTotalMinor: result.currentMonthTotalMinor,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not load expenses.";

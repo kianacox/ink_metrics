@@ -73,4 +73,5 @@ export interface FetchExpensesPageResult {
   rows: ExpenseListItem[];
   hasNextPage: boolean;
   totalCount: number;
+  currentMonthTotalMinor: number;
 }
