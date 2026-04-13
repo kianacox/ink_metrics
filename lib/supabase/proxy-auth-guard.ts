@@ -13,6 +13,11 @@ function isPublicRoute(pathname: string): boolean {
     return true;
   }
 
+  // API routes handle their own auth and must return JSON, not redirects.
+  if (pathname.startsWith("/api/")) {
+    return true;
+  }
+
   return false;
 }
 
