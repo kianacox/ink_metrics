@@ -177,9 +177,10 @@ test("clears all category filters", async ({ page }) => {
 // Auth guards
 // ---------------------------------------------------------------------------
 
-test("logged-out user cannot POST to /api/expenses", async ({ page, request }) => {
+test("logged-out user cannot POST to /api/expenses", async ({ page }) => {
   await page.context().clearCookies();
-  const response = await request.post("/api/expenses", {
+  const response = await page.request.fetch("/api/expenses", {
+    method: "POST",
     data: {
       item: "Test",
       category: "ink",
