@@ -25,6 +25,23 @@ describe("resolveProxyRedirectPath", () => {
     ).toBeNull();
   });
 
+  it("does not redirect unauthenticated users for API routes", () => {
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/api/expenses",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/api/sessions",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
+  });
+
   it("redirects unauthenticated users for protected routes", () => {
     expect(
       resolveProxyRedirectPath({
