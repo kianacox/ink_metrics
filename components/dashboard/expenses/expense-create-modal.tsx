@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { Paperclip } from "lucide-react";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -38,6 +39,7 @@ export function ExpenseCreateModal({
   const [error, setError] = useState<string | null>(null);
   const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   function resetForm() {
     setItem("");
@@ -46,6 +48,7 @@ export function ExpenseCreateModal({
     setDatePurchased(today);
     setError(null);
     setReceiptWarning(null);
+    setSelectedFileName(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -210,16 +213,36 @@ export function ExpenseCreateModal({
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="expense-receipt">
+          <Label>
             Receipt{" "}
             <span className="text-xs font-normal text-muted-foreground">(optional)</span>
           </Label>
-          <Input
+          <input
             id="expense-receipt"
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
             ref={fileInputRef}
+            className="sr-only"
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name ?? null)}
           />
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="mr-1.5 size-4" aria-hidden="true" />
+              Choose file
+            </Button>
+            {selectedFileName ? (
+              <span className="truncate text-sm text-foreground">{selectedFileName}</span>
+            ) : (
+              <span className="text-sm text-muted-foreground">No file chosen</span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF. Max 5 MB.</p>
         </div>
 

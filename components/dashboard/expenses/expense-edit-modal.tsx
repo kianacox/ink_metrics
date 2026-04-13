@@ -42,6 +42,7 @@ export function ExpenseEditModal({
   const [error, setError] = useState<string | null>(null);
   const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !expense) {
@@ -51,7 +52,9 @@ export function ExpenseEditModal({
     setCategory(expense.category);
     setAmount((expense.amountMinor / 100).toFixed(2));
     setDatePurchased(expense.datePurchased);
+    setSelectedFileName(null);
     setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [open, expense]);
 
   if (!open || !expense) {
@@ -203,10 +206,9 @@ export function ExpenseEditModal({
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="edit-expense-receipt">
+          <Label>
             {expense.receiptPath ? (
-              <span className="flex items-center gap-1.5">
-                <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+              <span>
                 Replace receipt{" "}
                 <span className="text-xs font-normal text-muted-foreground">(optional)</span>
               </span>
@@ -217,12 +219,34 @@ export function ExpenseEditModal({
               </span>
             )}
           </Label>
-          <Input
+          <input
             id="edit-expense-receipt"
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
             ref={fileInputRef}
+            className="sr-only"
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name ?? null)}
           />
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="mr-1.5 size-4" aria-hidden="true" />
+              Choose file
+            </Button>
+            {selectedFileName ? (
+              <span className="truncate text-sm text-foreground">{selectedFileName}</span>
+            ) : expense.receiptPath ? (
+              <span className="text-sm text-muted-foreground">Current receipt attached</span>
+            ) : (
+              <span className="text-sm text-muted-foreground">No file chosen</span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF. Max 5 MB.</p>
         </div>
 
