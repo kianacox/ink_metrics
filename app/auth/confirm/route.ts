@@ -4,12 +4,36 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 
+export type AuthConfirmErrorCode =
+  | "missing_token_or_type"
+  | "otp_verification_failed"
+  | "verified_user_missing";
+
+const SAFE_NEXT_QUERY_KEYS = new Set<string>([]);
+
+function redirectToAuthError(code: AuthConfirmErrorCode): never {
+  redirect(`/auth/error?code=${code}`);
+}
+
 export function safeNextPath(next: string | null): string {
   if (!next) return "/dashboard";
-  const path = next.split("?")[0] ?? next;
-  if (!path.startsWith("/") || path.startsWith("//")) return "/dashboard";
-  if (path.includes("://")) return "/dashboard";
-  return next;
+
+  const [rawPath = ""] = next.split("?");
+  if (!rawPath.startsWith("/") || rawPath.startsWith("//")) return "/dashboard";
+  if (rawPath.includes("://")) return "/dashboard";
+
+  // Strip arbitrary query params by default. Only explicitly allowed keys survive.
+  const parsedUrl = new URL(next, "http://localhost");
+  const allowedSearchParams = new URLSearchParams();
+
+  for (const [key, value] of parsedUrl.searchParams.entries()) {
+    if (SAFE_NEXT_QUERY_KEYS.has(key)) {
+      allowedSearchParams.append(key, value);
+    }
+  }
+
+  const query = allowedSearchParams.toString();
+  return query.length > 0 ? `${rawPath}?${query}` : rawPath;
 }
 
 export async function GET(request: NextRequest) {
@@ -29,7 +53,7 @@ export async function GET(request: NextRequest) {
       const verifiedUserId = otpData.user?.id;
 
       if (!verifiedUserId) {
-        redirect("/auth/error?error=Could not determine verified user.");
+        redirectToAuthError("verified_user_missing");
       }
 
       await bootstrapUserProfile({
@@ -40,11 +64,9 @@ export async function GET(request: NextRequest) {
 
       redirect(next);
     } else {
-      // redirect the user to an error page with some instructions
-      redirect(`/auth/error?error=${error?.message}`);
+      redirectToAuthError("otp_verification_failed");
     }
   }
 
-  // redirect the user to an error page with some instructions
-  redirect(`/auth/error?error=No token hash or type`);
+  redirectToAuthError("missing_token_or_type");
 }
