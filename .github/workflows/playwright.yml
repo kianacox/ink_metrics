@@ -179,8 +179,13 @@ jobs:
             fi
 
             if [ "$attempts" -lt "$max_attempts" ]; then
-              echo "Supabase DB reset failed. Retrying after brief wait..."
-              sleep 15
+              # Full stack restart before retrying — ensures the storage service
+              # (and all other containers) are healthy before db reset runs again.
+              # A bare sleep is insufficient when storage times out mid-reset.
+              echo "Supabase DB reset failed. Restarting stack before retry..."
+              supabase stop --no-backup 2>/dev/null || true
+              sleep 10
+              supabase start
             fi
           done
 
