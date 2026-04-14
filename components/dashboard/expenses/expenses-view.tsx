@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, ErrorState, LoadingState } from "@/components/ui";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
 import type { ExpenseListItem } from "@/lib/expenses/models";
@@ -104,28 +104,13 @@ export function ExpensesView() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="flex min-h-48 flex-col items-center justify-center gap-3">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-foreground"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-muted-foreground">Loading expenses…</p>
-        </div>
-      ) : null}
+      {isLoading ? <LoadingState message="Loading expenses…" /> : null}
 
       {!isLoading && hasFatalError ? (
-        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-destructive">{error ?? "Could not load expenses."}</p>
-          <Button
-            type="button"
-            className="mt-3"
-            variant="outline"
-            onClick={() => void reload()}
-          >
-            Retry
-          </Button>
-        </div>
+        <ErrorState
+          message={error ?? "Could not load expenses."}
+          onRetry={() => void reload()}
+        />
       ) : null}
 
       {!isLoading && !error && !hasExpenses ? (
