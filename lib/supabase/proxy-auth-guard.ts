@@ -4,6 +4,18 @@ interface ResolveProxyRedirectPathParams {
   isProfileComplete: boolean;
 }
 
+interface MissingEnvGuardParams {
+  hasEnvVars: boolean;
+  nodeEnv: string | undefined;
+}
+
+export function shouldFailClosedForMissingSupabaseEnv({
+  hasEnvVars,
+  nodeEnv,
+}: MissingEnvGuardParams): boolean {
+  return !hasEnvVars && nodeEnv === "production";
+}
+
 function isPublicRoute(pathname: string): boolean {
   if (pathname === "/") {
     return true;

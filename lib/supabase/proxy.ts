@@ -2,16 +2,30 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
-import { resolveProxyRedirectPath } from "./proxy-auth-guard";
+import {
+  resolveProxyRedirectPath,
+  shouldFailClosedForMissingSupabaseEnv,
+} from "./proxy-auth-guard";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  // If the env vars are not set, skip proxy check. You can remove this
-  // once you setup the project.
   if (!hasEnvVars) {
+    if (
+      shouldFailClosedForMissingSupabaseEnv({
+        hasEnvVars,
+        nodeEnv: process.env.NODE_ENV,
+      })
+    ) {
+      return NextResponse.json(
+        { error: "Service temporarily unavailable." },
+        { status: 503 },
+      );
+    }
+
+    // Keep local development unblocked when env vars are intentionally absent.
     return supabaseResponse;
   }
 
