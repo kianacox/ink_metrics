@@ -15,6 +15,10 @@ interface ProfileEditRequestBody {
   commissionCapAmountMinor?: unknown;
 }
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function PUT(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to edit your profile.",
@@ -91,7 +95,7 @@ export async function PUT(request: Request) {
   });
 
   if (rolloverError) {
-    return NextResponse.json({ error: rolloverError.message }, { status: 400 });
+    return errorJson(400, "PROFILE_UPDATE_FAILED", "Could not update profile.");
   }
 
   return NextResponse.json({ success: true });
