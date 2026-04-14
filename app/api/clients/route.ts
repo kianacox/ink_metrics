@@ -60,7 +60,6 @@ export async function GET(request: Request) {
   try {
     const result = await fetchClientsPage({
       supabase,
-      userId: user.id,
       reportingTimezone,
       searchQuery,
       sortField,

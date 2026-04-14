@@ -34,7 +34,6 @@ function mapRpcRow(row: RpcRow): ClientListItem {
 
 export async function fetchClientsPage({
   supabase,
-  userId,
   reportingTimezone,
   searchQuery,
   sortField,
@@ -54,7 +53,6 @@ export async function fetchClientsPage({
   const offset = pageIndex * pageSize;
 
   const { data, error } = await supabase.rpc("fetch_clients_page", {
-    p_user_id: userId,
     p_date_range_start: dateRangeStart,
     p_search: searchQuery.trim(),
     p_sort_by: sortField,
