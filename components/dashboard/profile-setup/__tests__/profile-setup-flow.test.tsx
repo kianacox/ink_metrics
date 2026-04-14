@@ -91,5 +91,18 @@ describe("ProfileSetupFlow mobile step validation", () => {
 
       expect(getMobileNext()).toBeEnabled();
     });
+
+    it("enables Next button when payChairRent is false (no chair rent path)", () => {
+      renderFlow();
+      // Advance to chairRent step
+      clickNext();
+      // Select No — does not pay chair rent
+      clickFirstButton("No");
+      // Advance to rentType step
+      clickNext();
+
+      // rentType is null but payChairRent is false — Next should be enabled
+      expect(getMobileNext()).toBeEnabled();
+    });
   });
 });

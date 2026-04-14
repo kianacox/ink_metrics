@@ -70,7 +70,7 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
   const isNextDisabled = useMemo(() => {
     if (isSubmitting) return true;
     if (activeMobileStep === "chairRent") return payChairRent === null;
-    if (activeMobileStep === "rentType") return rentType === null;
+    if (activeMobileStep === "rentType") return payChairRent !== false && rentType === null;
     return false;
   }, [activeMobileStep, payChairRent, rentType, isSubmitting]);
 
