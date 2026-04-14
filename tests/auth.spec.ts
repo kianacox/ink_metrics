@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   DEFAULT_MAILBOX_DOMAIN,
   DEFAULT_SEEDED_SESSION_USER_EMAIL,
-  DEFAULT_SIGN_UP_PASSWORD,
+  getSignUpPassword,
 } from "./constants";
 import {
   completeProfileSetupMinimal,
@@ -11,8 +11,7 @@ import {
   signUpAndConfirmUserOnly,
 } from "./auth-helpers";
 
-const signUpPassword =
-  process.env.E2E_SIGN_UP_PASSWORD ?? DEFAULT_SIGN_UP_PASSWORD;
+const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 const seededSessionUserEmail =
   process.env.E2E_SEEDED_SESSION_USER_EMAIL ?? DEFAULT_SEEDED_SESSION_USER_EMAIL;

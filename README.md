@@ -119,14 +119,15 @@ Local DB reset also applies [`supabase/seed.sql`](./supabase/seed.sql), which cr
 
 - `seeded-session-user@example.com` (profile complete)
 - `seeded-incomplete-user@example.com` (profile incomplete)
-- Password: `Password123!`
+- Password comes from `E2E_SEEDED_USER_PASSWORD` (or falls back to `E2E_SIGN_UP_PASSWORD`).
 
 You can override these in tests with env vars:
 
 ```env
+E2E_SIGN_UP_PASSWORD=<required-for-e2e>
 E2E_SEEDED_SESSION_USER_EMAIL=seeded-session-user@example.com
 E2E_SEEDED_INCOMPLETE_USER_EMAIL=seeded-incomplete-user@example.com
-E2E_SEEDED_USER_PASSWORD=Password123!
+E2E_SEEDED_USER_PASSWORD=<optional; defaults to E2E_SIGN_UP_PASSWORD>
 ```
 
 ### Avoid duplicate DB resets in CI

@@ -10,6 +10,14 @@ interface BootstrapUserProfileParams {
   source: string;
 }
 
+function redactUserId(userId: string): string {
+  if (userId.length <= 8) {
+    return "***";
+  }
+
+  return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
+}
+
 export async function bootstrapUserProfile({
   supabase,
   userId,
@@ -25,10 +33,19 @@ export async function bootstrapUserProfile({
   });
 
   if (profileError) {
+    const errorCode =
+      typeof (profileError as { code?: unknown }).code === "string"
+        ? (profileError as { code: string }).code
+        : "UNKNOWN";
+
     console.error("profile_bootstrap_failed", {
       source,
-      userId,
-      message: profileError.message,
+      userRef: redactUserId(userId),
+      errorCode,
+      message:
+        process.env.NODE_ENV === "production"
+          ? "Profile bootstrap failed."
+          : profileError.message,
     });
   }
 }

@@ -57,7 +57,8 @@ describe("bootstrapUserProfile", () => {
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("profile_bootstrap_failed", {
       source: "unit_test",
-      userId: "user-123",
+      userRef: "***",
+      errorCode: "UNKNOWN",
       message: "boom",
     });
 
