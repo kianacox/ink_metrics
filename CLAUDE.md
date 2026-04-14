@@ -97,6 +97,7 @@ Before marking work done:
 
 - Feature behavior matches requested scope.
 - Tests added/updated and passing for touched areas.
+- Full e2e test suite passes locally.
 - Lint passes for touched files.
 - Type safety is preserved.
 - Docs/spec references are still accurate if behavior changed.

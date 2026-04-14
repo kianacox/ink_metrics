@@ -80,8 +80,6 @@ Development follows **vertical slices** so value ships as quickly as possible.
 3. **Slice 3** — Tracking Clients
 4. **Slice 4** — Tracking Expenses
 5. **Slice 5** — Analytics dashboard
-6. **Slice 6** — Monthly reports (exportable summaries)
-   need to add feature to allow imports of data.
+6. **Slice 6** — Monthly reports (exportable summaries) and ability to export data as csv files
 7. **Slice 7** — Plan limits
-
-test
+8. **Slice 8** - Landing page and marketing

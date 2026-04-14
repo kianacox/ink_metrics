@@ -1,209 +1,167 @@
-# Security Hardening Spec
+# Security Re-Audit Spec (2026-04-14)
 
-## 1) Purpose
+## Purpose
 
-Define and implement security hardening work identified during a security assessment of `ink_metrics`, with clear, agent-executable tasks and measurable acceptance criteria.
+Re-audit `ink_metrics` against current repository state and define prioritized remediation work with clear acceptance criteria.
 
-## 2) Goals
+## Audit Method
 
-- Remove known vulnerable dependencies from production runtime.
-- Ensure auth/session protection fails closed in production.
-- Harden auth redirect and error handling flows.
-- Reduce sensitive data exposure in logs and test defaults.
-- Improve supply-chain and repository hygiene.
+- Reviewed auth/session handling, API routes, Supabase clients, and middleware/proxy guards.
+- Reviewed latest Supabase migrations and storage policies for RLS/data-isolation issues.
+- Reviewed CI workflows and repository hygiene controls.
+- Ran `npm audit --omit=dev` against current dependency graph.
 
-## 3) Scope
+## Re-Audit Result Summary
 
-### 3.1 In Scope
+- **Status:** Multiple prior findings remain open.
+- **New high-risk finding:** `fetch_clients_page` can be abused for cross-tenant reads due to `SECURITY DEFINER` + caller-provided `p_user_id`.
+- **Dependency status:** `next` remains vulnerable to advisory `GHSA-q4gf-8mx6-v5v3` (`npm audit --omit=dev` reports 1 high).
+- **CI posture:** No dependency-audit or secret-scanning gate is enforced in current workflows.
 
-- Dependency risk remediation for runtime packages.
-- Supabase env guard behavior in proxy/session middleware.
-- Auth confirm route query handling and error redirection hardening.
-- Redirect target safety constraints for reusable auth helpers.
-- Production logging hygiene for profile bootstrap errors.
-- E2E credential default hardening in tests and CI.
-- Ignore local tool metadata folders likely to contain secrets.
-- CI security checks for dependency vulnerabilities and secret scanning.
+## Findings and Recommendations
 
-### 3.2 Out of Scope
+### High
 
-- Full SOC2/ISO control implementation.
-- Third-party infrastructure hardening outside repository code.
-- Re-architecture of authentication provider.
+#### H-1: Cross-tenant data exposure via `fetch_clients_page` RPC
 
-## 4) Findings to Remediate
+- **Risk:** The RPC is `SECURITY DEFINER` and accepts `p_user_id` from the caller, enabling authenticated clients to request another user's data by calling RPC directly.
+- **Evidence:** `supabase/migrations/20260411100000_slice3_clients_page_rpc.sql`, `supabase/migrations/20260412100000_slice3_client_last_session_at.sql`, `lib/clients/fetch-clients-page.ts`.
+- **Recommendation:**
+  - Replace caller-supplied ownership with server-side identity (`auth.uid()`) inside SQL.
+  - Remove `p_user_id` parameter from `fetch_clients_page`.
+  - Prefer `SECURITY INVOKER` when possible; if `SECURITY DEFINER` is required, enforce explicit `auth.uid()` checks and no user-id inputs.
+  - Revoke/replace old function signatures and grants to prevent legacy abuse.
+- **Acceptance criteria:**
+  - RPC cannot read data for any user except caller identity.
+  - Direct RPC invocation with arbitrary user UUID does not return other users' rows.
 
-### 4.1 High
+#### H-2: Vulnerable runtime dependency (`next`)
 
-- Upgrade vulnerable `next` version due to DoS advisory:
-  - Advisory: `GHSA-q4gf-8mx6-v5v3`
-  - Required state: fixed version in use (`16.2.3` or newer).
+- **Risk:** DoS vulnerability in current allowed `next` range.
+- **Evidence:** `npm audit --omit=dev` reports `GHSA-q4gf-8mx6-v5v3` for `next 16.0.0-beta.0 - 16.2.2`.
+- **Recommendation:**
+  - Pin `next` to `16.2.3` or newer.
+  - Regenerate lockfile and rerun runtime audit.
+- **Acceptance criteria:**
+  - `npm audit --omit=dev` returns no high/critical runtime vulnerabilities.
 
-### 4.2 Medium
+### Medium
 
-- Proxy auth/session guard currently allows bypass behavior when required Supabase public env vars are missing.
-- Auth confirm route includes unencoded backend error text directly in redirect query params.
-- Auth confirm route accepts and forwards full query strings for safe paths without key-level allowlisting.
-- Generic auth helper accepts unrestricted `redirectTo` value, which is a future open-redirect footgun.
+#### M-1: Fail-open proxy behavior when Supabase env vars are missing
 
-### 4.3 Low
+- **Risk:** `updateSession` bypasses auth/session checks when required env vars are absent.
+- **Evidence:** `lib/supabase/proxy.ts`, `lib/utils.ts`.
+- **Recommendation:**
+  - Fail closed in production (startup failure or `503`), with explicit non-production bypass only.
+- **Acceptance criteria:**
+  - Production mode cannot continue normal routing with missing Supabase env vars.
 
-- Profile bootstrap failure logging includes raw `userId` and raw backend message.
-- Repository and CI define static test password defaults.
-- Several dependencies are pinned to `latest`, reducing reproducibility and supply-chain control.
-- `.claude/` directory is not ignored and can be accidentally committed.
+#### M-2: Auth error details are reflected in URL and UI
 
-## 5) Implementation Requirements
+- **Risk:** Backend error text is propagated into query params and rendered to users.
+- **Evidence:** `app/auth/confirm/route.ts`, `app/auth/error/page.tsx`.
+- **Recommendation:**
+  - Replace raw messages with stable error codes.
+  - Render user-safe copy from code mappings; do not render backend text.
+- **Acceptance criteria:**
+  - Auth error URLs and pages do not contain raw backend/internal exception text.
 
-### 5.1 Dependency Security
+#### M-3: `safeNextPath` preserves untrusted query parameters
 
-- Update `package.json`:
-  - Replace `next: "latest"` with a fixed safe version (`^16.2.3` or stricter, based on team policy).
-  - Replace `@supabase/ssr`, `@supabase/supabase-js`, and `tsx` `"latest"` entries with explicit semver ranges.
-- Regenerate lockfile via package manager.
-- Run audit and confirm no high/critical runtime vulnerabilities remain:
-  - `npm audit --omit=dev`
+- **Risk:** Redirect target validation only checks path prefix, then returns full original string including query params.
+- **Evidence:** `app/auth/confirm/route.ts`.
+- **Recommendation:**
+  - Normalize to internal path and allowlist query keys (or strip all by default).
+- **Acceptance criteria:**
+  - Untrusted query params are dropped unless explicitly allowlisted.
 
-Acceptance criteria:
+#### M-4: Unrestricted `redirectTo` in auth helper
 
-- `npm audit --omit=dev` reports `0` high/critical issues, or any exceptions are documented with justification and follow-up issue.
+- **Risk:** Helper accepts arbitrary `redirectTo`; future callsites may accidentally introduce open redirects.
+- **Evidence:** `lib/supabase/require-authenticated-user.ts`.
+- **Recommendation:**
+  - Enforce internal-path-only redirect targets and fallback to `/auth/login`.
+- **Acceptance criteria:**
+  - Helper never redirects to protocol/absolute/off-site destinations.
 
-### 5.2 Fail-Closed Proxy Behavior in Production
+#### M-5: API routes return raw RPC/database error messages
 
-- Update `lib/supabase/proxy.ts` and/or `lib/utils.ts` behavior:
-  - In production, missing required Supabase env vars must not silently continue request flow.
-  - Return explicit failure response (e.g., `503 Service Unavailable`) or throw startup-visible failure.
-  - Keep a safe local-development path if needed (explicitly gated to non-production).
+- **Risk:** Internal error text is returned to clients, increasing information disclosure.
+- **Evidence:** `app/api/sessions/route.ts`, `app/api/clients/route.ts`, `app/api/clients/[clientId]/route.ts`, `app/api/profile/route.ts`, `app/api/profile-setup/route.ts`, `app/api/expenses/route.ts`.
+- **Recommendation:**
+  - Replace raw backend messages with stable API error codes and sanitized user messages.
+  - Log detailed causes server-side only.
+- **Acceptance criteria:**
+  - Client responses never include raw DB/RPC exception text.
 
-Acceptance criteria:
+### Low
 
-- Production mode with missing env vars does not permit normal app routing.
-- Development mode behavior is explicit and documented.
+#### L-1: Logging includes raw `userId` and backend error message
 
-### 5.3 Auth Confirm Redirect and Error Hardening
+- **Evidence:** `lib/profiles/bootstrap-user-profile.ts`.
+- **Recommendation:** Redact/hash identifiers and avoid logging raw backend messages in production.
 
-- Update `app/auth/confirm/route.ts`:
-  - Never place raw backend error message directly into URL query string.
-  - Use stable error codes (preferred), or encoded safe text as fallback.
-  - If using query params, ensure values are encoded.
-- Update `app/auth/error/page.tsx` if needed:
-  - Render user-safe, generic copy mapped from known error codes.
-  - Do not leak internal backend details.
+#### L-2: Static E2E passwords committed in defaults and CI env
 
-Acceptance criteria:
+- **Evidence:** `tests/constants.ts`, `.github/workflows/playwright.yml`.
+- **Recommendation:** Require CI secrets for shared environments; keep local-only documented fallback.
 
-- Auth error URLs do not expose raw backend exception text.
-- Error page still gives actionable but non-sensitive guidance.
+#### L-3: Dependency supply-chain hygiene is weak (`latest` tags)
 
-### 5.4 Restrict Post-Login `next` Behavior
+- **Evidence:** `package.json` (`next`, `@supabase/ssr`, `@supabase/supabase-js`, `tsx`).
+- **Recommendation:** Replace `latest` with explicit semver ranges and automate update cadence (Renovate/Dependabot).
 
-- Update `safeNextPath()` in `app/auth/confirm/route.ts`:
-  - Validate path as internal relative path.
-  - Strip arbitrary query params by default, or allow only an explicit allowlist.
-  - Preserve current default fallback behavior to `/dashboard`.
+#### L-4: Local agent workspace metadata not ignored
 
-Acceptance criteria:
+- **Evidence:** `.claude/` present in repository but absent from `.gitignore`.
+- **Recommendation:** Add `.claude/` (and team-approved local tool state paths) to `.gitignore`.
 
-- Inputs like `/dashboard?next=https://evil.com` do not preserve untrusted query parameters unless explicitly allowlisted.
+#### L-5: Missing CI security guardrails
 
-### 5.5 Constrain `redirectTo` in Auth Helper
+- **Evidence:** `.github/workflows/playwright.yml`, `.github/workflows/unit-tests.yml`.
+- **Recommendation:** Add merge-blocking dependency audit and secret scanning workflow checks.
 
-- Update `lib/supabase/require-authenticated-user.ts`:
-  - Enforce that `redirectTo` must be a safe internal path.
-  - Reject/normalize absolute URLs and protocol-like values.
-  - Fallback to `/auth/login` for invalid values.
+## Prior Audit Delta (What Changed Since Last Spec)
 
-Acceptance criteria:
+- **Still open:** Dependency vulnerability, fail-open env guard, auth error leakage, redirect hardening gaps, logging/test-secret/repo-hygiene issues, and missing CI security checks.
+- **Newly identified:** Cross-tenant RPC exposure in `fetch_clients_page` (`H-1`) introduced/retained in slice 3 SQL.
+- **Scope expansion:** Added API error-sanitization requirement across sessions/clients/profile/expenses routes (`M-5`).
 
-- Helper cannot redirect to off-site destinations, even if future callers pass unsafe values.
+## Implementation Plan
 
-### 5.6 Logging Hygiene
+### Phase 1 (Immediate: Blocker)
 
-- Update `lib/profiles/bootstrap-user-profile.ts`:
-  - Remove raw `userId` from logs, or hash/redact it.
-  - Avoid logging raw backend error messages in production.
-  - Include non-sensitive correlation context instead (e.g., source + error code).
+- Fix `H-1` `fetch_clients_page` SQL ownership model and function signature/grants.
+- Upgrade `next` and clear runtime audit finding (`H-2`).
 
-Acceptance criteria:
+### Phase 2 (Short-term)
 
-- Production logs avoid direct PII identifiers and avoid sensitive backend detail leakage.
+- Implement production fail-closed env handling (`M-1`).
+- Harden auth confirm/error and `next` redirect behavior (`M-2`, `M-3`).
+- Constrain generic `redirectTo` helper (`M-4`).
+- Sanitize API error responses (`M-5`).
 
-### 5.7 Test Credential Hardening
+### Phase 3 (Hardening)
 
-- Update `tests/constants.ts` and `.github/workflows/playwright.yml`:
-  - Remove static default test passwords from committed defaults where practical.
-  - Read secrets from environment/CI secret store for shared CI.
-  - Keep local developer experience by documenting a local-only fallback approach if required.
+- Logging redaction (`L-1`), credential defaults (`L-2`), and `latest` pinning (`L-3`).
+- `.gitignore` hygiene (`L-4`).
+- CI dependency + secret scanning checks (`L-5`).
 
-Acceptance criteria:
-
-- CI no longer relies on hard-coded common password values.
-- E2E remains runnable with documented setup.
-
-### 5.8 Repository Hygiene
-
-- Update `.gitignore`:
-  - Add `.claude/` (and other local agent/tool state paths if used by team and not intended for version control).
-
-Acceptance criteria:
-
-- Local agent/tool files are not accidentally staged.
-
-### 5.9 CI Security Guardrails
-
-- Add or update GitHub workflow(s) to include:
-  - Runtime dependency audit step (`npm audit --omit=dev`).
-  - Secret scanning step (e.g., gitleaks, trufflehog, or org-standard scanner).
-- Ensure failures block merge (or use required checks policy).
-
-Acceptance criteria:
-
-- PR checks fail on newly introduced high-risk dependency vulnerabilities or detected secrets.
-
-## 6) Required File Targets
-
-- `package.json`
-- `package-lock.json`
-- `lib/supabase/proxy.ts`
-- `lib/utils.ts` (if env guard logic remains centralized)
-- `app/auth/confirm/route.ts`
-- `app/auth/error/page.tsx` (if error-code mapping UI is introduced)
-- `lib/supabase/require-authenticated-user.ts`
-- `lib/profiles/bootstrap-user-profile.ts`
-- `tests/constants.ts`
-- `.github/workflows/playwright.yml`
-- `.gitignore`
-- `.github/workflows/*` (security workflow updates if separate file is used)
-
-## 7) Testing and Verification Plan
-
-### 7.1 Automated
+## Verification Plan
 
 - `npm run lint`
 - `npm run test`
-- `npm run test:e2e` (or targeted auth/profile suites if full suite is too slow)
 - `npm audit --omit=dev`
+- Security regression tests:
+  - Direct RPC calls cannot read other users' client data.
+  - Missing env vars in production mode fail closed.
+  - Auth error flows do not expose internal messages in URL/UI.
+  - Unsafe redirect values are normalized.
+  - API responses use sanitized error payloads.
 
-### 7.2 Scenario Validation
+## Definition of Done
 
-- Missing Supabase env vars in production mode yields fail-closed behavior.
-- Auth confirm with backend failure does not leak raw error internals in URL or UI.
-- Auth confirm ignores or strips untrusted query params unless allowlisted.
-- Unsafe `redirectTo` values are normalized/fallback to safe internal route.
-- Logs from profile bootstrap failures exclude raw user identifiers.
-
-## 8) Delivery Checklist
-
-- [ ] All in-scope code changes implemented.
-- [ ] Existing tests updated for new redirect/error behavior.
-- [ ] New tests added for fail-closed and redirect safety behavior.
-- [ ] CI security checks added and passing.
-- [ ] Documentation updated for local E2E secret setup.
-- [ ] No secrets or local agent metadata staged for commit.
-
-## 9) Definition of Done
-
-- All acceptance criteria in sections `5.1` through `5.9` are met.
-- Security-focused test coverage exists for changed auth and redirect logic.
-- Runtime dependency audit is clean or documented with approved exceptions.
-- CI enforces dependency and secret scanning checks.
+- All High findings are remediated and verified.
+- Medium findings are remediated or tracked with explicit risk acceptance.
+- CI contains merge-blocking dependency and secret scanning checks.
+- Security tests exist for RPC tenant isolation and auth/redirect hardening paths.
