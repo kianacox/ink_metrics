@@ -7,7 +7,7 @@ import { ThemeSwitcher } from "./theme-switcher";
 export function SiteHeader() {
   return (
     <header className="flex w-full justify-center border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-      <div className="flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4 py-2 text-sm sm:h-16 sm:px-6">
+      <div className="flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 py-2 text-sm sm:h-16 sm:px-6">
         <div className="flex min-w-0 shrink-0 items-center gap-2 font-semibold sm:gap-3">
           <Link
             href="/"
