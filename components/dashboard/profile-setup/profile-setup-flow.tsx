@@ -67,6 +67,13 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
   const activeMobileStep = mobileSteps[mobileStepIndex] ?? "identity";
   const isFinalMobileStep = mobileStepIndex === mobileSteps.length - 1;
 
+  const isNextDisabled = useMemo(() => {
+    if (isSubmitting) return true;
+    if (activeMobileStep === "chairRent") return payChairRent === null;
+    if (activeMobileStep === "rentType") return rentType === null;
+    return false;
+  }, [activeMobileStep, payChairRent, rentType, isSubmitting]);
+
   function resetRentDetails(nextPayChairRent: ChairRentChoice) {
     if (nextPayChairRent === false) {
       setRentType(null);
@@ -400,6 +407,7 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
             <Button
               type="button"
               variant="outline"
+              data-testid="mobile-back"
               disabled={mobileStepIndex === 0 || isSubmitting}
               onClick={handleMobileBack}
             >
@@ -407,7 +415,8 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
             </Button>
             <Button
               type="button"
-              disabled={isSubmitting}
+              data-testid="mobile-next"
+              disabled={isNextDisabled}
               onClick={() => void handleMobileNext()}
             >
               {isSubmitting ? "Saving…" : isFinalMobileStep ? "Finish setup" : "Next"}
