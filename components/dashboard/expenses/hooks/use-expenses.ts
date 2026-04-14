@@ -1,37 +1,17 @@
 "use client";
 
+import type {
+  ExpensesApiResponse,
+  UseExpensesParams,
+  UseExpensesResult,
+} from "@/lib/expenses/models";
 import type { ExpenseListItem } from "@/lib/expenses/models";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-interface UseExpensesParams {
-  selectedCategories: string[];
-  pageSize?: number;
-}
-
-interface UseExpensesResult {
-  expenses: ExpenseListItem[];
-  totalCount: number;
-  currentMonthTotalMinor: number;
-  defaultCurrency: string;
-  isLoading: boolean;
-  isLoadingMore: boolean;
-  hasNextPage: boolean;
-  error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
-}
-
 interface PreferencesApiResponse {
   defaultCurrency: string;
   reportingTimezone: string;
-}
-
-interface ExpensesApiResponse {
-  expenses: ExpenseListItem[];
-  totalCount: number;
-  hasNextPage: boolean;
-  currentMonthTotalMinor: number;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
