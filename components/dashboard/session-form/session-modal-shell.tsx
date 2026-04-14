@@ -56,7 +56,7 @@ export function SessionModalShell({
           </CardTitle>
           <CardDescription className="text-pretty">{description}</CardDescription>
         </CardHeader>
-        <CardContent className={cn("p-4 pt-1 sm:p-6 sm:pt-1", contentClassName)}>
+        <CardContent className={cn("overflow-hidden p-4 pt-1 sm:p-6 sm:pt-1", contentClassName)}>
           {children}
         </CardContent>
       </Card>

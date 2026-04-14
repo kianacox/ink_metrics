@@ -86,7 +86,7 @@ export function SessionEditableFields({
       </div>
       <div className="grid min-w-0 gap-2">
         <Label htmlFor={dateTimeId}>Session date and time</Label>
-        <div className="relative">
+        <div className="relative overflow-hidden">
           <Clock3
             aria-hidden="true"
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -96,7 +96,7 @@ export function SessionEditableFields({
             type="datetime-local"
             value={sessionDateTime}
             onChange={(event) => onSessionDateTimeChange(event.target.value)}
-            className="min-w-0 max-w-full pl-8"
+            className="w-full min-w-0 max-w-full pl-8"
             required
           />
         </div>
