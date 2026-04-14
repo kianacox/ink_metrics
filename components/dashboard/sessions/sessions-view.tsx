@@ -7,7 +7,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  ErrorState,
   Input,
+  LoadingState,
 } from "@/components/ui";
 import { useSessions } from "@/components/dashboard/sessions/hooks/use-sessions";
 import type {
@@ -174,23 +176,13 @@ export function SessionsView() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex min-h-48 flex-col items-center justify-center gap-3">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-foreground"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-muted-foreground">Loading sessions…</p>
-        </div>
-      ) : null}
+      {isLoading ? <LoadingState message="Loading sessions…" /> : null}
 
       {!isLoading && hasFatalError ? (
-        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-destructive">{error ?? "Could not load sessions."}</p>
-          <Button type="button" className="mt-3" variant="outline" onClick={() => void reload()}>
-            Retry
-          </Button>
-        </div>
+        <ErrorState
+          message={error ?? "Could not load sessions."}
+          onRetry={() => void reload()}
+        />
       ) : null}
 
       {!isLoading && !error && !hasSessions ? (
