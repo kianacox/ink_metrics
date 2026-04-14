@@ -33,6 +33,9 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
   await page.getByRole("button", { name: /^next$/i }).click();
 
   await expect(page.getByText(/step 4 of 4/i)).toBeVisible();
+  await expect(
+    page.getByRole("checkbox", { name: /keep me updated about new features/i }),
+  ).toBeVisible();
   await page.getByRole("button", { name: /^finish setup$/i }).click();
 
   await expect(
@@ -42,6 +45,17 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
   await continueButton.click();
 
   await expect(page).toHaveURL(/\/dashboard/);
+});
+
+test("desktop profile setup shows marketing consent checkbox", async ({ page }) => {
+  const email = `profile-consent-${Date.now()}@${mailboxDomain}`;
+
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+
+  const checkbox = page.locator("#marketing-consent");
+  await expect(checkbox).toBeVisible();
+  await expect(checkbox).not.toBeChecked();
 });
 
 test("profile setup blocks partial submission", async ({ page }) => {

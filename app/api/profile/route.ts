@@ -100,3 +100,42 @@ export async function PUT(request: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+export async function PATCH(request: Request) {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to update your profile.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to update your profile." },
+      { status: 401 },
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+
+  if (typeof body.marketingConsent !== "boolean") {
+    return NextResponse.json(
+      { error: "Marketing consent must be a boolean." },
+      { status: 400 },
+    );
+  }
+
+  const { error: updateError } = await supabase.rpc("update_profile_marketing_consent", {
+    p_marketing_consent: body.marketingConsent,
+  });
+
+  if (updateError) {
+    return errorJson(400, "MARKETING_CONSENT_UPDATE_FAILED", "Could not update marketing preferences.");
+  }
+
+  return NextResponse.json({ success: true });
+}

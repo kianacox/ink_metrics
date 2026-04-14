@@ -25,6 +25,7 @@ export interface ProfileSetupCandidate {
   commissionCapped: boolean | null;
   commissionCapFrequency: RentFrequency | null;
   commissionCapAmountMinor: number | null;
+  marketingConsent: boolean;
 }
 
 export const MOBILE_STEPS: MobileStepKey[] = [

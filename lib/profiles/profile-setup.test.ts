@@ -43,6 +43,7 @@ describe("profile setup helpers", () => {
         commissionCapped: null,
         commissionCapFrequency: null,
         commissionCapAmountMinor: null,
+        marketingConsent: false,
       });
 
       expect(result.error).toBeNull();
@@ -62,6 +63,7 @@ describe("profile setup helpers", () => {
         commissionCapped: true,
         commissionCapFrequency: "monthly",
         commissionCapAmountMinor: 400000,
+        marketingConsent: false,
       });
 
       expect(result.error).toBeNull();
@@ -81,6 +83,7 @@ describe("profile setup helpers", () => {
         commissionCapped: false,
         commissionCapFrequency: null,
         commissionCapAmountMinor: null,
+        marketingConsent: false,
       });
 
       expect(result.error).toMatch(/Commission fields must be empty/);
@@ -100,6 +103,7 @@ describe("profile setup helpers", () => {
         commissionCapped: null,
         commissionCapFrequency: null,
         commissionCapAmountMinor: null,
+        marketingConsent: false,
       });
 
       expect(result.error).toBe("Fixed rent frequency and amount are required.");
@@ -119,6 +123,7 @@ describe("profile setup helpers", () => {
         commissionCapped: null,
         commissionCapFrequency: null,
         commissionCapAmountMinor: null,
+        marketingConsent: false,
       });
 
       expect(result.error).toBe("Commission cap selection is required.");
@@ -138,10 +143,51 @@ describe("profile setup helpers", () => {
         commissionCapped: null,
         commissionCapFrequency: null,
         commissionCapAmountMinor: null,
+        marketingConsent: false,
       });
 
       expect(result.error).toBe("Rent details must be empty when rent is not paid.");
       expect(result.data).toBeNull();
+    });
+
+    it("rejects payload with non-boolean marketingConsent", () => {
+      const result = parseProfileSetupPayload({
+        displayName: "Jane",
+        defaultCurrency: "GBP",
+        reportingTimezone: "Europe/London",
+        payChairRent: false,
+        rentType: null,
+        fixedFrequency: null,
+        fixedAmountMinor: null,
+        commissionRateBps: null,
+        commissionCapped: null,
+        commissionCapFrequency: null,
+        commissionCapAmountMinor: null,
+        marketingConsent: "yes",
+      });
+
+      expect(result.error).toBe("Marketing consent must be a boolean.");
+      expect(result.data).toBeNull();
+    });
+
+    it("accepts marketingConsent: true and returns it in data", () => {
+      const result = parseProfileSetupPayload({
+        displayName: "Jane",
+        defaultCurrency: "GBP",
+        reportingTimezone: "Europe/London",
+        payChairRent: false,
+        rentType: null,
+        fixedFrequency: null,
+        fixedAmountMinor: null,
+        commissionRateBps: null,
+        commissionCapped: null,
+        commissionCapFrequency: null,
+        commissionCapAmountMinor: null,
+        marketingConsent: true,
+      });
+
+      expect(result.error).toBeNull();
+      expect(result.data?.marketingConsent).toBe(true);
     });
   });
 
@@ -158,6 +204,7 @@ describe("profile setup helpers", () => {
       commissionCapped: null,
       commissionCapFrequency: null,
       commissionCapAmountMinor: null,
+      marketingConsent: false,
     });
 
     expect(result.error).toBe("Reporting timezone is invalid.");

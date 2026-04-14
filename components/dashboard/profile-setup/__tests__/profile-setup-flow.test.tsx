@@ -105,4 +105,36 @@ describe("ProfileSetupFlow mobile step validation", () => {
       expect(getMobileNext()).toBeEnabled();
     });
   });
+
+  describe("marketing consent checkbox", () => {
+    it("renders unchecked marketing consent checkbox on mobile rentDetails step", () => {
+      renderFlow();
+      // Advance through all steps to rentDetails (step 4)
+      clickNext(); // identity → chairRent
+      clickFirstButton("No");
+      clickNext(); // chairRent → rentType
+      clickNext(); // rentType → rentDetails
+
+      const checkbox = screen.getByRole("checkbox", {
+        name: /keep me updated about new features/i,
+      });
+      expect(checkbox).toBeInTheDocument();
+      expect(checkbox).not.toBeChecked();
+    });
+
+    it("toggles marketing consent checkbox on mobile rentDetails step", () => {
+      renderFlow();
+      // Advance to rentDetails (step 4) via no-chair-rent path
+      clickNext();
+      clickFirstButton("No");
+      clickNext();
+      clickNext();
+
+      const checkbox = screen.getByRole("checkbox", {
+        name: /keep me updated about new features/i,
+      });
+      fireEvent.click(checkbox);
+      expect(checkbox).toBeChecked();
+    });
+  });
 });
