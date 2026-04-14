@@ -203,13 +203,16 @@ export function ExpenseCreateModal({
 
         <div className="grid gap-2">
           <Label htmlFor="expense-date">Date purchased</Label>
-          <Input
-            id="expense-date"
-            type="date"
-            value={datePurchased}
-            onChange={(e) => setDatePurchased(e.target.value)}
-            aria-required="true"
-          />
+          <div className="overflow-hidden">
+            <Input
+              id="expense-date"
+              type="date"
+              value={datePurchased}
+              onChange={(e) => setDatePurchased(e.target.value)}
+              className="w-full min-w-0"
+              aria-required="true"
+            />
+          </div>
         </div>
 
         <div className="grid gap-2">
