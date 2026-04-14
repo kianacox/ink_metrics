@@ -14,6 +14,10 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
 ]);
 const DEFAULT_PAGE_SIZE = 25;
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to view sessions.",
@@ -68,8 +72,10 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not load sessions.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (err instanceof Error && err.message === "Could not compute date range boundaries.") {
+      return errorJson(400, "SESSIONS_DATE_RANGE_INVALID", err.message);
+    }
+    return errorJson(500, "SESSIONS_FETCH_FAILED", "Could not load sessions.");
   }
 }
 
@@ -134,9 +140,21 @@ export async function POST(request: Request) {
   );
 
   if (rpcError) {
+    const status = getRpcErrorStatus(rpcError.message);
+    const knownUserSafeMessage =
+      rpcError.message === "A client with this name already exists. Choose it from Existing client." ||
+      rpcError.message === "No compensation settings are active for this session date/time." ||
+      rpcError.message === "You must be signed in to log a session." ||
+      rpcError.message === "Select an existing client before saving." ||
+      rpcError.message === "Selected client was not found." ||
+      rpcError.message === "Client name is required for a new client.";
+
     return NextResponse.json(
-      { error: rpcError.message },
-      { status: getRpcErrorStatus(rpcError.message) },
+      {
+        error: knownUserSafeMessage ? rpcError.message : "Could not create session.",
+        code: knownUserSafeMessage ? "SESSION_CREATE_VALIDATION_FAILED" : "SESSION_CREATE_FAILED",
+      },
+      { status },
     );
   }
 

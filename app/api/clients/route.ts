@@ -15,6 +15,10 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
 ]);
 const DEFAULT_PAGE_SIZE = 25;
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to list clients.",
@@ -74,8 +78,10 @@ export async function GET(request: Request) {
       hasNextPage: result.hasNextPage,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not load clients.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (err instanceof Error && err.message === "Could not compute date range boundaries.") {
+      return errorJson(400, "CLIENTS_DATE_RANGE_INVALID", err.message);
+    }
+    return errorJson(500, "CLIENTS_FETCH_FAILED", "Could not load clients.");
   }
 }
 
@@ -116,7 +122,15 @@ export async function POST(request: Request) {
   if (rpcError) {
     const status =
       rpcError.message === "A client with this name already exists." ? 409 : 400;
-    return NextResponse.json({ error: rpcError.message }, { status });
+    const message =
+      rpcError.message === "A client with this name already exists."
+        ? rpcError.message
+        : "Could not create client.";
+    const code =
+      rpcError.message === "A client with this name already exists."
+        ? "CLIENT_ALREADY_EXISTS"
+        : "CLIENT_CREATE_FAILED";
+    return errorJson(status, code, message);
   }
 
   return NextResponse.json({ success: true, clientId });

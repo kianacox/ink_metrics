@@ -7,6 +7,10 @@ import { NextResponse } from "next/server";
 
 const DEFAULT_PAGE_SIZE = 25;
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to list expenses.",
@@ -54,9 +58,8 @@ export async function GET(request: Request) {
       hasNextPage: result.hasNextPage,
       currentMonthTotalMinor: result.currentMonthTotalMinor,
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not load expenses.";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return errorJson(500, "EXPENSES_FETCH_FAILED", "Could not load expenses.");
   }
 }
 
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
   const result = await createExpense(supabase, user.id, payload);
 
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    return errorJson(500, "EXPENSE_CREATE_FAILED", "Could not create expense.");
   }
 
   return NextResponse.json({ success: true, expenseId: result.expenseId });

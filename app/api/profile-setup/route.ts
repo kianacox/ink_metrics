@@ -2,6 +2,10 @@ import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticate
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
 import { NextResponse } from "next/server";
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function POST(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
     "You must be signed in to set up your profile.",
@@ -68,7 +72,10 @@ export async function POST(request: Request) {
 
   if (setupError) {
     const status = setupError.message.includes("already been completed") ? 409 : 400;
-    return NextResponse.json({ error: setupError.message }, { status });
+    if (setupError.message.includes("already been completed")) {
+      return errorJson(409, "PROFILE_ALREADY_COMPLETE", "Profile setup has already been completed.");
+    }
+    return errorJson(status, "PROFILE_SETUP_FAILED", "Could not complete profile setup.");
   }
 
   return NextResponse.json({ success: true });

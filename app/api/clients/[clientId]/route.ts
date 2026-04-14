@@ -9,6 +9,10 @@ function isValidClientId(value: string): boolean {
   return UUID_REGEX.test(value);
 }
 
+function errorJson(status: number, code: string, error: string) {
+  return NextResponse.json({ error, code }, { status });
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ clientId: string }> },
@@ -54,12 +58,12 @@ export async function PATCH(
 
   if (rpcError) {
     if (rpcError.message === "Client was not found.") {
-      return NextResponse.json({ error: rpcError.message }, { status: 404 });
+      return errorJson(404, "CLIENT_NOT_FOUND", rpcError.message);
     }
     if (rpcError.message === "A client with this name already exists.") {
-      return NextResponse.json({ error: rpcError.message }, { status: 409 });
+      return errorJson(409, "CLIENT_ALREADY_EXISTS", rpcError.message);
     }
-    return NextResponse.json({ error: rpcError.message }, { status: 400 });
+    return errorJson(400, "CLIENT_UPDATE_FAILED", "Could not update client.");
   }
 
   return NextResponse.json({ success: true });
