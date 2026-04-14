@@ -1,4 +1,5 @@
 import { resolveProxyRedirectPath } from "./proxy-auth-guard";
+import { shouldFailClosedForMissingSupabaseEnv } from "./proxy-auth-guard";
 
 describe("resolveProxyRedirectPath", () => {
   it("does not redirect unauthenticated users for public routes", () => {
@@ -111,5 +112,40 @@ describe("resolveProxyRedirectPath", () => {
         isProfileComplete: true,
       }),
     ).toBeNull();
+  });
+});
+
+describe("shouldFailClosedForMissingSupabaseEnv", () => {
+  it("fails closed in production when env vars are missing", () => {
+    expect(
+      shouldFailClosedForMissingSupabaseEnv({
+        hasEnvVars: false,
+        nodeEnv: "production",
+      }),
+    ).toBe(true);
+  });
+
+  it("allows bypass outside production when env vars are missing", () => {
+    expect(
+      shouldFailClosedForMissingSupabaseEnv({
+        hasEnvVars: false,
+        nodeEnv: "development",
+      }),
+    ).toBe(false);
+    expect(
+      shouldFailClosedForMissingSupabaseEnv({
+        hasEnvVars: false,
+        nodeEnv: "test",
+      }),
+    ).toBe(false);
+  });
+
+  it("never blocks when env vars are configured", () => {
+    expect(
+      shouldFailClosedForMissingSupabaseEnv({
+        hasEnvVars: true,
+        nodeEnv: "production",
+      }),
+    ).toBe(false);
   });
 });
