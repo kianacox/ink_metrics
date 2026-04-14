@@ -19,7 +19,6 @@ export interface ClientListItem {
 
 export interface FetchClientsPageParams {
   supabase: SupabaseClient;
-  userId: string;
   reportingTimezone: string;
   searchQuery: string;
   sortField: ClientSortField;

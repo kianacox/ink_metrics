@@ -4,9 +4,9 @@
 -- PostgreSQL does not allow CREATE OR REPLACE to change a function's return
 -- type, so we drop the existing function first.
 DROP FUNCTION IF EXISTS fetch_clients_page(uuid, timestamptz, text, text, integer, integer);
+DROP FUNCTION IF EXISTS fetch_clients_page(timestamptz, text, text, integer, integer);
 
 CREATE OR REPLACE FUNCTION fetch_clients_page(
-  p_user_id          uuid,
   p_date_range_start timestamptz,   -- null = all time
   p_search           text,          -- '' = no filter
   p_sort_by          text,          -- 'session_count' | 'total_value'
@@ -26,12 +26,17 @@ RETURNS TABLE (
   total_count                bigint
 )
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
+  v_user_id uuid := auth.uid();
   v_search text := trim(p_search);
 BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'You must be signed in to list clients.';
+  END IF;
+
   RETURN QUERY
   WITH
   -- Lifetime aggregates per client owned by this user
@@ -42,7 +47,7 @@ BEGIN
       coalesce(sum(s.price), 0)    AS total_value,
       max(s.session_at)            AS last_session_at
     FROM sessions s
-    WHERE s.user_id = p_user_id
+    WHERE s.user_id = v_user_id
       AND s.client_id IS NOT NULL
     GROUP BY s.client_id
   ),
@@ -54,7 +59,7 @@ BEGIN
       count(*)    AS session_count,
       coalesce(sum(s.price), 0) AS total_value
     FROM sessions s
-    WHERE s.user_id = p_user_id
+    WHERE s.user_id = v_user_id
       AND s.client_id IS NOT NULL
       AND (p_date_range_start IS NULL OR s.session_at >= p_date_range_start)
     GROUP BY s.client_id
@@ -75,7 +80,7 @@ BEGIN
     FROM clients c
     LEFT JOIN lifetime_agg la ON la.client_id = c.client_id
     LEFT JOIN range_agg     ra ON ra.client_id = c.client_id
-    WHERE c.user_id = p_user_id
+    WHERE c.user_id = v_user_id
       -- Inclusion rule: created in range OR has a session in range
       AND (
         p_date_range_start IS NULL
@@ -116,5 +121,5 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION fetch_clients_page(uuid, timestamptz, text, text, integer, integer)
+GRANT EXECUTE ON FUNCTION fetch_clients_page(timestamptz, text, text, integer, integer)
   TO authenticated;
