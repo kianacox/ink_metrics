@@ -22,13 +22,13 @@ There is a critical need for a platform-agnostic financial health application th
 
 ## Elevator Pitch
 
-Tattoo artists are currently forced to choose between expensive, all-in-one management software that interferes with their booking workflow, or manual spreadsheets that provide zero business insight and are prone to error. With new digital tax regulations (MTD) approaching in the UK and a $2.4B market professionalizing rapidly, artists need a friction-free way to track their financial heartbeat—net profit, supply costs, and client lifetime value—without changing how they work.
+Tattoo artists are currently forced to choose between expensive, all-in-one management software that interferes with their booking workflow, or manual spreadsheets that provide zero business insight and are prone to error. With new digital tax regulations (MTD) approaching in the UK and a $2.4B market professionalizing rapidly, artists need a friction-free way to track their business health—net profit, supply costs, and client lifetime value—without changing how they work.
 
-# The Solution: A "Financial Heartbeat" for the Modern Tattoo Artist
+# The Solution: A "Business Intelligence Tool" for the Modern Tattoo Artist
 
 ## The Concept
 
-We are building the first platform-agnostic business intelligence dashboard designed exclusively for tattoo artists. Unlike traditional studio management software that forces a change in how you book clients, our application focuses entirely on the "back-of-house"—transforming raw session data into a clear narrative of financial health.
+We are building the first platform-agnostic business intelligence dashboard designed exclusively for tattoo artists. Unlike traditional studio management software that forces a change in how you book clients, our application focuses entirely on the "back-of-house"—transforming raw session data into a clear narrative of financial and overall business health.
 
 ### Low-friction logging
 
@@ -43,8 +43,6 @@ The application moves beyond basic bookkeeping to provide Third-Order Insights t
 - **Client Lifetime Value (LTV)** — Identifies your "VIP" clients, allowing you to prioritize the high-value relationships that drive sustainable growth.
 
 - **Efficiency metrics** — Tracks "Average Profit per Session" and "Time Spent Tattooing" to highlight if your hourly rate is being eroded by supply inflation or preparation time.
-
-- **Seasonal forecasting** — Provides month-to-month comparisons to help artists build cash reserves for the industry's predictable "winter dips."
 
 ### Compliance & future-proofing
 
