@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, LogOut, Receipt, Syringe, UserRound, Users } from "lucide-react";
+import { BarChart3, LogOut, Pencil, Receipt, UserRound, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -16,7 +16,7 @@ const PREFETCH_ROUTES = ["/dashboard", "/dashboard/sessions", "/dashboard/client
 
 const navIcons: Record<AppNavItemKey, React.ComponentType<{ className?: string }>> = {
   dashboard: BarChart3,
-  sessions: Syringe,
+  sessions: Pencil,
   clients: Users,
   expenses: Receipt,
   profile: UserRound,
