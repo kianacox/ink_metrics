@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
 import {
   DEFAULT_MAILBOX_DOMAIN,
-  DEFAULT_SIGN_UP_PASSWORD,
+  getSignUpPassword,
 } from "./constants";
 import { signUpAndConfirmUserOnly } from "./auth-helpers";
 
-const signUpPassword =
-  process.env.E2E_SIGN_UP_PASSWORD ?? DEFAULT_SIGN_UP_PASSWORD;
+const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 
 test("mobile profile setup keeps a stable step count and finishes successfully", async ({

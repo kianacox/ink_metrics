@@ -151,14 +151,21 @@ jobs:
         run: supabase status -o env >> "$GITHUB_ENV"
 
       - name: Create local test env file
+        env:
+          E2E_SIGN_UP_PASSWORD_SECRET: ${{ secrets.E2E_SIGN_UP_PASSWORD }}
         run: |
+          TEST_PASSWORD="$E2E_SIGN_UP_PASSWORD_SECRET"
+          if [ -z "$TEST_PASSWORD" ]; then
+            TEST_PASSWORD="$(node -e "console.log('Tt' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36) + '!9')")"
+          fi
           cat <<EOF > .env.local
           NEXT_PUBLIC_SUPABASE_URL=$API_URL
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY
           SUPABASE_SECRET_KEY=$SERVICE_ROLE_KEY
           PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001
           INBUCKET_BASE_URL=http://127.0.0.1:54324
-          E2E_SIGN_UP_PASSWORD=Password123!
+          E2E_SIGN_UP_PASSWORD=$TEST_PASSWORD
+          E2E_SEEDED_USER_PASSWORD=$TEST_PASSWORD
           E2E_MAILBOX_DOMAIN=example.com
           EOF
 

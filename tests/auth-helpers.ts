@@ -3,8 +3,8 @@ import {
   DEFAULT_INBUCKET_BASE_URL,
   DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL,
   DEFAULT_SEEDED_SESSION_USER_EMAIL,
-  DEFAULT_SEEDED_USER_PASSWORD,
   DEFAULT_PLAYWRIGHT_BASE_URL,
+  getSeededUserPassword,
 } from "./constants";
 
 const inbucketBaseUrl =
@@ -15,8 +15,7 @@ const seededSessionUserEmail =
   process.env.E2E_SEEDED_SESSION_USER_EMAIL ?? DEFAULT_SEEDED_SESSION_USER_EMAIL;
 const seededIncompleteUserEmail =
   process.env.E2E_SEEDED_INCOMPLETE_USER_EMAIL ?? DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL;
-const seededUserPassword =
-  process.env.E2E_SEEDED_USER_PASSWORD ?? DEFAULT_SEEDED_USER_PASSWORD;
+const seededUserPassword = getSeededUserPassword();
 
 function collectStrings(value: unknown): string[] {
   if (typeof value === "string") {
