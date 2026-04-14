@@ -36,6 +36,10 @@ export function safeNextPath(next: string | null): string {
   return query.length > 0 ? `${rawPath}?${query}` : rawPath;
 }
 
+export function shouldBootstrapVerifiedUser(type: EmailOtpType): boolean {
+  return type !== "email_change";
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
@@ -50,6 +54,10 @@ export async function GET(request: NextRequest) {
       token_hash,
     });
     if (!error) {
+      if (!shouldBootstrapVerifiedUser(type)) {
+        redirect(next);
+      }
+
       const verifiedUserId = otpData.user?.id;
 
       if (!verifiedUserId) {

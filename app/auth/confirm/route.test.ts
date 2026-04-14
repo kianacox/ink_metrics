@@ -1,4 +1,4 @@
-import { safeNextPath } from "./route";
+import { safeNextPath, shouldBootstrapVerifiedUser } from "./route";
 
 describe("safeNextPath", () => {
   it("falls back to dashboard when next is null or empty", () => {
@@ -20,5 +20,17 @@ describe("safeNextPath", () => {
 
   it("strips untrusted query parameters from safe paths", () => {
     expect(safeNextPath("/dashboard?next=https://evil.com")).toBe("/dashboard");
+  });
+});
+
+describe("shouldBootstrapVerifiedUser", () => {
+  it("returns false for email change confirmations", () => {
+    expect(shouldBootstrapVerifiedUser("email_change")).toBe(false);
+  });
+
+  it("returns true for non-email-change confirmation types", () => {
+    expect(shouldBootstrapVerifiedUser("email")).toBe(true);
+    expect(shouldBootstrapVerifiedUser("recovery")).toBe(true);
+    expect(shouldBootstrapVerifiedUser("invite")).toBe(true);
   });
 });
