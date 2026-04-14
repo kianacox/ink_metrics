@@ -153,10 +153,16 @@ jobs:
       - name: Create local test env file
         env:
           E2E_SIGN_UP_PASSWORD_SECRET: ${{ secrets.E2E_SIGN_UP_PASSWORD }}
+          E2E_SEEDED_USER_PASSWORD_SECRET: ${{ secrets.E2E_SEEDED_USER_PASSWORD }}
         run: |
           TEST_PASSWORD="$E2E_SIGN_UP_PASSWORD_SECRET"
           if [ -z "$TEST_PASSWORD" ]; then
             TEST_PASSWORD="$(node -e "console.log('Tt' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36) + '!9')")"
+          fi
+          SEEDED_PASSWORD="$E2E_SEEDED_USER_PASSWORD_SECRET"
+          if [ -z "$SEEDED_PASSWORD" ]; then
+            # Matches deterministic seeded auth users from supabase/seed.sql.
+            SEEDED_PASSWORD="Password123!"
           fi
           cat <<EOF > .env.local
           NEXT_PUBLIC_SUPABASE_URL=$API_URL
@@ -165,7 +171,7 @@ jobs:
           PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001
           INBUCKET_BASE_URL=http://127.0.0.1:54324
           E2E_SIGN_UP_PASSWORD=$TEST_PASSWORD
-          E2E_SEEDED_USER_PASSWORD=$TEST_PASSWORD
+          E2E_SEEDED_USER_PASSWORD=$SEEDED_PASSWORD
           E2E_MAILBOX_DOMAIN=example.com
           EOF
 
