@@ -68,6 +68,7 @@ export async function POST(request: Request) {
     p_commission_capped: payload.commissionCapped,
     p_commission_cap_frequency: payload.commissionCapFrequency,
     p_commission_cap_amount_minor: payload.commissionCapAmountMinor,
+    p_marketing_consent: payload.marketingConsent,
   });
 
   if (setupError) {

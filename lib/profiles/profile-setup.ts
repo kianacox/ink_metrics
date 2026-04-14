@@ -21,6 +21,7 @@ export interface ProfileSetupPayload {
   commissionCapped: boolean | null;
   commissionCapFrequency: RentFrequency | null;
   commissionCapAmountMinor: number | null;
+  marketingConsent: boolean;
 }
 
 interface ProfileSetupCandidate {
@@ -35,6 +36,7 @@ interface ProfileSetupCandidate {
   commissionCapped: unknown;
   commissionCapFrequency: unknown;
   commissionCapAmountMinor: unknown;
+  marketingConsent: unknown;
 }
 
 function isFrequency(value: unknown): value is RentFrequency {
@@ -210,6 +212,7 @@ export function parseProfileSetupPayload(input: unknown): {
     commissionCapped: payload.commissionCapped,
     commissionCapFrequency: payload.commissionCapFrequency,
     commissionCapAmountMinor: payload.commissionCapAmountMinor,
+    marketingConsent: payload.marketingConsent,
   };
 
   if (candidate.displayName.length < 2) {
@@ -224,6 +227,10 @@ export function parseProfileSetupPayload(input: unknown): {
   const rentValidationError = validateRentStructure(candidate);
   if (rentValidationError) {
     return { data: null, error: rentValidationError };
+  }
+
+  if (typeof candidate.marketingConsent !== "boolean") {
+    return { data: null, error: "Marketing consent must be a boolean." };
   }
 
   return {
@@ -241,6 +248,7 @@ export function parseProfileSetupPayload(input: unknown): {
         ? candidate.commissionCapFrequency
         : null,
       commissionCapAmountMinor: candidate.commissionCapAmountMinor as number | null,
+      marketingConsent: candidate.marketingConsent as boolean,
     },
     error: null,
   };

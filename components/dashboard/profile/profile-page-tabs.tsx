@@ -26,6 +26,7 @@ interface ProfilePageTabsProps {
   initialCommissionCapped: boolean | null;
   initialCommissionCapFrequency: RentFrequency | null;
   initialCommissionCapAmountMinor: number | null;
+  initialMarketingConsent: boolean;
 }
 
 export function ProfilePageTabs({
@@ -41,6 +42,7 @@ export function ProfilePageTabs({
   initialCommissionCapped,
   initialCommissionCapFrequency,
   initialCommissionCapAmountMinor,
+  initialMarketingConsent,
 }: ProfilePageTabsProps) {
   const [activeTab, setActiveTab] = useState<ProfileTab>("profile");
 
@@ -101,7 +103,12 @@ export function ProfilePageTabs({
         aria-labelledby="tab-settings"
         hidden={activeTab !== "settings"}
       >
-        {activeTab === "settings" ? <ProfileSettingsView currentEmail={initialEmail} /> : null}
+        {activeTab === "settings" ? (
+          <ProfileSettingsView
+            currentEmail={initialEmail}
+            initialMarketingConsent={initialMarketingConsent}
+          />
+        ) : null}
       </div>
     </div>
   );

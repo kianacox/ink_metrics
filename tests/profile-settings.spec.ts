@@ -165,6 +165,43 @@ test.describe("profile settings", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Marketing consent
+  // -------------------------------------------------------------------------
+
+  test("shows marketing preferences card with unchecked consent by default", async ({
+    page,
+  }) => {
+    await createProfileCompleteUser(page, "settings-consent-display");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+    await expect(
+      settingsPanel.getByRole("checkbox", { name: /keep me updated about new features/i }),
+    ).toBeVisible();
+    await expect(
+      settingsPanel.getByRole("checkbox", { name: /keep me updated about new features/i }),
+    ).not.toBeChecked();
+  });
+
+  test("saves marketing consent and shows success feedback", async ({ page }) => {
+    await createProfileCompleteUser(page, "settings-consent-save");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+    const consentCheckbox = settingsPanel.getByRole("checkbox", {
+      name: /keep me updated about new features/i,
+    });
+    await consentCheckbox.click();
+    await expect(consentCheckbox).toBeChecked();
+
+    await settingsPanel.getByRole("button", { name: /^save preferences$/i }).click();
+
+    await expect(settingsPanel.getByRole("status")).toContainText(
+      /marketing preferences saved/i,
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // Account deletion
   // -------------------------------------------------------------------------
 

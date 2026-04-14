@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
   Label,
 } from "@/components/ui";
@@ -17,15 +18,23 @@ import { DeleteAccountModal } from "@/components/dashboard/profile/delete-accoun
 
 interface ProfileSettingsViewProps {
   currentEmail: string;
+  initialMarketingConsent: boolean;
 }
 
-export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) {
+export function ProfileSettingsView({ currentEmail, initialMarketingConsent }: ProfileSettingsViewProps) {
   const [newEmail, setNewEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
   const { isSubmitting: isUpdatingEmail, updateEmail } = useUpdateEmail();
+
+  const [marketingConsent, setMarketingConsent] = useState(initialMarketingConsent);
+  const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
+  const [consentStatus, setConsentStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -48,6 +57,32 @@ export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) 
       message: "Check your inbox — a confirmation link has been sent to your new address.",
     });
     setNewEmail("");
+  }
+
+  async function handleMarketingConsentSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setConsentStatus(null);
+    setIsUpdatingConsent(true);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ marketingConsent }),
+      });
+      const responseBody = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setConsentStatus({
+          type: "error",
+          message: responseBody.error ?? "Could not update marketing preferences.",
+        });
+        return;
+      }
+      setConsentStatus({ type: "success", message: "Marketing preferences saved." });
+    } catch {
+      setConsentStatus({ type: "error", message: "Could not update marketing preferences." });
+    } finally {
+      setIsUpdatingConsent(false);
+    }
   }
 
   return (
@@ -101,6 +136,54 @@ export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) 
               <div className="flex justify-end">
                 <Button type="submit" className="w-full sm:w-auto" disabled={isUpdatingEmail}>
                   {isUpdatingEmail ? "Sending..." : "Send confirmation"}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-card shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg sm:text-xl">Marketing preferences</CardTitle>
+          <CardDescription>
+            Choose whether to receive product updates and announcements by email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4" onSubmit={(event) => void handleMarketingConsentSave(event)}>
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="settings-marketing-consent"
+                checked={marketingConsent}
+                onCheckedChange={(checked) => {
+                  if (typeof checked === "boolean") setMarketingConsent(checked);
+                }}
+              />
+              <Label
+                htmlFor="settings-marketing-consent"
+                className="cursor-pointer font-normal leading-snug"
+              >
+                Keep me updated about new features and announcements.
+              </Label>
+            </div>
+            <div className="grid gap-2">
+              <div className="min-h-4">
+                {consentStatus ? (
+                  <p
+                    className={cn(
+                      "text-sm",
+                      consentStatus.type === "success" ? "text-primary" : "text-destructive",
+                    )}
+                    role="status"
+                  >
+                    {consentStatus.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex justify-end">
+                <Button type="submit" className="w-full sm:w-auto" disabled={isUpdatingConsent}>
+                  {isUpdatingConsent ? "Saving..." : "Save preferences"}
                 </Button>
               </div>
             </div>

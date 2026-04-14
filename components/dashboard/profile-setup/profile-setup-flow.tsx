@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Input, Label } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import {
   PROFILE_CURRENCIES,
@@ -57,6 +57,7 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
   const [commissionCapFrequency, setCommissionCapFrequency] =
     useState<RentFrequency | null>(null);
   const [commissionCapAmount, setCommissionCapAmount] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [mobileStepIndex, setMobileStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +112,7 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
       commissionCapFrequency:
         candidateCapped === true ? commissionCapFrequency : null,
       commissionCapAmountMinor,
+      marketingConsent,
     };
   }
 
@@ -366,6 +368,21 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
     </div>
   );
 
+  const marketingConsentCheckbox = (
+    <div className="flex items-start gap-3">
+      <Checkbox
+        id="marketing-consent"
+        checked={marketingConsent}
+        onCheckedChange={(checked) => {
+          if (typeof checked === "boolean") setMarketingConsent(checked);
+        }}
+      />
+      <Label htmlFor="marketing-consent" className="cursor-pointer font-normal leading-snug">
+        Keep me updated about new features and announcements.
+      </Label>
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
       <div>
@@ -400,6 +417,7 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
               You&apos;re nearly done. Continue to save your profile setup.
             </p>
           ) : null}
+          {activeMobileStep === "rentDetails" ? marketingConsentCheckbox : null}
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
@@ -442,6 +460,8 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
             {payChairRent ? rentTypeFields : null}
             {payChairRent && rentType === "fixed" ? fixedFields : null}
             {payChairRent && rentType === "commission" ? commissionFields : null}
+
+            {marketingConsentCheckbox}
 
             {error ? (
               <p className={cn("text-sm", "text-destructive")} role="status">

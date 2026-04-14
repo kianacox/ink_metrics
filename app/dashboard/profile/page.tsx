@@ -22,7 +22,7 @@ export default async function ProfilePage() {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name,default_currency,reporting_timezone")
+        .select("display_name,default_currency,reporting_timezone,marketing_consent")
         .eq("user_id", user.id)
         .limit(1),
       supabase
@@ -72,6 +72,7 @@ export default async function ProfilePage() {
         initialCommissionCapped={compensation.commission_capped}
         initialCommissionCapFrequency={compensation.commission_cap_frequency}
         initialCommissionCapAmountMinor={compensation.commission_cap_amount_minor}
+        initialMarketingConsent={profile.marketing_consent ?? false}
       />
     </div>
   );
