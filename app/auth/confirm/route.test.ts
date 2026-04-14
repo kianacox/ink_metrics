@@ -8,9 +8,7 @@ describe("safeNextPath", () => {
 
   it("keeps safe in-app paths", () => {
     expect(safeNextPath("/dashboard")).toBe("/dashboard");
-    expect(safeNextPath("/dashboard/sessions?sort=date")).toBe(
-      "/dashboard/sessions?sort=date",
-    );
+    expect(safeNextPath("/dashboard/sessions?sort=date")).toBe("/dashboard/sessions");
   });
 
   it("rejects non-relative and protocol-style redirects", () => {
@@ -20,9 +18,7 @@ describe("safeNextPath", () => {
     expect(safeNextPath("/https://evil.com/path")).toBe("/dashboard");
   });
 
-  it("allows safe path with suspicious query text in search params", () => {
-    expect(safeNextPath("/dashboard?next=https://evil.com")).toBe(
-      "/dashboard?next=https://evil.com",
-    );
+  it("strips untrusted query parameters from safe paths", () => {
+    expect(safeNextPath("/dashboard?next=https://evil.com")).toBe("/dashboard");
   });
 });
