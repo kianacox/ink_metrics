@@ -13,7 +13,7 @@ import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
-import { Plus } from "lucide-react";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { ClientsCards } from "./clients-cards";
 import { ClientsTable } from "./clients-table";
 import { ClientCreateModal } from "./client-create-modal";
@@ -263,16 +263,11 @@ export function ClientsView() {
         </>
       ) : null}
 
-      {/* Floating action button */}
-      <button
-        type="button"
+      <FloatingActionButton
         data-testid="create-client-fab"
-        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+0.75rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:bottom-6 sm:right-6"
         aria-label="Create new client"
         onClick={() => setCreateOpen(true)}
-      >
-        <Plus className="h-6 w-6" aria-hidden="true" />
-      </button>
+      />
 
       <ClientCreateModal
         open={createOpen}

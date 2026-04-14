@@ -1,3 +1,4 @@
+import { createExpense } from "@/lib/expenses/expense-db";
 import { parseExpenseCreatePayload } from "@/lib/expenses/expense-write";
 import { fetchExpensesPage } from "@/lib/expenses/fetch-expenses-page";
 import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
@@ -88,22 +89,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
-    .from("expenses")
-    .insert({
-      user_id: user.id,
-      item: payload.item,
-      category: payload.category,
-      amount_minor: payload.amountMinor,
-      currency_code: payload.currencyCode,
-      date_purchased: payload.datePurchased,
-    })
-    .select("expense_id")
-    .single();
+  const result = await createExpense(supabase, user.id, payload);
 
-  if (error) {
-    return NextResponse.json({ error: "Could not create expense." }, { status: 500 });
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, expenseId: data.expense_id });
+  return NextResponse.json({ success: true, expenseId: result.expenseId });
 }

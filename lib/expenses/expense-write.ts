@@ -9,22 +9,96 @@ export type { ExpenseCreatePayload, ExpenseUpdatePayload };
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function isValidExpenseDate(value: string): boolean {
-  if (!DATE_REGEX.test(value)) {
-    return false;
+// Allowed MIME types mirrored from the client-side upload helper so the
+// backend can independently reject invalid file types.
+export const ALLOWED_RECEIPT_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
+
+// ---------------------------------------------------------------------------
+// Field-level validators — each returns { ok: true, value } on success
+// or { ok: false, error } on failure. The `ok` discriminant lets TypeScript
+// narrow the union cleanly after a guard check.
+// ---------------------------------------------------------------------------
+
+type FieldResult<T> = { ok: true; value: T } | { ok: false; error: string };
+
+function ok<T>(value: T): FieldResult<T> {
+  return { ok: true, value };
+}
+
+function fail<T = never>(error: string): FieldResult<T> {
+  return { ok: false, error };
+}
+
+function validateItem(raw: unknown): FieldResult<string> {
+  const item = typeof raw === "string" ? raw.trim() : "";
+  return item.length === 0 ? fail("Item name is required.") : ok(item);
+}
+
+function validateCategory(raw: unknown): FieldResult<ExpenseCategory> {
+  const valid = typeof raw === "string" && EXPENSE_CATEGORIES.includes(raw as ExpenseCategory);
+  return valid ? ok(raw as ExpenseCategory) : fail("Category is invalid.");
+}
+
+function validateAmountMinor(raw: unknown): FieldResult<number> {
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 0) {
+    return fail("Amount must be a non-negative integer.");
   }
-  const ts = Date.parse(value);
-  return Number.isFinite(ts);
+  return ok(raw);
 }
 
-function isFutureDate(value: string): boolean {
+function validateCurrencyCode(raw: unknown): FieldResult<string> {
+  const code = typeof raw === "string" ? raw.trim() : "";
+  return code.length === 0 ? fail("Currency code is required.") : ok(code);
+}
+
+function validateDatePurchased(raw: unknown): FieldResult<string> {
+  if (typeof raw !== "string" || !DATE_REGEX.test(raw) || !Number.isFinite(Date.parse(raw))) {
+    return fail("Date purchased must be a valid date (YYYY-MM-DD).");
+  }
   const today = new Date().toISOString().slice(0, 10);
-  return value > today;
+  if (raw > today) {
+    return fail("Expense date cannot be in the future.");
+  }
+  return ok(raw);
 }
 
-function isExpenseCategory(value: unknown): value is ExpenseCategory {
-  return typeof value === "string" && EXPENSE_CATEGORIES.includes(value as ExpenseCategory);
+function validateReceiptFields(candidate: Record<string, unknown>): FieldResult<{
+  receiptPath: string;
+  receiptMimeType: string;
+  receiptSizeBytes: number;
+}> {
+  const path = typeof candidate.receiptPath === "string" ? candidate.receiptPath.trim() : "";
+  if (path.length === 0) {
+    return fail("Receipt path must be a non-empty string.");
+  }
+
+  const mimeType =
+    typeof candidate.receiptMimeType === "string" ? candidate.receiptMimeType.trim() : "";
+  if (mimeType.length === 0) {
+    return fail("Receipt MIME type must be a non-empty string.");
+  }
+  if (!ALLOWED_RECEIPT_MIME_TYPES.has(mimeType)) {
+    return fail("Receipt must be a JPEG, PNG, WebP, or PDF file.");
+  }
+
+  const sizeBytes = candidate.receiptSizeBytes;
+  if (typeof sizeBytes !== "number" || !Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+    return fail("Receipt size must be a positive integer.");
+  }
+
+  return ok({ receiptPath: path, receiptMimeType: mimeType, receiptSizeBytes: sizeBytes });
 }
+
+// ---------------------------------------------------------------------------
+// Public parsers
+// ---------------------------------------------------------------------------
+
+const RECEIPT_FIELDS = ["receiptPath", "receiptMimeType", "receiptSizeBytes"] as const;
 
 export function parseExpenseCreatePayload(input: unknown): {
   data: ExpenseCreatePayload | null;
@@ -34,60 +108,34 @@ export function parseExpenseCreatePayload(input: unknown): {
     return { data: null, error: "Expense payload is invalid." };
   }
 
-  const candidate = input as Record<string, unknown>;
+  const c = input as Record<string, unknown>;
 
-  const item = typeof candidate.item === "string" ? candidate.item.trim() : "";
-  if (item.length === 0) {
-    return { data: null, error: "Item name is required." };
-  }
+  const item = validateItem(c.item);
+  if (!item.ok) return { data: null, error: item.error };
 
-  if (!isExpenseCategory(candidate.category)) {
-    return { data: null, error: "Category is invalid." };
-  }
+  const category = validateCategory(c.category);
+  if (!category.ok) return { data: null, error: category.error };
 
-  if (
-    typeof candidate.amountMinor !== "number" ||
-    !Number.isInteger(candidate.amountMinor) ||
-    candidate.amountMinor < 0
-  ) {
-    return { data: null, error: "Amount must be a non-negative integer." };
-  }
+  const amountMinor = validateAmountMinor(c.amountMinor);
+  if (!amountMinor.ok) return { data: null, error: amountMinor.error };
 
-  const currencyCode =
-    typeof candidate.currencyCode === "string" ? candidate.currencyCode.trim() : "";
-  if (currencyCode.length === 0) {
-    return { data: null, error: "Currency code is required." };
-  }
+  const currencyCode = validateCurrencyCode(c.currencyCode);
+  if (!currencyCode.ok) return { data: null, error: currencyCode.error };
 
-  if (typeof candidate.datePurchased !== "string" || !isValidExpenseDate(candidate.datePurchased)) {
-    return { data: null, error: "Date purchased must be a valid date (YYYY-MM-DD)." };
-  }
-
-  if (isFutureDate(candidate.datePurchased)) {
-    return { data: null, error: "Expense date cannot be in the future." };
-  }
+  const datePurchased = validateDatePurchased(c.datePurchased);
+  if (!datePurchased.ok) return { data: null, error: datePurchased.error };
 
   return {
     data: {
-      item,
-      category: candidate.category,
-      amountMinor: candidate.amountMinor,
-      currencyCode,
-      datePurchased: candidate.datePurchased,
+      item: item.value,
+      category: category.value,
+      amountMinor: amountMinor.value,
+      currencyCode: currencyCode.value,
+      datePurchased: datePurchased.value,
     },
     error: null,
   };
 }
-
-const EXPENSE_UPDATE_CORE_FIELDS = new Set([
-  "item",
-  "category",
-  "amountMinor",
-  "currencyCode",
-  "datePurchased",
-]);
-
-const EXPENSE_UPDATE_RECEIPT_FIELDS = ["receiptPath", "receiptMimeType", "receiptSizeBytes"] as const;
 
 export function parseExpenseUpdatePayload(input: unknown): {
   data: ExpenseUpdatePayload | null;
@@ -97,90 +145,62 @@ export function parseExpenseUpdatePayload(input: unknown): {
     return { data: null, error: "Expense update payload is invalid." };
   }
 
-  const candidate = input as Record<string, unknown>;
-  const result: ExpenseUpdatePayload = {};
-
-  const hasCoreField = [...EXPENSE_UPDATE_CORE_FIELDS].some((k) => k in candidate);
-  const hasReceiptField = EXPENSE_UPDATE_RECEIPT_FIELDS.some((k) => k in candidate);
+  const c = input as Record<string, unknown>;
+  const coreFields = ["item", "category", "amountMinor", "currencyCode", "datePurchased"];
+  const hasCoreField = coreFields.some((k) => k in c);
+  const hasReceiptField = RECEIPT_FIELDS.some((k) => k in c);
 
   if (!hasCoreField && !hasReceiptField) {
     return { data: null, error: "No updatable fields were provided." };
   }
 
-  if ("item" in candidate) {
-    const item = typeof candidate.item === "string" ? candidate.item.trim() : "";
-    if (item.length === 0) {
-      return { data: null, error: "Item name is required." };
-    }
-    result.item = item;
+  const result: ExpenseUpdatePayload = {};
+
+  if ("item" in c) {
+    const r = validateItem(c.item);
+    if (!r.ok) return { data: null, error: r.error };
+    result.item = r.value;
   }
 
-  if ("category" in candidate) {
-    if (!isExpenseCategory(candidate.category)) {
-      return { data: null, error: "Category is invalid." };
-    }
-    result.category = candidate.category;
+  if ("category" in c) {
+    const r = validateCategory(c.category);
+    if (!r.ok) return { data: null, error: r.error };
+    result.category = r.value;
   }
 
-  if ("amountMinor" in candidate) {
-    if (
-      typeof candidate.amountMinor !== "number" ||
-      !Number.isInteger(candidate.amountMinor) ||
-      candidate.amountMinor < 0
-    ) {
-      return { data: null, error: "Amount must be a non-negative integer." };
-    }
-    result.amountMinor = candidate.amountMinor;
+  if ("amountMinor" in c) {
+    const r = validateAmountMinor(c.amountMinor);
+    if (!r.ok) return { data: null, error: r.error };
+    result.amountMinor = r.value;
   }
 
-  if ("currencyCode" in candidate) {
-    const currencyCode =
-      typeof candidate.currencyCode === "string" ? candidate.currencyCode.trim() : "";
-    if (currencyCode.length === 0) {
-      return { data: null, error: "Currency code is required." };
-    }
-    result.currencyCode = currencyCode;
+  if ("currencyCode" in c) {
+    const r = validateCurrencyCode(c.currencyCode);
+    if (!r.ok) return { data: null, error: r.error };
+    result.currencyCode = r.value;
   }
 
-  if ("datePurchased" in candidate) {
-    if (
-      typeof candidate.datePurchased !== "string" ||
-      !isValidExpenseDate(candidate.datePurchased)
-    ) {
-      return { data: null, error: "Date purchased must be a valid date (YYYY-MM-DD)." };
-    }
-    if (isFutureDate(candidate.datePurchased)) {
-      return { data: null, error: "Expense date cannot be in the future." };
-    }
-    result.datePurchased = candidate.datePurchased;
+  if ("datePurchased" in c) {
+    const r = validateDatePurchased(c.datePurchased);
+    if (!r.ok) return { data: null, error: r.error };
+    result.datePurchased = r.value;
   }
 
-  // Receipt fields must all be present together or not at all
-  const presentReceiptFields = EXPENSE_UPDATE_RECEIPT_FIELDS.filter((k) => k in candidate);
-  if (presentReceiptFields.length > 0 && presentReceiptFields.length < EXPENSE_UPDATE_RECEIPT_FIELDS.length) {
+  // Receipt fields must all be present together or not at all.
+  const presentReceiptFields = RECEIPT_FIELDS.filter((k) => k in c);
+  if (presentReceiptFields.length > 0 && presentReceiptFields.length < RECEIPT_FIELDS.length) {
     return {
       data: null,
       error: "Receipt fields (receiptPath, receiptMimeType, receiptSizeBytes) must all be provided together.",
     };
   }
 
-  if (presentReceiptFields.length === EXPENSE_UPDATE_RECEIPT_FIELDS.length) {
-    if (typeof candidate.receiptPath !== "string" || candidate.receiptPath.trim().length === 0) {
-      return { data: null, error: "Receipt path must be a non-empty string." };
-    }
-    if (typeof candidate.receiptMimeType !== "string" || candidate.receiptMimeType.trim().length === 0) {
-      return { data: null, error: "Receipt MIME type must be a non-empty string." };
-    }
-    if (
-      typeof candidate.receiptSizeBytes !== "number" ||
-      !Number.isInteger(candidate.receiptSizeBytes) ||
-      candidate.receiptSizeBytes <= 0
-    ) {
-      return { data: null, error: "Receipt size must be a positive integer." };
-    }
-    result.receiptPath = candidate.receiptPath.trim();
-    result.receiptMimeType = candidate.receiptMimeType.trim();
-    result.receiptSizeBytes = candidate.receiptSizeBytes;
+  if (presentReceiptFields.length === RECEIPT_FIELDS.length) {
+    const r = validateReceiptFields(c);
+    if (!r.ok) return { data: null, error: r.error };
+    result.receiptPath = r.value.receiptPath;
+    result.receiptMimeType = r.value.receiptMimeType;
+    result.receiptSizeBytes = r.value.receiptSizeBytes;
   }
 
   return { data: result, error: null };

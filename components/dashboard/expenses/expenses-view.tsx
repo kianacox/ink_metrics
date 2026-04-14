@@ -2,15 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
-import {
-  EXPENSE_CATEGORIES,
-  EXPENSE_CATEGORY_LABELS,
-} from "@/lib/expenses/models";
 import type { ExpenseListItem } from "@/lib/expenses/models";
-import { Plus } from "lucide-react";
 import { ExpensesCards } from "./expenses-cards";
 import { ExpensesTable } from "./expenses-table";
+import { ExpenseCategoryFilterPills } from "./expense-category-filter-pills";
 import { ExpenseCreateModal } from "./expense-create-modal";
 import { ExpenseEditModal } from "./expense-edit-modal";
 import { ExpenseDeleteModal } from "./expense-delete-modal";
@@ -90,38 +87,11 @@ export function ExpensesView() {
         </p>
       </div>
 
-      {/* Category filter pills */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-2">
-          {EXPENSE_CATEGORIES.map((category) => {
-            const isActive = selectedCategories.has(category);
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => toggleCategory(category)}
-                className={
-                  isActive
-                    ? "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors bg-primary text-primary-foreground"
-                    : "inline-flex items-center rounded-full border border-emerald-600/40 bg-transparent px-3 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:border-emerald-400/40 dark:text-emerald-300"
-                }
-                aria-pressed={isActive}
-              >
-                {EXPENSE_CATEGORY_LABELS[category]}
-              </button>
-            );
-          })}
-        </div>
-        {selectedCategories.size > 0 ? (
-          <button
-            type="button"
-            onClick={() => setSelectedCategories(new Set())}
-            className="self-start text-sm text-muted-foreground underline hover:text-foreground"
-          >
-            Clear all
-          </button>
-        ) : null}
-      </div>
+      <ExpenseCategoryFilterPills
+        selectedCategories={selectedCategories}
+        onToggle={toggleCategory}
+        onClearAll={() => setSelectedCategories(new Set())}
+      />
 
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-foreground sm:text-lg">All expenses</h2>
@@ -202,16 +172,11 @@ export function ExpensesView() {
         </>
       ) : null}
 
-      {/* Floating action button */}
-      <button
-        type="button"
+      <FloatingActionButton
         data-testid="create-expense-fab"
-        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom)+0.75rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:bottom-6 sm:right-6"
         aria-label="Log new expense"
         onClick={() => setCreateOpen(true)}
-      >
-        <Plus className="h-6 w-6" aria-hidden="true" />
-      </button>
+      />
 
       <ExpenseCreateModal
         open={createOpen}

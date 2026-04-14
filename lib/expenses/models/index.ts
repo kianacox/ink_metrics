@@ -1,32 +1,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type ExpenseCategory =
-  | "ink"
-  | "cartridges"
-  | "needles"
-  | "machines"
-  | "other_equipment"
-  | "travel"
-  | "miscellaneous";
+// Const-object enum: string literals remain assignable to ExpenseCategory,
+// and Object.values(ExpenseCategory) gives the canonical ordered array.
+export const ExpenseCategory = {
+  ink: "ink",
+  cartridges: "cartridges",
+  needles: "needles",
+  machines: "machines",
+  other_equipment: "other_equipment",
+  travel: "travel",
+  miscellaneous: "miscellaneous",
+} as const;
+export type ExpenseCategory = (typeof ExpenseCategory)[keyof typeof ExpenseCategory];
 
-export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  "ink",
-  "cartridges",
-  "needles",
-  "machines",
-  "other_equipment",
-  "travel",
-  "miscellaneous",
-];
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = Object.values(ExpenseCategory);
 
 export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  ink: "Ink",
-  cartridges: "Cartridges",
-  needles: "Needles",
-  machines: "Machines",
-  other_equipment: "Other equipment",
-  travel: "Travel",
-  miscellaneous: "Miscellaneous",
+  [ExpenseCategory.ink]: "Ink",
+  [ExpenseCategory.cartridges]: "Cartridges",
+  [ExpenseCategory.needles]: "Needles",
+  [ExpenseCategory.machines]: "Machines",
+  [ExpenseCategory.other_equipment]: "Other equipment",
+  [ExpenseCategory.travel]: "Travel",
+  [ExpenseCategory.miscellaneous]: "Miscellaneous",
 };
 
 export interface ExpenseListItem {
@@ -73,5 +69,31 @@ export interface FetchExpensesPageResult {
   rows: ExpenseListItem[];
   hasNextPage: boolean;
   totalCount: number;
+  currentMonthTotalMinor: number;
+}
+
+// Hook types for useExpenses
+export interface UseExpensesParams {
+  selectedCategories: string[];
+  pageSize?: number;
+}
+
+export interface UseExpensesResult {
+  expenses: ExpenseListItem[];
+  totalCount: number;
+  currentMonthTotalMinor: number;
+  defaultCurrency: string;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasNextPage: boolean;
+  error: string | null;
+  reload: () => Promise<void>;
+  loadMore: () => Promise<void>;
+}
+
+export interface ExpensesApiResponse {
+  expenses: ExpenseListItem[];
+  totalCount: number;
+  hasNextPage: boolean;
   currentMonthTotalMinor: number;
 }

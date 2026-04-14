@@ -1,3 +1,4 @@
+import { deleteExpense, updateExpense } from "@/lib/expenses/expense-db";
 import { parseExpenseUpdatePayload } from "@/lib/expenses/expense-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
@@ -46,30 +47,13 @@ export async function PATCH(
     );
   }
 
-  // Build the DB update object from validated payload fields
-  const updateObj: Record<string, unknown> = {};
-  if (payload.item !== undefined) updateObj.item = payload.item;
-  if (payload.category !== undefined) updateObj.category = payload.category;
-  if (payload.amountMinor !== undefined) updateObj.amount_minor = payload.amountMinor;
-  if (payload.currencyCode !== undefined) updateObj.currency_code = payload.currencyCode;
-  if (payload.datePurchased !== undefined) updateObj.date_purchased = payload.datePurchased;
-  if (payload.receiptPath !== undefined) updateObj.receipt_path = payload.receiptPath;
-  if (payload.receiptMimeType !== undefined) updateObj.receipt_mime_type = payload.receiptMimeType;
-  if (payload.receiptSizeBytes !== undefined) updateObj.receipt_size_bytes = payload.receiptSizeBytes;
-  updateObj.updated_at = new Date().toISOString();
+  const result = await updateExpense(supabase, user.id, expenseId, payload);
 
-  const { data, error } = await supabase
-    .from("expenses")
-    .update(updateObj)
-    .eq("expense_id", expenseId)
-    .eq("user_id", user.id)
-    .select("expense_id");
-
-  if (error) {
-    return NextResponse.json({ error: "Could not update expense." }, { status: 500 });
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  if ((data ?? []).length === 0) {
+  if (!result.found) {
     return NextResponse.json({ error: "Expense was not found." }, { status: 404 });
   }
 
@@ -98,19 +82,11 @@ export async function DELETE(
     );
   }
 
-  const { data, error } = await supabase
-    .from("expenses")
-    .delete()
-    .eq("expense_id", expenseId)
-    .eq("user_id", user.id)
-    .select("expense_id");
+  const result = await deleteExpense(supabase, user.id, expenseId);
 
-  if (error) {
-    return NextResponse.json({ error: "Could not delete expense." }, { status: 500 });
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  return NextResponse.json({
-    success: true,
-    deleted: (data ?? []).length > 0,
-  });
+  return NextResponse.json({ success: true, deleted: result.deleted });
 }
