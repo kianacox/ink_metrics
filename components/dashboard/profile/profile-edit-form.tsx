@@ -111,6 +111,9 @@ export function ProfileEditForm({
       commissionCapped: candidateCapped,
       commissionCapFrequency: candidateCapped === true ? commissionCapFrequency : null,
       commissionCapAmountMinor,
+      // Marketing consent is not editable here — managed via the Settings tab.
+      // A stub value satisfies the shared validator; the server uses the DB value.
+      marketingConsent: false,
     });
 
     if (!parsedPayload.data || parsedPayload.error) {

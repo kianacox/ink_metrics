@@ -201,6 +201,26 @@ test.describe("profile settings", () => {
     );
   });
 
+  test("marketing consent checkbox reflects saved state after page reload", async ({ page }) => {
+    await createProfileCompleteUser(page, "settings-consent-persist");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+
+    // Opt in and save
+    await settingsPanel
+      .getByRole("checkbox", { name: /keep me updated about new features/i })
+      .click();
+    await settingsPanel.getByRole("button", { name: /^save preferences$/i }).click();
+    await expect(settingsPanel.getByRole("status")).toContainText(/marketing preferences saved/i);
+
+    // Reload and reopen settings — consent should still be checked
+    await openSettingsTab(page);
+    await expect(
+      settingsPanel.getByRole("checkbox", { name: /keep me updated about new features/i }),
+    ).toBeChecked();
+  });
+
   // -------------------------------------------------------------------------
   // Account deletion
   // -------------------------------------------------------------------------

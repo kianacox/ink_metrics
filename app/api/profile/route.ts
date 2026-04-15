@@ -41,7 +41,7 @@ export async function PUT(request: Request) {
   }
   const { data: profileRows, error: profileFetchError } = await supabase
     .from("profiles")
-    .select("default_currency")
+    .select("default_currency,marketing_consent")
     .eq("user_id", user.id)
     .limit(1);
 
@@ -72,6 +72,9 @@ export async function PUT(request: Request) {
     commissionCapped: body.commissionCapped,
     commissionCapFrequency: body.commissionCapFrequency,
     commissionCapAmountMinor: body.commissionCapAmountMinor,
+    // Marketing consent is managed separately via PATCH; pass the existing
+    // value through so parseProfileSetupPayload validation succeeds.
+    marketingConsent: currentProfile.marketing_consent ?? false,
   };
   const { data: parsedPayload, error: validationError } = parseProfileSetupPayload(candidatePayload);
   if (!parsedPayload || validationError) {
