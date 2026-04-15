@@ -75,7 +75,11 @@ async function hasVisibleButton(page: Page, namePattern: RegExp): Promise<boolea
 export async function completeProfileSetupMinimal(
   page: Page,
   email: string,
+  options: {
+    marketingConsent?: boolean;
+  } = {},
 ): Promise<void> {
+  const marketingConsent = options.marketingConsent ?? false;
   await page.waitForLoadState("networkidle");
 
   const profileHeading = page.getByRole("heading", { name: /set up your profile/i });
@@ -86,12 +90,12 @@ export async function completeProfileSetupMinimal(
     !(await hasVisibleButton(page, /^next$/i));
 
   if (isDesktopFlow) {
-    await clickFirstVisibleButton(page, /^no$/i);
+    await clickFirstVisibleButton(page, marketingConsent ? /^yes$/i : /^no$/i);
     await clickFirstVisibleButton(page, /^finish setup$/i);
   } else {
     await page.getByRole("button", { name: /^next$/i }).click();
     await page.getByRole("button", { name: /^next$/i }).click();
-    await clickFirstVisibleButton(page, /^no$/i);
+    await clickFirstVisibleButton(page, marketingConsent ? /^yes$/i : /^no$/i);
     await page.getByRole("button", { name: /^next$/i }).click();
     await page.getByRole("button", { name: /^finish setup$/i }).click();
   }

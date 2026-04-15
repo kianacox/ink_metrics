@@ -1,3 +1,4 @@
+import { fetchProfileSettings } from "@/lib/profiles/fetch-profile-settings";
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
@@ -17,6 +18,38 @@ interface ProfileEditRequestBody {
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
+}
+
+export async function GET() {
+  const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
+    "You must be signed in to view your profile.",
+  );
+  if (errorResponse) {
+    return errorResponse;
+  }
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to view your profile." },
+      { status: 401 },
+    );
+  }
+
+  const settings = await fetchProfileSettings({
+    supabase,
+    userId: user.id,
+  });
+
+  if (!settings) {
+    return NextResponse.json(
+      { error: "Profile setup is incomplete." },
+      { status: 409 },
+    );
+  }
+
+  return NextResponse.json({
+    email: user.email ?? "",
+    ...settings,
+  });
 }
 
 export async function PUT(request: Request) {

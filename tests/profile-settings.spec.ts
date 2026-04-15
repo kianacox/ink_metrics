@@ -31,10 +31,13 @@ async function openSettingsTab(page: Page): Promise<void> {
 async function createProfileCompleteUser(
   page: Page,
   emailPrefix: string,
+  options: {
+    marketingConsent?: boolean;
+  } = {},
 ): Promise<string> {
   const email = makeDisposableEmail(emailPrefix);
   await signUpAndConfirmUserOnly(page, email, signUpPassword);
-  await completeProfileSetupMinimal(page, email);
+  await completeProfileSetupMinimal(page, email, options);
   return email;
 }
 
@@ -168,10 +171,12 @@ test.describe("profile settings", () => {
   // Marketing consent
   // -------------------------------------------------------------------------
 
-  test("shows marketing preferences card with unchecked consent by default", async ({
+  test("shows marketing consent as checked when opted in during profile setup", async ({
     page,
   }) => {
-    await createProfileCompleteUser(page, "settings-consent-display");
+    await createProfileCompleteUser(page, "settings-consent-display", {
+      marketingConsent: true,
+    });
     await openSettingsTab(page);
 
     const settingsPanel = page.locator("#tabpanel-settings");
@@ -180,7 +185,7 @@ test.describe("profile settings", () => {
     ).toBeVisible();
     await expect(
       settingsPanel.getByRole("checkbox", { name: /keep me updated about new features/i }),
-    ).not.toBeChecked();
+    ).toBeChecked();
   });
 
   test("saves marketing consent and shows success feedback", async ({ page }) => {
