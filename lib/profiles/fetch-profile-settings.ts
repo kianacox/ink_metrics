@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
 
 interface FetchProfileSettingsArgs {
-  supabase: SupabaseClient<Database>;
+  supabase: SupabaseClient;
   userId: string;
 }
 
