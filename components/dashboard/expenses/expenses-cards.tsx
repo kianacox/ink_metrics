@@ -21,18 +21,18 @@ export function ExpensesCards({
   onDeleteExpense,
 }: ExpensesCardsProps) {
   return (
-    <div className="grid gap-3 sm:hidden">
+    <div className="grid min-w-0 gap-3 sm:hidden">
       {expenses.map((expense) => (
-        <Card key={expense.id} className="border-border">
+        <Card key={expense.id} className="w-full border-border">
           <CardHeader className="p-4 pb-3">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <span className="mb-1.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   {EXPENSE_CATEGORY_LABELS[expense.category]}
                 </span>
                 <CardTitle className="truncate text-base">{expense.item}</CardTitle>
               </div>
-              <div className="flex shrink-0 gap-1">
+              <div className="flex w-full shrink-0 justify-end gap-1 min-[360px]:w-auto">
                 <Button
                   type="button"
                   size="sm"
