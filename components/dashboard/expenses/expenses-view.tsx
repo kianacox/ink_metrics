@@ -67,7 +67,7 @@ export function ExpensesView() {
   const hasFatalError = Boolean(error) && !hasExpenses;
 
   return (
-    <section className="flex flex-col gap-4 sm:gap-6">
+    <section className="flex min-w-0 flex-col gap-4 sm:gap-6">
       {toastMessage ? (
         <div
           className="fixed right-4 top-4 z-[60] max-w-xs rounded-md border border-border bg-background px-4 py-3 text-sm shadow-lg sm:right-6 sm:top-6"

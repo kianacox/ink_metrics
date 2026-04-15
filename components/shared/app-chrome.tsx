@@ -8,7 +8,7 @@ export async function AppChrome({ children }: { children: React.ReactNode }) {
   const isAuthenticated = Boolean(data?.claims?.sub);
 
   return (
-    <main className="min-h-dvh min-h-[100dvh] flex flex-col items-center bg-background">
+    <main className="min-h-dvh min-h-[100dvh] flex flex-col items-center overflow-x-clip bg-background">
       <div className="flex-1 w-full flex flex-col items-center">
         <SiteHeader />
         <div
@@ -19,7 +19,7 @@ export async function AppChrome({ children }: { children: React.ReactNode }) {
           }`}
         >
           {isAuthenticated ? <DesktopSidebarNav /> : null}
-          <div className="flex-1 flex flex-col gap-8 sm:gap-12">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-8 sm:gap-12">{children}</div>
         </div>
         {isAuthenticated ? <MobileBottomNav /> : null}
       </div>
