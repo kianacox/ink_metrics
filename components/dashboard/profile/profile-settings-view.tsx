@@ -45,7 +45,8 @@ export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) 
     }
     setEmailStatus({
       type: "success",
-      message: "Check your inbox — a confirmation link has been sent to your new address.",
+      message:
+        "Check both inboxes — confirmation links have been sent to your new and current email addresses. You must click both links to complete the change.",
     });
     setNewEmail("");
   }
@@ -56,9 +57,9 @@ export function ProfileSettingsView({ currentEmail }: ProfileSettingsViewProps) 
         <CardHeader>
           <CardTitle className="text-lg sm:text-xl">Email address</CardTitle>
           <CardDescription>
-            Update the email address associated with your account. Your address
-            will not change until you click the confirmation link sent to the
-            new address.
+            Update the email address associated with your account. Confirmation
+            links will be sent to both your new and current address — you must
+            click both to complete the change.
           </CardDescription>
         </CardHeader>
         <CardContent>

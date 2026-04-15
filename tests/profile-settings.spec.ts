@@ -72,7 +72,7 @@ test.describe("profile settings", () => {
     await submitButton.click();
 
     await expect(settingsPanel.getByRole("status")).toContainText(
-      /check your inbox.*confirmation link has been sent/i,
+      /check both inboxes.*confirmation links have been sent/i,
     );
     await expect(newEmailField).toHaveValue("");
   });
@@ -90,7 +90,7 @@ test.describe("profile settings", () => {
     await settingsPanel.locator("#settings-new-email").fill(nextEmail);
     await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
     await expect(settingsPanel.getByRole("status")).toContainText(
-      /check your inbox/i,
+      /check both inboxes/i,
     );
 
     // Reload and revisit settings — the displayed email must still be the original
@@ -114,7 +114,7 @@ test.describe("profile settings", () => {
     await settingsPanel.locator("#settings-new-email").fill(nextEmail);
     await settingsPanel.getByRole("button", { name: /^send confirmation$/i }).click();
     await expect(settingsPanel.getByRole("status")).toContainText(
-      /check your inbox/i,
+      /check both inboxes/i,
     );
 
     // Click the link in the new email's inbox first
