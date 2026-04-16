@@ -90,13 +90,19 @@ export async function completeProfileSetupMinimal(
     !(await hasVisibleButton(page, /^next$/i));
 
   if (isDesktopFlow) {
-    await clickFirstVisibleButton(page, marketingConsent ? /^yes$/i : /^no$/i);
+    await clickFirstVisibleButton(page, /^no$/i);
+    if (marketingConsent) {
+      await page.locator("#marketing-consent").click();
+    }
     await clickFirstVisibleButton(page, /^finish setup$/i);
   } else {
     await page.getByRole("button", { name: /^next$/i }).click();
+    await clickFirstVisibleButton(page, /^no$/i);
     await page.getByRole("button", { name: /^next$/i }).click();
-    await clickFirstVisibleButton(page, marketingConsent ? /^yes$/i : /^no$/i);
     await page.getByRole("button", { name: /^next$/i }).click();
+    if (marketingConsent) {
+      await page.locator("#marketing-consent").click();
+    }
     await page.getByRole("button", { name: /^finish setup$/i }).click();
   }
 
