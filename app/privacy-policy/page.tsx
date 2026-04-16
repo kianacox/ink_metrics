@@ -405,12 +405,17 @@ export default function PrivacyPolicyPage() {
                   logged in across browser sessions. These are essential for
                   the application to function.
                 </li>
+                <li>
+                  Cookie consent preference cookies — used to remember your
+                  consent choices through our CookieYes consent banner.
+                </li>
               </ul>
               <p className="mt-3 text-muted-foreground">
-                We do not currently use any non-essential cookies (such as
+                We do not currently use non-essential cookies (such as
                 analytics or advertising cookies). If this changes in a future
-                release, we will update this policy and, where required by law,
-                obtain your consent before placing any non-essential cookies.
+                release, we will request consent through the cookie banner
+                before placing non-essential cookies and update this policy
+                accordingly.
               </p>
             </section>
 
