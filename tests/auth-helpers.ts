@@ -220,6 +220,7 @@ export async function signUpAndConfirmUserOnly(
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Repeat Password").fill(password);
+  await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
   await page.getByRole("button", { name: /^sign up$/i }).click();
 
   const confirmationLink = await fetchConfirmationLink(email);
