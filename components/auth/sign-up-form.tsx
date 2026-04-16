@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import {
   Button,
   Card,
@@ -9,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
   Label,
 } from "@/components/ui";
@@ -23,13 +23,13 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
@@ -40,24 +40,26 @@ export function SignUpForm({
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`,
-        },
+      const response = await fetch("/api/auth/sign-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          tsancs: true,
+          redirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`,
+        }),
       });
-      if (error) throw error;
-      // Supabase returns no error but an empty identities array when the email
-      // is already registered (prevents email enumeration on their end, but we
-      // want to surface a clear message rather than a false success screen).
-      if (data.user?.identities?.length === 0) {
-        setError("An account with this email already exists.");
+
+      if (!response.ok) {
+        const body = await response.json();
+        setError(body.error ?? "An error occurred");
         return;
       }
+
       router.push("/auth/sign-up-success");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+    } catch {
+      setError("An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -108,8 +110,32 @@ export function SignUpForm({
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="terms-and-conditions"
+                  checked={hasAcceptedTerms}
+                  onCheckedChange={(checked) =>
+                    setHasAcceptedTerms(checked === true)
+                  }
+                />
+                <Label htmlFor="terms-and-conditions" className="font-normal">
+                  I accept inkMetric&apos;s{" "}
+                  <Link
+                    href="/terms-and-conditions"
+                    className="underline underline-offset-4"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Terms and Conditions
+                  </Link>
+                </Label>
+              </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !hasAcceptedTerms}
+              >
                 {isLoading ? "Creating an account..." : "Sign up"}
               </Button>
             </div>

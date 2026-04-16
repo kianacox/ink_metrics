@@ -83,6 +83,7 @@ test("shows error when signing up with an already-registered email", async ({
   await page.getByLabel("Email").fill(seededSessionUserEmail);
   await page.getByLabel("Password", { exact: true }).fill(signUpPassword);
   await page.getByLabel("Repeat Password").fill(signUpPassword);
+  await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
   await page.getByRole("button", { name: /^sign up$/i }).click();
 
   // Supabase returns "User already registered" for a confirmed duplicate;
@@ -97,6 +98,7 @@ test("shows error when passwords do not match on sign-up", async ({ page }) => {
   await page.getByLabel("Email").fill(`mismatch-${Date.now()}@${mailboxDomain}`);
   await page.getByLabel("Password", { exact: true }).fill(signUpPassword);
   await page.getByLabel("Repeat Password").fill("different-password");
+  await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
   await page.getByRole("button", { name: /^sign up$/i }).click();
 
   await expect(page.getByText(/passwords do not match/i)).toBeVisible();
@@ -159,4 +161,41 @@ test("redirects authenticated user away from /auth/forgot-password to /dashboard
 
   await page.goto("/auth/forgot-password");
   await expect(page).toHaveURL(/\/dashboard/);
+});
+
+// ---------------------------------------------------------------------------
+// Terms and Conditions
+// ---------------------------------------------------------------------------
+
+test("sign-up button is disabled until Terms and Conditions checkbox is ticked", async ({
+  page,
+}) => {
+  await page.goto("/auth/sign-up");
+  await page.getByLabel("Email").fill(`tnc-${Date.now()}@${mailboxDomain}`);
+  await page.getByLabel("Password", { exact: true }).fill(signUpPassword);
+  await page.getByLabel("Repeat Password").fill(signUpPassword);
+
+  await expect(page.getByRole("button", { name: /^sign up$/i })).toBeDisabled();
+
+  await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
+  await expect(page.getByRole("button", { name: /^sign up$/i })).toBeEnabled();
+});
+
+test("sign-up API rejects request without tsancs flag", async ({ page }) => {
+  await page.goto("/auth/sign-up");
+
+  const response = await page.evaluate(async () => {
+    const res = await fetch("/api/auth/sign-up", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "no-tsancs@example.com",
+        password: "SomePassword123!",
+      }),
+    });
+    return { status: res.status, body: await res.json() };
+  });
+
+  expect(response.status).toBe(400);
+  expect(response.body.code).toBe("TSANCS_REQUIRED");
 });
