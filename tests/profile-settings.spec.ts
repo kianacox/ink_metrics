@@ -226,6 +226,28 @@ test.describe("profile settings", () => {
     ).toBeChecked();
   });
 
+  test("marketing consent checkbox stays checked after switching between tabs", async ({ page }) => {
+    await createProfileCompleteUser(page, "settings-consent-tabswitch");
+    await openSettingsTab(page);
+
+    const settingsPanel = page.locator("#tabpanel-settings");
+
+    // Opt in and save
+    await settingsPanel
+      .getByRole("checkbox", { name: /keep me updated about new features/i })
+      .click();
+    await settingsPanel.getByRole("button", { name: /^save preferences$/i }).click();
+    await expect(settingsPanel.getByRole("status")).toContainText(/marketing preferences saved/i);
+
+    // Switch to the Profile tab and back — state must survive the tab switch
+    await page.getByRole("tab", { name: /^profile$/i }).click();
+    await page.getByRole("tab", { name: /^settings$/i }).click();
+
+    await expect(
+      settingsPanel.getByRole("checkbox", { name: /keep me updated about new features/i }),
+    ).toBeChecked();
+  });
+
   // -------------------------------------------------------------------------
   // Account deletion
   // -------------------------------------------------------------------------

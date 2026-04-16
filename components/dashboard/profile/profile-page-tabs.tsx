@@ -80,21 +80,19 @@ export function ProfilePageTabs({
         aria-labelledby="tab-profile"
         hidden={activeTab !== "profile"}
       >
-        {activeTab === "profile" ? (
-          <ProfileEditForm
-            initialDisplayName={initialDisplayName}
-            initialDefaultCurrency={initialDefaultCurrency}
-            initialReportingTimezone={initialReportingTimezone}
-            initialPayChairRent={initialPayChairRent}
-            initialRentType={initialRentType}
-            initialFixedFrequency={initialFixedFrequency}
-            initialFixedAmountMinor={initialFixedAmountMinor}
-            initialCommissionRateBps={initialCommissionRateBps}
-            initialCommissionCapped={initialCommissionCapped}
-            initialCommissionCapFrequency={initialCommissionCapFrequency}
-            initialCommissionCapAmountMinor={initialCommissionCapAmountMinor}
-          />
-        ) : null}
+        <ProfileEditForm
+          initialDisplayName={initialDisplayName}
+          initialDefaultCurrency={initialDefaultCurrency}
+          initialReportingTimezone={initialReportingTimezone}
+          initialPayChairRent={initialPayChairRent}
+          initialRentType={initialRentType}
+          initialFixedFrequency={initialFixedFrequency}
+          initialFixedAmountMinor={initialFixedAmountMinor}
+          initialCommissionRateBps={initialCommissionRateBps}
+          initialCommissionCapped={initialCommissionCapped}
+          initialCommissionCapFrequency={initialCommissionCapFrequency}
+          initialCommissionCapAmountMinor={initialCommissionCapAmountMinor}
+        />
       </div>
 
       <div
@@ -103,12 +101,10 @@ export function ProfilePageTabs({
         aria-labelledby="tab-settings"
         hidden={activeTab !== "settings"}
       >
-        {activeTab === "settings" ? (
-          <ProfileSettingsView
-            currentEmail={initialEmail}
-            initialMarketingConsent={initialMarketingConsent}
-          />
-        ) : null}
+        <ProfileSettingsView
+          currentEmail={initialEmail}
+          initialMarketingConsent={initialMarketingConsent}
+        />
       </div>
     </div>
   );
