@@ -66,6 +66,35 @@ describe("fetchClientsPage", () => {
     ).rejects.toThrow("db exploded");
   });
 
+  it("passes the 1st of the current calendar month (not a rolling 30-day window) for thisMonth", async () => {
+    // Run on April 10 2026 12:00 UTC. The start of April in UTC is Apr 1 00:00 UTC.
+    // We verify the RPC receives exactly that date, not a rolling 30-day offset
+    // (which would be 2026-03-11T12:00:00.000Z).
+    const rpc = jest.fn().mockResolvedValue({ data: [], error: null });
+    const supabase = { rpc } as unknown as Parameters<typeof fetchClientsPage>[0]["supabase"];
+
+    // Mock Date so getDateRangeStartUtcIso sees a fixed "now"
+    const fixedDate = new Date("2026-04-10T12:00:00.000Z");
+    jest.useFakeTimers({ now: fixedDate.getTime() });
+
+    await fetchClientsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "session_count",
+      cursor: null,
+      limit: 25,
+      dateRange: "thisMonth",
+    });
+
+    jest.useRealTimers();
+
+    const call = rpc.mock.calls[0][1] as { p_date_range_start: string };
+    expect(call.p_date_range_start).toBe("2026-04-01T00:00:00.000Z");
+    expect(call.p_date_range_start).not.toBe("2026-03-11T12:00:00.000Z");
+  });
+
   it("generates nextCursor from the last kept record", async () => {
     const supabase = {
       rpc: jest.fn().mockResolvedValue({

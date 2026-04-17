@@ -77,6 +77,33 @@ describe("timezone helpers", () => {
         now: fixedNow,
       }),
     ).toBe("2026-01-10T13:00:00.000Z");
+
+    // thisMonth returns midnight on the 1st of the current month in the given
+    // timezone — NOT a rolling 30-day window. Verified across UTC, a US
+    // timezone (UTC-4 in April, EDT), and Europe/London (UTC+1 in April, BST).
+    expect(
+      getDateRangeStartUtcIso({
+        preset: "thisMonth",
+        timezone: "UTC",
+        now: fixedNow,
+      }),
+    ).toBe("2026-04-01T00:00:00.000Z");
+
+    expect(
+      getDateRangeStartUtcIso({
+        preset: "thisMonth",
+        timezone: "America/New_York",
+        now: fixedNow,
+      }),
+    ).toBe("2026-04-01T04:00:00.000Z"); // midnight EDT = UTC+4
+
+    expect(
+      getDateRangeStartUtcIso({
+        preset: "thisMonth",
+        timezone: "Europe/London",
+        now: fixedNow,
+      }),
+    ).toBe("2026-03-31T23:00:00.000Z"); // midnight BST = UTC-1
   });
 
   it("formats datetime-local value in the requested timezone", () => {
