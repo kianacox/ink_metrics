@@ -215,8 +215,8 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
-            title="Monthly client retention rate"
-            description="Repeat clients this month."
+            title="Lifetime client retention rate"
+            description="Clients who have come back at least once."
             state={cardState}
             headerAction={(
               <Button
@@ -237,7 +237,7 @@ export function DashboardAnalyticsView({
               </p>
               <p className="text-muted-foreground">
                 {analytics?.retention.numerator ?? 0} of {analytics?.retention.denominator ?? 0}{" "}
-                clients returned.
+                clients have returned.
               </p>
             </div>
           </AnalyticsCard>
@@ -337,17 +337,16 @@ export function DashboardAnalyticsView({
             </div>
             <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
               <p>
-                This metric is calculated on a <span className="font-semibold text-foreground">per-month</span>{" "}
-                basis using your reporting timezone.
+                This metric is calculated across your <span className="font-semibold text-foreground">full session history</span>,
+                not limited to the current month.
               </p>
               <p className="font-medium text-foreground">Formula</p>
               <p>
-                Clients with 2 or more sessions in the month / Unique clients with at least 1
-                session in that same month
+                Clients with 2 or more sessions (all time) / All unique clients
               </p>
               <p>
-                Example: if a client had one session in March and one in April, they are counted
-                in April&apos;s total clients, but not as a returning client for April.
+                Example: a client who had one session in January and one in April counts as a
+                returning client because they have 2 or more sessions in total.
               </p>
             </div>
           </div>
