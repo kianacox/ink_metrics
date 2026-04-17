@@ -43,7 +43,7 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeCard.getByText("Gross", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("Paid to studio", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("Expenses", { exact: true })).toBeVisible();
-  await expect(takeHomeCard.getByText("Net", { exact: true })).toBeVisible();
+  await expect(takeHomeCard.getByText("Total Take-Home", { exact: true })).toBeVisible();
 
   await expect(takeHomeCard.getByText("£1,960.00")).toBeVisible();
   await expect(takeHomeCard.getByText("£470.00")).toBeVisible();
@@ -53,7 +53,12 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeCard.getByLabel("Gross comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Paid to studio comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Expenses comparison bar")).toBeVisible();
-  await expect(takeHomeCard.getByLabel("Net comparison bar")).toBeVisible();
+  await expect(takeHomeCard.getByLabel("Total Take-Home comparison bar")).toBeVisible();
+
+  await expect(takeHomeCard.getByText("100%", { exact: true })).toBeVisible();
+  await expect(takeHomeCard.getByText("73%", { exact: true })).toBeVisible();
+  await expect(takeHomeCard.getByText("24%", { exact: true })).toBeVisible();
+  await expect(takeHomeCard.getByText("3%", { exact: true })).toBeVisible();
 
   const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();

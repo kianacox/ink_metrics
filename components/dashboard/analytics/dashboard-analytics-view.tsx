@@ -30,8 +30,8 @@ const TAKE_HOME_COMPARISON_ITEMS = [
   },
   {
     key: "net" as const,
-    label: "Net",
-    colorClassName: "bg-blue-500/85",
+    label: "Total Take-Home",
+    colorClassName: "bg-blue-600",
   },
 ];
 
@@ -41,6 +41,7 @@ interface TakeHomeComparisonItem {
   value: number;
   colorClassName: string;
   widthPct: number;
+  pctOfGross: number;
 }
 
 function buildTakeHomeComparisonItems(
@@ -52,15 +53,21 @@ function buildTakeHomeComparisonItems(
     totalExpenses: analytics?.takeHome.totalExpensesMinor ?? 0,
     net: analytics?.takeHome.netMinor ?? 0,
   };
+  const grossValue = valuesByKey.gross;
   const maxAbsValue = Math.max(...Object.values(valuesByKey).map((value) => Math.abs(value)), 1);
 
   return TAKE_HOME_COMPARISON_ITEMS.map((item) => {
     const value = valuesByKey[item.key];
     const widthPct = Math.max((Math.abs(value) / maxAbsValue) * 100, value === 0 ? 0 : 8);
+    const pctOfGross =
+      item.key === "gross"
+        ? 100
+        : Math.round((Math.abs(value) / Math.max(grossValue, 1)) * 100);
     return {
       ...item,
       value,
       widthPct,
+      pctOfGross,
     };
   });
 }
@@ -191,26 +198,36 @@ export function DashboardAnalyticsView({
             state={cardState}
           >
             <div className="space-y-3 text-sm">
-              {takeHomeComparisonItems.map((item) => (
-                <div key={item.key} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-muted-foreground">{item.label}</p>
-                    <p className="font-semibold">
-                      {formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
-                    </p>
-                  </div>
-                  <div
-                    className="h-2 overflow-hidden rounded-full bg-muted/70"
-                    aria-label={`${item.label} comparison bar`}
-                    role="img"
-                  >
+              {takeHomeComparisonItems.map((item) => {
+                const isNet = item.key === "net";
+                return (
+                  <div key={item.key} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <p className={isNet ? "font-bold text-foreground text-base" : "text-muted-foreground"}>
+                          {item.label}
+                        </p>
+                        <span className={isNet ? "text-xs font-semibold text-foreground" : "text-xs text-muted-foreground"}>
+                          {item.pctOfGross}%
+                        </span>
+                      </div>
+                      <p className="font-semibold">
+                        {formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
+                      </p>
+                    </div>
                     <div
-                      className={`h-full rounded-full ${item.colorClassName}`}
-                      style={{ width: `${item.widthPct}%` }}
-                    />
+                      className={`${isNet ? "h-3" : "h-2"} overflow-hidden rounded-full bg-muted/70`}
+                      aria-label={`${item.label} comparison bar`}
+                      role="img"
+                    >
+                      <div
+                        className={`h-full rounded-full ${item.colorClassName}`}
+                        style={{ width: `${item.widthPct}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </AnalyticsCard>
 
