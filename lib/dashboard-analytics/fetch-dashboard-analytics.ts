@@ -17,6 +17,23 @@ export class DashboardAnalyticsMonthParamError extends Error {
   }
 }
 
+interface TakeHomeSummaryRpcRow {
+  gross_minor: number | string | null;
+  paid_to_studio_minor: number | string | null;
+  total_expenses_minor: number | string | null;
+  net_minor: number | string | null;
+}
+
+function toSafeMinorInt(value: number | string | null | undefined): number {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  const normalized = Math.trunc(parsed);
+  return Object.is(normalized, -0) ? 0 : normalized;
+}
+
 export function assertSupportedDashboardAnalyticsMonth(monthParam: string | null): void {
   if (monthParam && monthParam !== "current") {
     throw new DashboardAnalyticsMonthParamError();
@@ -56,6 +73,31 @@ export async function fetchDashboardAnalytics({
   const monthWindow = computeCurrentMonthWindow({
     timezone: reportingTimezone,
   });
+  const emptyResponse = buildEmptyAnalyticsResponse(monthWindow);
+  const { data: takeHomeRows, error: takeHomeError } = await supabase.rpc(
+    "compute_dashboard_take_home_summary",
+    {
+      p_user_id: userId,
+      p_month_start_utc: monthWindow.startUtcIso,
+      p_month_end_utc: monthWindow.endUtcIso,
+      p_reporting_timezone: monthWindow.timezone,
+      p_month_start_local_date: monthWindow.monthStartLocalDate,
+      p_month_end_local_date: monthWindow.monthEndLocalDate,
+    },
+  );
+  if (takeHomeError) {
+    throw new Error("Could not compute dashboard take-home metrics.");
+  }
 
-  return buildEmptyAnalyticsResponse(monthWindow);
+  const takeHome = ((takeHomeRows ?? [])[0] ?? null) as TakeHomeSummaryRpcRow | null;
+
+  return {
+    ...emptyResponse,
+    takeHome: {
+      grossMinor: toSafeMinorInt(takeHome?.gross_minor),
+      paidToStudioMinor: toSafeMinorInt(takeHome?.paid_to_studio_minor),
+      totalExpensesMinor: toSafeMinorInt(takeHome?.total_expenses_minor),
+      netMinor: toSafeMinorInt(takeHome?.net_minor),
+    },
+  };
 }

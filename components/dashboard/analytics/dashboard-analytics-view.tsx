@@ -11,6 +11,59 @@ import {
 } from "@/lib/dashboard-analytics";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 
+const TAKE_HOME_COMPARISON_ITEMS = [
+  {
+    key: "gross" as const,
+    label: "Gross",
+    colorClassName: "bg-emerald-500/85",
+  },
+  {
+    key: "paidToStudio" as const,
+    label: "Paid to studio",
+    colorClassName: "bg-amber-500/85",
+  },
+  {
+    key: "totalExpenses" as const,
+    label: "Expenses",
+    colorClassName: "bg-orange-500/85",
+  },
+  {
+    key: "net" as const,
+    label: "Net",
+    colorClassName: "bg-blue-500/85",
+  },
+];
+
+interface TakeHomeComparisonItem {
+  key: "gross" | "paidToStudio" | "totalExpenses" | "net";
+  label: string;
+  value: number;
+  colorClassName: string;
+  widthPct: number;
+}
+
+function buildTakeHomeComparisonItems(
+  analytics: DashboardAnalyticsResponse | null,
+): TakeHomeComparisonItem[] {
+  const valuesByKey = {
+    gross: analytics?.takeHome.grossMinor ?? 0,
+    paidToStudio: analytics?.takeHome.paidToStudioMinor ?? 0,
+    totalExpenses: analytics?.takeHome.totalExpensesMinor ?? 0,
+    net: analytics?.takeHome.netMinor ?? 0,
+  };
+  const maxAbsValue = Math.max(...Object.values(valuesByKey).map((value) => Math.abs(value)), 1);
+
+  return TAKE_HOME_COMPARISON_ITEMS.map((item) => {
+    const value = valuesByKey[item.key];
+    const widthPct = Math.max((Math.abs(value) / maxAbsValue) * 100, value === 0 ? 0 : 8);
+    return {
+      ...item,
+      value,
+      widthPct,
+    };
+  });
+}
+
 function hasAnyMetricData(analytics: DashboardAnalyticsResponse): boolean {
   if (
     analytics.takeHome.grossMinor !== 0 ||
@@ -93,6 +146,10 @@ export function DashboardAnalyticsView({
 
     return "ready" as const;
   }, [analytics, isLoading]);
+  const takeHomeComparisonItems = useMemo(
+    () => buildTakeHomeComparisonItems(analytics),
+    [analytics],
+  );
 
   return (
     <section className="flex flex-col gap-4">
@@ -115,43 +172,27 @@ export function DashboardAnalyticsView({
             description="Gross, studio deductions, expenses, and net."
             state={cardState}
           >
-            <div className="space-y-2 text-sm">
-              <p>
-                Gross:{" "}
-                <span className="font-semibold">
-                  {formatMinorAsCurrency(
-                    analytics?.takeHome.grossMinor ?? 0,
-                    effectiveCurrencyCode,
-                  )}
-                </span>
-              </p>
-              <p>
-                Paid to studio:{" "}
-                <span className="font-semibold">
-                  {formatMinorAsCurrency(
-                    analytics?.takeHome.paidToStudioMinor ?? 0,
-                    effectiveCurrencyCode,
-                  )}
-                </span>
-              </p>
-              <p>
-                Total expenses:{" "}
-                <span className="font-semibold">
-                  {formatMinorAsCurrency(
-                    analytics?.takeHome.totalExpensesMinor ?? 0,
-                    effectiveCurrencyCode,
-                  )}
-                </span>
-              </p>
-              <p>
-                Net:{" "}
-                <span className="font-semibold">
-                  {formatMinorAsCurrency(
-                    analytics?.takeHome.netMinor ?? 0,
-                    effectiveCurrencyCode,
-                  )}
-                </span>
-              </p>
+            <div className="space-y-3 text-sm">
+              {takeHomeComparisonItems.map((item) => (
+                <div key={item.key} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-muted-foreground">{item.label}</p>
+                    <p className="font-semibold">
+                      {formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
+                    </p>
+                  </div>
+                  <div
+                    className="h-2 overflow-hidden rounded-full bg-muted/70"
+                    aria-label={`${item.label} comparison bar`}
+                    role="img"
+                  >
+                    <div
+                      className={`h-full rounded-full ${item.colorClassName}`}
+                      style={{ width: `${item.widthPct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </AnalyticsCard>
 
