@@ -35,7 +35,7 @@ test("renders take-home summary values and comparative bars for seeded data", as
 
   const monthLabel = new Date().toLocaleString("en-GB", { month: "long" });
 
-  await expect(page.getByRole("heading", { name: `${monthLabel} stats` })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `${monthLabel} Performance` })).toBeVisible();
   const takeHomeTitle = page.getByText("Take-home summary", { exact: true });
   await expect(takeHomeTitle).toBeVisible();
   const takeHomeCard = takeHomeTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();

@@ -172,9 +172,13 @@ export function DashboardAnalyticsView({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          {(analytics?.monthLabel ?? "This month")} stats
-        </h1>
+        {isLoading ? (
+          <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+        ) : (
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            {(analytics?.monthLabel ?? "This month")} Performance
+          </h1>
+        )}
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Your monthly business snapshot uses your reporting timezone and updates
           as you log sessions and expenses.
