@@ -9,6 +9,7 @@ interface AnalyticsCardProps {
   title: string;
   description: string;
   state: AnalyticsCardState;
+  headerAction?: ReactNode;
   children?: ReactNode;
 }
 
@@ -16,12 +17,16 @@ export function AnalyticsCard({
   title,
   description,
   state,
+  headerAction,
   children,
 }: AnalyticsCardProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="leading-tight text-base">{title}</CardTitle>
+          {headerAction ? <div className="mt-[-1px] shrink-0">{headerAction}</div> : null}
+        </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>

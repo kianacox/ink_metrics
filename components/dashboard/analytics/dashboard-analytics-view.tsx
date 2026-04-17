@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
-import { ErrorState } from "@/components/ui";
+import { Button, ErrorState } from "@/components/ui";
 import {
   formatHours,
   formatMinorAsCurrency,
@@ -10,6 +10,7 @@ import {
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { Info, X } from "lucide-react";
 
 const TAKE_HOME_COMPARISON_ITEMS = [
   {
@@ -105,10 +106,12 @@ export function DashboardAnalyticsView({
 }: {
   currencyCode?: string;
 }) {
+  const retentionInfoTitleId = useId();
   const effectiveCurrencyCode = currencyCode ?? DEFAULT_CURRENCY;
   const [analytics, setAnalytics] = useState<DashboardAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
 
   const loadAnalytics = useCallback(async () => {
     setIsLoading(true);
@@ -134,6 +137,21 @@ export function DashboardAnalyticsView({
   useEffect(() => {
     void loadAnalytics();
   }, [loadAnalytics]);
+
+  useEffect(() => {
+    if (!isRetentionInfoOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsRetentionInfoOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isRetentionInfoOpen]);
 
   const cardState = useMemo(() => {
     if (isLoading) {
@@ -197,9 +215,21 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
-            title="Client retention rate"
+            title="Monthly client retention rate"
             description="Repeat clients this month."
             state={cardState}
+            headerAction={(
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="-mr-1 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+                aria-label="How client retention is calculated"
+                onClick={() => setIsRetentionInfoOpen(true)}
+              >
+                <Info aria-hidden="true" className="size-4" />
+              </Button>
+            )}
           >
             <div className="space-y-2 text-sm">
               <p className="text-2xl font-semibold text-foreground">
@@ -276,6 +306,53 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
         </div>
       )}
+
+      {isRetentionInfoOpen ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+          role="presentation"
+          onClick={() => setIsRetentionInfoOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl border border-border bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-xl sm:rounded-xl sm:px-6 sm:pb-6 sm:pt-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={retentionInfoTitleId}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id={retentionInfoTitleId} className="text-base font-semibold text-foreground sm:text-lg">
+                How client retention is calculated
+              </h2>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                aria-label="Close retention calculation details"
+                onClick={() => setIsRetentionInfoOpen(false)}
+              >
+                <X aria-hidden="true" className="size-4" />
+              </Button>
+            </div>
+            <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+              <p>
+                This metric is calculated on a <span className="font-semibold text-foreground">per-month</span>{" "}
+                basis using your reporting timezone.
+              </p>
+              <p className="font-medium text-foreground">Formula</p>
+              <p>
+                Clients with 2 or more sessions in the month / Unique clients with at least 1
+                session in that same month
+              </p>
+              <p>
+                Example: if a client had one session in March and one in April, they are counted
+                in April&apos;s total clients, but not as a returning client for April.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
