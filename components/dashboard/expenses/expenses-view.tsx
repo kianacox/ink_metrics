@@ -27,7 +27,6 @@ export function ExpensesView() {
 
   const {
     expenses,
-    totalCount,
     currentMonthTotalMinor,
     defaultCurrency,
     isLoading,
@@ -100,7 +99,7 @@ export function ExpensesView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           Total expenses:{" "}
-          <span className="font-semibold">{isLoading ? "..." : totalCount}</span>
+          <span className="font-semibold">{isLoading ? "..." : expenses.length}</span>
         </p>
       </div>
 

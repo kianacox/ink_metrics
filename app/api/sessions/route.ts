@@ -1,4 +1,5 @@
 import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
+import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
@@ -12,7 +13,7 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
   "yearToDate",
   "allTime",
 ]);
-const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_LIMIT = 25;
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
@@ -48,30 +49,34 @@ export async function GET(request: Request) {
     ? (rawDateRange as SessionDateRangePreset)
     : "last30Days";
 
-  const pageIndex = Math.max(0, Number.parseInt(params.get("page") ?? "0", 10) || 0);
-  const pageSize = Math.max(
+  const limit = Math.max(
     1,
     Math.min(
       100,
-      Number.parseInt(params.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10) ||
-        DEFAULT_PAGE_SIZE,
+      Number.parseInt(params.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
+        DEFAULT_LIMIT,
     ),
   );
   const reportingTimezone = params.get("tz") ?? "UTC";
+  const cursorParam = params.get("cursor");
 
   try {
+    const cursor = decodeCompositeCursor(cursorParam);
     const result = await fetchSessionsPage({
       supabase,
       userId: user.id,
       reportingTimezone,
       searchQuery,
       sortField,
-      pageIndex,
-      pageSize,
+      cursor,
+      limit,
       dateRange,
     });
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof CursorDecodeError) {
+      return errorJson(400, "SESSIONS_CURSOR_INVALID", err.message);
+    }
     if (err instanceof Error && err.message === "Could not compute date range boundaries.") {
       return errorJson(400, "SESSIONS_DATE_RANGE_INVALID", err.message);
     }

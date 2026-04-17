@@ -22,17 +22,17 @@ export function useSessionsPagination({
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const requestIdRef = useRef(0);
 
   const loadPage = useCallback(
     async ({
-      pageIndex,
+      cursor,
       append,
       reportingTimezoneOverride,
     }: {
-      pageIndex: number;
+      cursor: string | null;
       append: boolean;
       reportingTimezoneOverride?: string;
     }) => {
@@ -43,10 +43,12 @@ export function useSessionsPagination({
         search: searchQuery,
         sort: sortField,
         dateRange,
-        page: String(pageIndex),
-        pageSize: String(pageSize),
+        limit: String(pageSize),
         tz: effectiveTimezone,
       });
+      if (cursor) {
+        params.set("cursor", cursor);
+      }
 
       const res = await fetch(`/api/sessions?${params.toString()}`);
       if (!res.ok) {
@@ -60,13 +62,16 @@ export function useSessionsPagination({
         return;
       }
 
-      const mappedPage = mapSessionRowsToListItems(pageResult.rows);
-      setSessions((previousSessions) =>
-        append ? [...previousSessions, ...mappedPage] : mappedPage,
-      );
-      setTotalCount(pageResult.totalCount);
+      const mappedPage = mapSessionRowsToListItems(pageResult.data);
+      let nextTotalCount = mappedPage.length;
+      setSessions((previousSessions) => {
+        const nextSessions = append ? [...previousSessions, ...mappedPage] : mappedPage;
+        nextTotalCount = nextSessions.length;
+        return nextSessions;
+      });
+      setTotalCount(nextTotalCount);
       setHasNextPage(pageResult.hasNextPage);
-      setCurrentPageIndex(pageIndex);
+      setNextCursor(pageResult.nextCursor);
     },
     [dateRange, getCurrentReportingTimezone, pageSize, searchQuery, sortField],
   );
@@ -77,7 +82,7 @@ export function useSessionsPagination({
     try {
       const sessionPreferences = await ensureSessionPreferencesLoaded();
       await loadPage({
-        pageIndex: 0,
+        cursor: null,
         append: false,
         reportingTimezoneOverride: sessionPreferences.reportingTimezone,
       });
@@ -91,6 +96,7 @@ export function useSessionsPagination({
       setSessions([]);
       setTotalCount(0);
       setHasNextPage(false);
+      setNextCursor(null);
     } finally {
       setIsLoading(false);
     }
@@ -104,13 +110,13 @@ export function useSessionsPagination({
     setIsLoadingMore(true);
     setError(null);
     try {
-      await loadPage({ pageIndex: currentPageIndex + 1, append: true });
+      await loadPage({ cursor: nextCursor, append: true });
     } catch {
       setError("Could not load more sessions. Please try again.");
     } finally {
       setIsLoadingMore(false);
     }
-  }, [currentPageIndex, hasNextPage, isLoading, isLoadingMore, loadPage]);
+  }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
 
   useEffect(() => {
     void reload();
