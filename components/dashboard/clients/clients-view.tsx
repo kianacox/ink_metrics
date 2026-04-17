@@ -66,7 +66,6 @@ export function ClientsView() {
 
   const {
     clients,
-    totalCount,
     defaultCurrency,
     reportingTimezone,
     topClientThisMonth,
@@ -147,7 +146,7 @@ export function ClientsView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? "..." : totalCount}</span>
+          <span className="font-semibold">{isLoading ? "..." : clients.length}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">
