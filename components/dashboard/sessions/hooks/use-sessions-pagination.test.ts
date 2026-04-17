@@ -12,8 +12,8 @@ describe("useSessionsPagination", () => {
       ok: true,
       json: () =>
         Promise.resolve({
-          rows: [],
-          totalCount: 0,
+          data: [],
+          nextCursor: null,
           hasNextPage: false,
         } satisfies FetchSessionsPageResult),
     }) as jest.Mock;
@@ -91,7 +91,7 @@ describe("useSessionsPagination", () => {
     await act(async () => {
       resolveSecond?.(
         makeResponse({
-          rows: [
+          data: [
             {
               session_id: "session-2",
               price: 2000,
@@ -100,7 +100,7 @@ describe("useSessionsPagination", () => {
               clients: { name: "Bob" },
             },
           ],
-          totalCount: 1,
+          nextCursor: null,
           hasNextPage: false,
         }),
       );
@@ -114,7 +114,7 @@ describe("useSessionsPagination", () => {
     await act(async () => {
       resolveFirst?.(
         makeResponse({
-          rows: [
+          data: [
             {
               session_id: "session-1",
               price: 1000,
@@ -123,7 +123,7 @@ describe("useSessionsPagination", () => {
               clients: { name: "Alice" },
             },
           ],
-          totalCount: 1,
+          nextCursor: null,
           hasNextPage: false,
         }),
       );
