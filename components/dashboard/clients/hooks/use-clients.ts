@@ -15,7 +15,6 @@ interface UseClientsParams {
 
 interface UseClientsResult {
   clients: ClientListItem[];
-  totalCount: number;
   defaultCurrency: string;
   reportingTimezone: string;
   topClientThisMonth: ClientListItem | null;
@@ -33,8 +32,8 @@ interface PreferencesApiResponse {
 }
 
 interface ClientsApiResponse {
-  clients: ClientListItem[];
-  totalCount: number;
+  data: ClientListItem[];
+  nextCursor: string | null;
   hasNextPage: boolean;
 }
 
@@ -47,15 +46,14 @@ export function useClients({
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseClientsParams): UseClientsResult {
   const [clients, setClients] = useState<ClientListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [reportingTimezone, setReportingTimezone] = useState(getDefaultReportingTimezone());
   const [topClientThisMonth, setTopClientThisMonth] = useState<ClientListItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   const requestIdRef = useRef(0);
   const reportingTimezoneRef = useRef(getDefaultReportingTimezone());
@@ -90,11 +88,11 @@ export function useClients({
 
   const loadPage = useCallback(
     async ({
-      pageIndex,
+      cursor,
       append,
       reportingTimezoneOverride,
     }: {
-      pageIndex: number;
+      cursor: string | null;
       append: boolean;
       reportingTimezoneOverride?: string;
     }) => {
@@ -105,10 +103,12 @@ export function useClients({
         search: searchQuery,
         sort: sortField,
         dateRange,
-        page: String(pageIndex),
-        pageSize: String(pageSize),
+        limit: String(pageSize),
         tz: effectiveTimezone,
       });
+      if (cursor) {
+        params.set("cursor", cursor);
+      }
 
       const res = await fetch(`/api/clients?${params.toString()}`);
       if (!res.ok) {
@@ -121,10 +121,9 @@ export function useClients({
       }
 
       const data = (await res.json()) as ClientsApiResponse;
-      setClients((prev) => (append ? [...prev, ...data.clients] : data.clients));
-      setTotalCount(data.totalCount);
+      setClients((prev) => (append ? [...prev, ...data.data] : data.data));
       setHasNextPage(data.hasNextPage);
-      setCurrentPageIndex(pageIndex);
+      setNextCursor(data.nextCursor);
     },
     [dateRange, pageSize, searchQuery, sortField],
   );
@@ -133,8 +132,7 @@ export function useClients({
     const params = new URLSearchParams({
       dateRange: "thisMonth",
       sort: "total_value",
-      pageSize: "1",
-      page: "0",
+      limit: "1",
       search: "",
       tz,
     });
@@ -143,7 +141,7 @@ export function useClients({
       return;
     }
     const data = (await res.json()) as ClientsApiResponse;
-    setTopClientThisMonth(data.clients[0] ?? null);
+    setTopClientThisMonth(data.data[0] ?? null);
   }, []);
 
   const reload = useCallback(async () => {
@@ -153,7 +151,7 @@ export function useClients({
       const prefs = await loadPreferences();
       await Promise.all([
         loadPage({
-          pageIndex: 0,
+          cursor: null,
           append: false,
           reportingTimezoneOverride: prefs.reportingTimezone,
         }),
@@ -167,8 +165,8 @@ export function useClients({
           : "Could not load clients. Please try again.",
       );
       setClients([]);
-      setTotalCount(0);
       setHasNextPage(false);
+      setNextCursor(null);
     } finally {
       setIsLoading(false);
     }
@@ -181,13 +179,13 @@ export function useClients({
     setIsLoadingMore(true);
     setError(null);
     try {
-      await loadPage({ pageIndex: currentPageIndex + 1, append: true });
+      await loadPage({ cursor: nextCursor, append: true });
     } catch {
       setError("Could not load more clients. Please try again.");
     } finally {
       setIsLoadingMore(false);
     }
-  }, [currentPageIndex, hasNextPage, isLoading, isLoadingMore, loadPage]);
+  }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
 
   useEffect(() => {
     void reload();
@@ -195,7 +193,6 @@ export function useClients({
 
   return {
     clients,
-    totalCount,
     defaultCurrency,
     reportingTimezone,
     topClientThisMonth,

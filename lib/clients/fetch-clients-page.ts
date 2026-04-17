@@ -1,9 +1,11 @@
 import { getDateRangeStartUtcIso } from "@/lib/timezones";
 import type {
+  ClientSortField,
   ClientListItem,
   FetchClientsPageParams,
   FetchClientsPageResult,
 } from "@/lib/clients/models";
+import { encodeCompositeCursor } from "@/lib/pagination/cursor";
 
 interface RpcRow {
   client_id: string;
@@ -15,7 +17,6 @@ interface RpcRow {
   lifetime_total_value_minor: number;
   range_session_count: number;
   range_total_value_minor: number;
-  total_count: number;
 }
 
 function mapRpcRow(row: RpcRow): ClientListItem {
@@ -32,13 +33,21 @@ function mapRpcRow(row: RpcRow): ClientListItem {
   };
 }
 
+function getSortValueForCursor(row: RpcRow, sortField: ClientSortField): number {
+  if (sortField === "total_value") {
+    return Number(row.range_total_value_minor);
+  }
+  return Number(row.range_session_count);
+}
+
 export async function fetchClientsPage({
   supabase,
+  userId,
   reportingTimezone,
   searchQuery,
   sortField,
-  pageIndex,
-  pageSize,
+  cursor,
+  limit,
   dateRange,
 }: FetchClientsPageParams): Promise<FetchClientsPageResult> {
   const dateRangeStart = getDateRangeStartUtcIso({
@@ -50,14 +59,20 @@ export async function fetchClientsPage({
     throw new Error("Could not compute date range boundaries.");
   }
 
-  const offset = pageIndex * pageSize;
+  const cursorSortValue =
+    cursor === null ? null : Number(cursor.sortValue);
+  if (cursor !== null && Number.isNaN(cursorSortValue)) {
+    throw new Error("Client cursor sort value must be a number.");
+  }
 
   const { data, error } = await supabase.rpc("fetch_clients_page", {
+    p_user_id: userId,
     p_date_range_start: dateRangeStart,
     p_search: searchQuery.trim(),
     p_sort_by: sortField,
-    p_page_size: pageSize + 1,
-    p_offset: offset,
+    p_page_size: limit + 1,
+    p_cursor_sort_value: cursorSortValue,
+    p_cursor_client_id: cursor?.id ?? null,
   });
 
   if (error) {
@@ -65,13 +80,20 @@ export async function fetchClientsPage({
   }
 
   const rows = (data ?? []) as RpcRow[];
-  const totalCount = rows[0]?.total_count ?? 0;
-  const hasNextPage = rows.length > pageSize;
-  const pageRows = rows.slice(0, pageSize).map(mapRpcRow);
+  const hasNextPage = rows.length > limit;
+  const pageRows = rows.slice(0, limit);
+  const mappedRows = pageRows.map(mapRpcRow);
+  const lastRow = pageRows[pageRows.length - 1] ?? null;
+  const nextCursor = hasNextPage && lastRow
+    ? encodeCompositeCursor({
+        sortValue: getSortValueForCursor(lastRow, sortField),
+        id: lastRow.client_id,
+      })
+    : null;
 
   return {
-    rows: pageRows,
+    data: mappedRows,
     hasNextPage,
-    totalCount: Number(totalCount),
+    nextCursor,
   };
 }
