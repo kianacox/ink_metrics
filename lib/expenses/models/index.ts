@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CompositeCursor, CursorPaginatedResult } from "@/lib/pagination/cursor";
 
 // Const-object enum: string literals remain assignable to ExpenseCategory,
 // and Object.values(ExpenseCategory) gives the canonical ordered array.
@@ -61,14 +62,11 @@ export interface FetchExpensesPageParams {
   supabase: SupabaseClient;
   userId: string;
   categories: string[];
-  pageIndex: number;
-  pageSize: number;
+  cursor: CompositeCursor | null;
+  limit: number;
 }
 
-export interface FetchExpensesPageResult {
-  rows: ExpenseListItem[];
-  hasNextPage: boolean;
-  totalCount: number;
+export interface FetchExpensesPageResult extends CursorPaginatedResult<ExpenseListItem> {
   currentMonthTotalMinor: number;
 }
 
@@ -80,7 +78,6 @@ export interface UseExpensesParams {
 
 export interface UseExpensesResult {
   expenses: ExpenseListItem[];
-  totalCount: number;
   currentMonthTotalMinor: number;
   defaultCurrency: string;
   isLoading: boolean;
@@ -92,8 +89,8 @@ export interface UseExpensesResult {
 }
 
 export interface ExpensesApiResponse {
-  expenses: ExpenseListItem[];
-  totalCount: number;
+  data: ExpenseListItem[];
+  nextCursor: string | null;
   hasNextPage: boolean;
   currentMonthTotalMinor: number;
 }

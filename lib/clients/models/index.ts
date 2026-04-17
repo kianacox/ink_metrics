@@ -1,4 +1,5 @@
 import type { SessionDateRangePreset } from "@/lib/timezones";
+import type { CompositeCursor, CursorPaginatedResult } from "@/lib/pagination/cursor";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type { SessionDateRangePreset as ClientDateRangePreset };
@@ -19,19 +20,16 @@ export interface ClientListItem {
 
 export interface FetchClientsPageParams {
   supabase: SupabaseClient;
+  userId: string;
   reportingTimezone: string;
   searchQuery: string;
   sortField: ClientSortField;
-  pageIndex: number;
-  pageSize: number;
+  cursor: CompositeCursor | null;
+  limit: number;
   dateRange: SessionDateRangePreset;
 }
 
-export interface FetchClientsPageResult {
-  rows: ClientListItem[];
-  hasNextPage: boolean;
-  totalCount: number;
-}
+export type FetchClientsPageResult = CursorPaginatedResult<ClientListItem>;
 
 export interface ClientCreatePayload {
   name: string;
