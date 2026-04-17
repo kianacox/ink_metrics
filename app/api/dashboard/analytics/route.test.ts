@@ -75,9 +75,9 @@ describe("GET /api/dashboard/analytics", () => {
         netMinor: 144800,
       },
       retention: {
-        numerator: 0,
-        denominator: 0,
-        rate: 0,
+        numerator: 3,
+        denominator: 8,
+        rate: 0.375,
       },
       averageProfitPerSession: {
         valueMinor: 0,
@@ -106,6 +106,11 @@ describe("GET /api/dashboard/analytics", () => {
       paidToStudioMinor: 45000,
       totalExpensesMinor: 6200,
       netMinor: 144800,
+    });
+    expect(payload.retention).toEqual({
+      numerator: 3,
+      denominator: 8,
+      rate: 0.375,
     });
   });
 
