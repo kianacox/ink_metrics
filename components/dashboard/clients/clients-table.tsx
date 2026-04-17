@@ -30,7 +30,7 @@ export function ClientsTable({
   onDeleteClient,
 }: ClientsTableProps) {
   return (
-    <div className="hidden overflow-hidden rounded-lg border border-border sm:block">
+    <div className="hidden overflow-x-auto rounded-lg border border-border sm:block">
       <table className="w-full border-collapse">
         <thead className="bg-muted/40">
           <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -41,7 +41,7 @@ export function ClientsTable({
             <th className="px-4 py-3 font-medium">Value ({dateRangeLabel})</th>
             <th className="px-4 py-3 font-medium">Lifetime sessions</th>
             <th className="px-4 py-3 font-medium">Lifetime value</th>
-            <th className="px-4 py-3 text-right font-medium">Actions</th>
+            <th className="w-px whitespace-nowrap px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -79,7 +79,7 @@ export function ClientsTable({
                 <td className="px-4 py-3 text-sm text-foreground">
                   {formatSessionProfit(client.lifetimeTotalValueMinor, currencyCode)}
                 </td>
-                <td className="px-4 py-3">
+                <td className="w-px whitespace-nowrap px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Button
                       type="button"
