@@ -39,8 +39,8 @@ describe("useSessions", () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            rows: [],
-            totalCount: 0,
+            data: [],
+            nextCursor: null,
             hasNextPage: false,
           }),
       }) as jest.Mock;

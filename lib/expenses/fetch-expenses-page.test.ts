@@ -1,4 +1,5 @@
 import { fetchExpensesPage } from "./fetch-expenses-page";
+import { decodeCompositeCursor } from "@/lib/pagination/cursor";
 
 const BASE_ROW = {
   expense_id: "exp-1",
@@ -23,7 +24,12 @@ interface PageQuery {
   eq: jest.Mock;
   in: jest.Mock;
   order: jest.Mock;
-  range: jest.Mock;
+  or: jest.Mock;
+  limit: jest.Mock;
+  then: <TResult1 = unknown, TResult2 = never>(
+    onfulfilled?: ((value: { data: unknown[]; error: null }) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>;
 }
 
 interface MonthQuery {
@@ -31,12 +37,15 @@ interface MonthQuery {
   gte: jest.Mock;
 }
 
-function createPageQuery(rows: unknown[] = [], count = 0): PageQuery {
+function createPageQuery(rows: unknown[] = []): PageQuery {
   const q: Partial<PageQuery> = {};
   q.eq = jest.fn(() => q);
   q.in = jest.fn(() => q);
   q.order = jest.fn(() => q);
-  q.range = jest.fn().mockResolvedValue({ data: rows, count, error: null });
+  q.or = jest.fn(() => q);
+  q.limit = jest.fn(() => q);
+  q.then = (onfulfilled, onrejected) =>
+    Promise.resolve({ data: rows, error: null }).then(onfulfilled, onrejected);
   return q as PageQuery;
 }
 
@@ -45,7 +54,10 @@ function createPageQueryError(message: string): PageQuery {
   q.eq = jest.fn(() => q);
   q.in = jest.fn(() => q);
   q.order = jest.fn(() => q);
-  q.range = jest.fn().mockResolvedValue({ data: null, count: null, error: { message } });
+  q.or = jest.fn(() => q);
+  q.limit = jest.fn(() => q);
+  q.then = (onfulfilled, onrejected) =>
+    Promise.resolve({ data: null, error: { message } }).then(onfulfilled, onrejected);
   return q as PageQuery;
 }
 
@@ -71,18 +83,18 @@ function buildSupabase(pageQuery: PageQuery, monthQuery: MonthQuery) {
 describe("fetchExpensesPage", () => {
   it("maps DB rows to ExpenseListItem shape", async () => {
     const row = { ...BASE_ROW };
-    const supabase = buildSupabase(createPageQuery([row], 1), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery([row]), createMonthQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
-    expect(result.rows).toHaveLength(1);
-    expect(result.rows[0]).toEqual({
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0]).toEqual({
       id: "exp-1",
       item: "Black ink",
       category: "ink",
@@ -97,30 +109,30 @@ describe("fetchExpensesPage", () => {
   });
 
   it("applies category filter when categories are provided", async () => {
-    const pageQuery = createPageQuery([], 0);
+    const pageQuery = createPageQuery([]);
     const supabase = buildSupabase(pageQuery, createMonthQuery([]));
 
     await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: ["ink", "needles"],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(pageQuery.in).toHaveBeenCalledWith("category", ["ink", "needles"]);
   });
 
   it("does not apply category filter when categories array is empty", async () => {
-    const pageQuery = createPageQuery([], 0);
+    const pageQuery = createPageQuery([]);
     const supabase = buildSupabase(pageQuery, createMonthQuery([]));
 
     await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(pageQuery.in).not.toHaveBeenCalled();
@@ -129,78 +141,62 @@ describe("fetchExpensesPage", () => {
   it("detects hasNextPage when rows returned exceeds pageSize", async () => {
     // We fetch pageSize + 1 rows to detect a next page
     const rows = Array.from({ length: 26 }, (_, i) => ({ ...BASE_ROW, expense_id: `exp-${i}` }));
-    const supabase = buildSupabase(createPageQuery(rows, 26), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery(rows), createMonthQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(result.hasNextPage).toBe(true);
-    expect(result.rows).toHaveLength(25);
+    expect(result.data).toHaveLength(25);
+    expect(result.nextCursor).not.toBeNull();
   });
 
   it("sets hasNextPage to false when rows count does not exceed pageSize", async () => {
     const rows = [BASE_ROW];
-    const supabase = buildSupabase(createPageQuery(rows, 1), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery(rows), createMonthQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(result.hasNextPage).toBe(false);
   });
 
   it("sums currentMonthTotalMinor from the month query", async () => {
-    const supabase = buildSupabase(
-      createPageQuery([], 0),
-      createMonthQuery([{ amount_minor: 500 }, { amount_minor: 750 }]),
-    );
+    const supabase = buildSupabase(createPageQuery([]), createMonthQuery([{ amount_minor: 500 }, { amount_minor: 750 }]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(result.currentMonthTotalMinor).toBe(1250);
   });
 
   it("returns zero currentMonthTotalMinor when no month rows", async () => {
-    const supabase = buildSupabase(createPageQuery([], 0), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery([]), createMonthQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
     expect(result.currentMonthTotalMinor).toBe(0);
-  });
-
-  it("returns totalCount from the count field", async () => {
-    const supabase = buildSupabase(createPageQuery([], 42), createMonthQuery([]));
-
-    const result = await fetchExpensesPage({
-      supabase,
-      userId: "user-1",
-      categories: [],
-      pageIndex: 0,
-      pageSize: 25,
-    });
-
-    expect(result.totalCount).toBe(42);
   });
 
   it("throws when the page query returns an error", async () => {
@@ -211,8 +207,8 @@ describe("fetchExpensesPage", () => {
         supabase,
         userId: "user-1",
         categories: [],
-        pageIndex: 0,
-        pageSize: 25,
+        cursor: null,
+        limit: 25,
       }),
     ).rejects.toThrow("DB failure");
   });
@@ -224,18 +220,42 @@ describe("fetchExpensesPage", () => {
       receipt_mime_type: "image/jpeg",
       receipt_size_bytes: 204800,
     };
-    const supabase = buildSupabase(createPageQuery([row], 1), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery([row]), createMonthQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
-      pageIndex: 0,
-      pageSize: 25,
+      cursor: null,
+      limit: 25,
     });
 
-    expect(result.rows[0]?.receiptPath).toBe("user-1/exp-1/receipt.jpg");
-    expect(result.rows[0]?.receiptMimeType).toBe("image/jpeg");
-    expect(result.rows[0]?.receiptSizeBytes).toBe(204800);
+    expect(result.data[0]?.receiptPath).toBe("user-1/exp-1/receipt.jpg");
+    expect(result.data[0]?.receiptMimeType).toBe("image/jpeg");
+    expect(result.data[0]?.receiptSizeBytes).toBe(204800);
+  });
+
+  it("applies composite cursor filter and serializes nextCursor", async () => {
+    const pageQuery = createPageQuery([
+      { ...BASE_ROW, expense_id: "exp-2", date_purchased: "2026-03-20" },
+      { ...BASE_ROW, expense_id: "exp-1", date_purchased: "2026-03-19" },
+    ]);
+    const supabase = buildSupabase(pageQuery, createMonthQuery([]));
+
+    const result = await fetchExpensesPage({
+      supabase,
+      userId: "user-1",
+      categories: [],
+      cursor: { sortValue: "2026-03-21", id: "exp-3" },
+      limit: 1,
+    });
+
+    expect(pageQuery.or).toHaveBeenCalledWith(
+      'date_purchased.lt."2026-03-21",and(date_purchased.eq."2026-03-21",expense_id.lt."exp-3")',
+    );
+    expect(decodeCompositeCursor(result.nextCursor)).toEqual({
+      sortValue: "2026-03-20",
+      id: "exp-2",
+    });
   });
 });
