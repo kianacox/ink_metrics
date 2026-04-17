@@ -25,8 +25,8 @@ interface TakeHomeSummaryRpcRow {
 }
 
 interface RetentionRpcRow {
-  unique_clients_in_month: number | string | null;
-  clients_with_2plus_sessions_in_month: number | string | null;
+  unique_clients_total: number | string | null;
+  clients_with_2plus_sessions_total: number | string | null;
 }
 
 function toSafeInt(value: number | string | null | undefined): number {
@@ -116,22 +116,17 @@ export async function fetchDashboardAnalytics({
 
   const takeHome = ((takeHomeRows ?? [])[0] ?? null) as TakeHomeSummaryRpcRow | null;
   const { data: retentionRows, error: retentionError } = await supabase.rpc(
-    "compute_dashboard_client_retention",
+    "compute_lifetime_client_retention",
     {
       p_user_id: userId,
-      p_month_start_utc: monthWindow.startUtcIso,
-      p_month_end_utc: monthWindow.endUtcIso,
-      p_reporting_timezone: monthWindow.timezone,
-      p_month_start_local_date: monthWindow.monthStartLocalDate,
-      p_month_end_local_date: monthWindow.monthEndLocalDate,
     },
   );
   if (retentionError) {
     throw new Error("Could not compute dashboard retention metrics.");
   }
   const retention = ((retentionRows ?? [])[0] ?? null) as RetentionRpcRow | null;
-  const retentionDenominator = toSafeInt(retention?.unique_clients_in_month);
-  const retentionNumerator = toSafeInt(retention?.clients_with_2plus_sessions_in_month);
+  const retentionDenominator = toSafeInt(retention?.unique_clients_total);
+  const retentionNumerator = toSafeInt(retention?.clients_with_2plus_sessions_total);
 
   return {
     ...emptyResponse,

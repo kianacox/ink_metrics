@@ -14,8 +14,8 @@ function buildSupabaseMock({
   takeHomeRpcError = null,
   retentionRpcData = [
     {
-      unique_clients_in_month: 8,
-      clients_with_2plus_sessions_in_month: 3,
+      unique_clients_total: 8,
+      clients_with_2plus_sessions_total: 3,
     },
   ],
   retentionRpcError = null,
@@ -30,8 +30,8 @@ function buildSupabaseMock({
   }>;
   takeHomeRpcError?: { message: string } | null;
   retentionRpcData?: Array<{
-    unique_clients_in_month: number | string | null;
-    clients_with_2plus_sessions_in_month: number | string | null;
+    unique_clients_total: number | string | null;
+    clients_with_2plus_sessions_total: number | string | null;
   }>;
   retentionRpcError?: { message: string } | null;
 }) {
@@ -50,7 +50,7 @@ function buildSupabaseMock({
       });
     }
 
-    if (functionName === "compute_dashboard_client_retention") {
+    if (functionName === "compute_lifetime_client_retention") {
       return Promise.resolve({
         data: retentionRpcData,
         error: retentionRpcError,
@@ -115,8 +115,8 @@ describe("fetchDashboardAnalytics", () => {
       ],
       retentionRpcData: [
         {
-          unique_clients_in_month: "-0",
-          clients_with_2plus_sessions_in_month: "Infinity",
+          unique_clients_total: "-0",
+          clients_with_2plus_sessions_total: "Infinity",
         },
       ],
     });
@@ -143,8 +143,8 @@ describe("fetchDashboardAnalytics", () => {
     const mock = buildSupabaseMock({
       retentionRpcData: [
         {
-          unique_clients_in_month: 0,
-          clients_with_2plus_sessions_in_month: 5,
+          unique_clients_total: 0,
+          clients_with_2plus_sessions_total: 5,
         },
       ],
     });

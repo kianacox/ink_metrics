@@ -11,9 +11,9 @@ const EXPECTED_TAKE_HOME_MINOR = {
   netMinor: 142800,
 } as const;
 const EXPECTED_RETENTION = {
-  numerator: 3,
+  numerator: 7,
   denominator: 7,
-  rate: 3 / 7,
+  rate: 1,
 } as const;
 const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
@@ -55,14 +55,14 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeCard.getByLabel("Expenses comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Net comparison bar")).toBeVisible();
 
-  const retentionTitle = page.getByText("Monthly client retention rate", { exact: true });
+  const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();
   const retentionCard = retentionTitle
     .locator("xpath=ancestor::div[contains(@class,'h-full')]")
     .first();
 
-  await expect(retentionCard.getByText("43%", { exact: true })).toBeVisible();
-  await expect(retentionCard.getByText("3 of 7 clients returned.", { exact: true })).toBeVisible();
+  await expect(retentionCard.getByText("100%", { exact: true })).toBeVisible();
+  await expect(retentionCard.getByText("7 of 7 clients have returned.", { exact: true })).toBeVisible();
 });
 
 test("renders safe zero retention state when no month sessions exist", async ({ page }) => {
@@ -81,7 +81,7 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
     rate: 0,
   });
 
-  const retentionTitle = page.getByText("Monthly client retention rate", { exact: true });
+  const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();
   const retentionCard = retentionTitle
     .locator("xpath=ancestor::div[contains(@class,'h-full')]")
