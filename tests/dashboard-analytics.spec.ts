@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { loginAsSeededUser, loginAsUser } from "./auth-helpers";
+import { DEFAULT_MAILBOX_DOMAIN, getSignUpPassword } from "./constants";
+import { completeProfileSetupMinimal, loginAsUser, signUpAndConfirmUserOnly } from "./auth-helpers";
 
 const DEMO_USER_EMAIL = "test@test.com";
 const DEMO_USER_PASSWORD = "Password123";
@@ -14,6 +15,8 @@ const EXPECTED_RETENTION = {
   denominator: 7,
   rate: 3 / 7,
 } as const;
+const signUpPassword = getSignUpPassword();
+const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 
 test("renders take-home summary values and comparative bars for seeded data", async ({ page }) => {
   await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
@@ -63,8 +66,11 @@ test("renders take-home summary values and comparative bars for seeded data", as
 });
 
 test("renders safe zero retention state when no month sessions exist", async ({ page }) => {
-  await loginAsSeededUser(page, "sessionComplete");
-  await expect(page).toHaveURL(/\/dashboard/);
+  const email = `dashboard-retention-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
   expect(analyticsResponse.ok()).toBeTruthy();
