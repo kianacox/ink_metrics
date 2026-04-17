@@ -169,3 +169,27 @@ test("changes date range filter and updates client count label", async ({ page }
   await page.getByRole("menuitem", { name: /^year to date$/i }).click();
   await expect(page.getByText(/clients year to date/i)).toBeVisible();
 });
+
+test("top client banner shows the current calendar month, not a rolling 30-day label", async ({
+  page,
+}) => {
+  // Create a session this month so there is at least one client to surface.
+  const clientName = uniqueClientName("top-client-month");
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "150",
+  });
+
+  await goToClientsPage(page);
+
+  // The banner should reference the current month by name (e.g. "April 2026"),
+  // not a relative label like "last 30 days".
+  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+  const bannerPattern = new RegExp(`top client ${currentMonthLabel}`, "i");
+  await expect(page.getByText(bannerPattern)).toBeVisible();
+});
