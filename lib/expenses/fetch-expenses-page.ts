@@ -4,6 +4,7 @@ import type {
   FetchExpensesPageParams,
   FetchExpensesPageResult,
 } from "@/lib/expenses/models";
+import { encodeCompositeCursor } from "@/lib/pagination/cursor";
 
 interface DbRow {
   expense_id: string;
@@ -35,12 +36,19 @@ function mapDbRow(row: DbRow): ExpenseListItem {
   };
 }
 
+function formatOrValue(value: string | number): string {
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
 export async function fetchExpensesPage({
   supabase,
   userId,
   categories,
-  pageIndex,
-  pageSize,
+  cursor,
+  limit,
 }: FetchExpensesPageParams): Promise<FetchExpensesPageResult> {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -49,17 +57,25 @@ export async function fetchExpensesPage({
     (() => {
       let query = supabase
         .from("expenses")
-        .select("*", { count: "exact" })
+        .select("*")
         .eq("user_id", userId);
 
       if (categories.length > 0) {
         query = query.in("category", categories);
       }
 
+      if (cursor) {
+        const cursorSortValue = formatOrValue(cursor.sortValue);
+        const cursorId = formatOrValue(cursor.id);
+        query = query.or(
+          `date_purchased.lt.${cursorSortValue},and(date_purchased.eq.${cursorSortValue},expense_id.lt.${cursorId})`,
+        );
+      }
+
       return query
         .order("date_purchased", { ascending: false })
         .order("expense_id", { ascending: false })
-        .range(pageIndex * pageSize, pageIndex * pageSize + pageSize);
+        .limit(limit + 1);
     })(),
     supabase
       .from("expenses")
@@ -73,8 +89,13 @@ export async function fetchExpensesPage({
   }
 
   const rows = (pageResult.data ?? []) as DbRow[];
-  const hasNextPage = rows.length > pageSize;
-  const pageRows = rows.slice(0, pageSize).map(mapDbRow);
+  const hasNextPage = rows.length > limit;
+  const pageRows = rows.slice(0, limit);
+  const mappedRows = pageRows.map(mapDbRow);
+  const lastRow = pageRows[pageRows.length - 1] ?? null;
+  const nextCursor = hasNextPage && lastRow
+    ? encodeCompositeCursor({ sortValue: lastRow.date_purchased, id: lastRow.expense_id })
+    : null;
 
   const monthRows = (monthResult.data ?? []) as Array<{ amount_minor: number }>;
   const currentMonthTotalMinor = monthRows.reduce(
@@ -83,9 +104,9 @@ export async function fetchExpensesPage({
   );
 
   return {
-    rows: pageRows,
+    data: mappedRows,
     hasNextPage,
-    totalCount: pageResult.count ?? 0,
+    nextCursor,
     currentMonthTotalMinor,
   };
 }

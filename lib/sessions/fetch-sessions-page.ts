@@ -6,6 +6,7 @@ import type {
   FetchSessionsPageParams,
   FetchSessionsPageResult,
 } from "@/lib/sessions/models";
+import { encodeCompositeCursor } from "@/lib/pagination/cursor";
 
 const SORT_FIELD_TO_COLUMN: Record<SessionSortField, string> = {
   date: "session_at",
@@ -87,20 +88,35 @@ async function hydrateMissingCompensationVersions({
   });
 }
 
+function formatOrValue(value: string | number): string {
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+function getSortValueForCursor(row: SessionRow, sortField: SessionSortField): string | number {
+  if (sortField === "duration") {
+    return Number(row.session_duration ?? 0);
+  }
+  if (sortField === "profit") {
+    return Number(row.price ?? 0);
+  }
+  return row.session_at ?? "";
+}
+
 export async function fetchSessionsPage({
   supabase,
   userId,
   reportingTimezone,
   searchQuery,
   sortField,
-  pageIndex,
-  pageSize,
+  cursor,
+  limit,
   dateRange,
 }: FetchSessionsPageParams): Promise<FetchSessionsPageResult> {
   const sortColumn = SORT_FIELD_TO_COLUMN[sortField];
   const normalizedQuery = searchQuery.trim();
-  const rangeStart = pageIndex * pageSize;
-  const rangeEnd = rangeStart + pageSize - 1;
   const dateRangeStart = getDateRangeStartUtcIso({
     preset: dateRange,
     timezone: reportingTimezone,
@@ -116,42 +132,52 @@ export async function fetchSessionsPage({
     )
     .eq("user_id", userId)
     .order(sortColumn, { ascending: false })
-    .order("session_id", { ascending: false });
-
-  let totalCountQuery = supabase
-    .from("sessions")
-    .select("session_id,clients!inner(name)", { count: "exact", head: true })
-    .eq("user_id", userId);
+    .order("session_id", { ascending: false })
+    .limit(limit + 1);
 
   if (dateRangeStart) {
     rowsQuery = rowsQuery.gte("session_at", dateRangeStart);
-    totalCountQuery = totalCountQuery.gte("session_at", dateRangeStart);
   }
 
   if (normalizedQuery.length > 0) {
     const escapedQuery = `%${escapeLikePattern(normalizedQuery)}%`;
     rowsQuery = rowsQuery.ilike("clients.name", escapedQuery);
-    totalCountQuery = totalCountQuery.ilike("clients.name", escapedQuery);
   }
 
-  const [{ data, error }, { count, error: countError }] = await Promise.all([
-    rowsQuery.range(rangeStart, rangeEnd + 1),
-    totalCountQuery,
-  ]);
-
-  if (error || countError) {
-    throw new Error(error?.message ?? countError?.message ?? "Could not load sessions.");
+  if (cursor) {
+    const cursorSortValue = formatOrValue(cursor.sortValue);
+    const cursorId = formatOrValue(cursor.id);
+    rowsQuery = rowsQuery.or(
+      `${sortColumn}.lt.${cursorSortValue},and(${sortColumn}.eq.${cursorSortValue},session_id.lt.${cursorId})`,
+    );
   }
 
-  const pageRows = ((data ?? []) as SessionRow[]).slice(0, pageSize);
-  const rows = await hydrateMissingCompensationVersions({
+  const { data, error } = await rowsQuery;
+
+  if (error) {
+    throw new Error(error.message ?? "Could not load sessions.");
+  }
+
+  const rows = (data ?? []) as SessionRow[];
+  const hasNextPage = rows.length > limit;
+  const pageRows = rows.slice(0, limit);
+  const hydratedRows = await hydrateMissingCompensationVersions({
     supabase,
     userId,
     rows: pageRows,
   });
+
+  const lastRow = pageRows[pageRows.length - 1] ?? null;
+  const nextCursor = hasNextPage && lastRow
+    ? encodeCompositeCursor({
+        sortValue: getSortValueForCursor(lastRow, sortField),
+        id: lastRow.session_id,
+      })
+    : null;
+
   return {
-    rows,
-    hasNextPage: (data ?? []).length > pageSize,
-    totalCount: count ?? 0,
+    data: hydratedRows,
+    hasNextPage,
+    nextCursor,
   };
 }

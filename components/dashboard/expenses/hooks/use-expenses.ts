@@ -21,14 +21,13 @@ export function useExpenses({
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseExpensesParams): UseExpensesResult {
   const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [currentMonthTotalMinor, setCurrentMonthTotalMinor] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   const requestIdRef = useRef(0);
   const didLoadProfileRef = useRef(false);
@@ -55,13 +54,15 @@ export function useExpenses({
   }, []);
 
   const loadPage = useCallback(
-    async ({ pageIndex, append }: { pageIndex: number; append: boolean }) => {
+    async ({ cursor, append }: { cursor: string | null; append: boolean }) => {
       const currentRequestId = ++requestIdRef.current;
 
       const params = new URLSearchParams({
-        page: String(pageIndex),
-        pageSize: String(pageSize),
+        limit: String(pageSize),
       });
+      if (cursor) {
+        params.set("cursor", cursor);
+      }
 
       for (const category of selectedCategories) {
         params.append("category", category);
@@ -78,10 +79,9 @@ export function useExpenses({
       }
 
       const data = (await res.json()) as ExpensesApiResponse;
-      setExpenses((prev) => (append ? [...prev, ...data.expenses] : data.expenses));
-      setTotalCount(data.totalCount);
+      setExpenses((prev) => (append ? [...prev, ...data.data] : data.data));
       setHasNextPage(data.hasNextPage);
-      setCurrentPageIndex(pageIndex);
+      setNextCursor(data.nextCursor);
       // Always reflect the latest month total from page 0 responses
       if (!append) {
         setCurrentMonthTotalMinor(data.currentMonthTotalMinor ?? 0);
@@ -95,13 +95,13 @@ export function useExpenses({
     setError(null);
     try {
       await loadPreferences();
-      await loadPage({ pageIndex: 0, append: false });
+      await loadPage({ cursor: null, append: false });
     } catch {
       setError("Could not load expenses. Please try again.");
       setExpenses([]);
-      setTotalCount(0);
       setCurrentMonthTotalMinor(0);
       setHasNextPage(false);
+      setNextCursor(null);
     } finally {
       setIsLoading(false);
     }
@@ -114,13 +114,13 @@ export function useExpenses({
     setIsLoadingMore(true);
     setError(null);
     try {
-      await loadPage({ pageIndex: currentPageIndex + 1, append: true });
+      await loadPage({ cursor: nextCursor, append: true });
     } catch {
       setError("Could not load more expenses. Please try again.");
     } finally {
       setIsLoadingMore(false);
     }
-  }, [currentPageIndex, hasNextPage, isLoading, isLoadingMore, loadPage]);
+  }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
 
   useEffect(() => {
     void reload();
@@ -128,7 +128,6 @@ export function useExpenses({
 
   return {
     expenses,
-    totalCount,
     currentMonthTotalMinor,
     defaultCurrency,
     isLoading,

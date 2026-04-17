@@ -2,10 +2,11 @@ import { createExpense } from "@/lib/expenses/expense-db";
 import { parseExpenseCreatePayload } from "@/lib/expenses/expense-write";
 import { fetchExpensesPage } from "@/lib/expenses/fetch-expenses-page";
 import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
+import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
 
-const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_LIMIT = 25;
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
@@ -33,32 +34,31 @@ export async function GET(request: Request) {
     EXPENSE_CATEGORIES.includes(c as (typeof EXPENSE_CATEGORIES)[number]),
   );
 
-  const pageIndex = Math.max(0, Number.parseInt(params.get("page") ?? "0", 10) || 0);
-  const pageSize = Math.max(
+  const limit = Math.max(
     1,
     Math.min(
       100,
-      Number.parseInt(params.get("pageSize") ?? String(DEFAULT_PAGE_SIZE), 10) ||
-        DEFAULT_PAGE_SIZE,
+      Number.parseInt(params.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
+        DEFAULT_LIMIT,
     ),
   );
+  const cursorParam = params.get("cursor");
 
   try {
+    const cursor = decodeCompositeCursor(cursorParam);
     const result = await fetchExpensesPage({
       supabase,
       userId: user.id,
       categories,
-      pageIndex,
-      pageSize,
+      cursor,
+      limit,
     });
 
-    return NextResponse.json({
-      expenses: result.rows,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-      currentMonthTotalMinor: result.currentMonthTotalMinor,
-    });
-  } catch {
+    return NextResponse.json(result);
+  } catch (error) {
+    if (error instanceof CursorDecodeError) {
+      return errorJson(400, "EXPENSES_CURSOR_INVALID", error.message);
+    }
     return errorJson(500, "EXPENSES_FETCH_FAILED", "Could not load expenses.");
   }
 }
