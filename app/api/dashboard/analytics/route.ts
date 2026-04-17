@@ -1,8 +1,9 @@
 import {
-  buildEmptyAnalyticsResponse,
-  computeCurrentMonthWindow,
+  assertSupportedDashboardAnalyticsMonth,
+  DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH_CODE,
+  DashboardAnalyticsMonthParamError,
+  fetchDashboardAnalytics,
 } from "@/lib/dashboard-analytics";
-import { getDefaultReportingTimezone, getEffectiveReportingTimezone } from "@/lib/timezones";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
 
@@ -27,33 +28,19 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const monthParam = url.searchParams.get("month");
-    if (monthParam && monthParam !== "current") {
-      return errorJson(
-        400,
-        "DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH",
-        "Only month=current is supported.",
-      );
-    }
+    assertSupportedDashboardAnalyticsMonth(monthParam);
 
-    const { data: profileRows, error: profileError } = await supabase
-      .from("profiles")
-      .select("reporting_timezone")
-      .eq("user_id", user.id)
-      .limit(1);
-
-    if (profileError) {
-      throw new Error("Could not load dashboard analytics profile settings.");
-    }
-
-    const reportingTimezone = getEffectiveReportingTimezone(
-      profileRows?.[0]?.reporting_timezone ?? getDefaultReportingTimezone(),
+    return NextResponse.json(
+      await fetchDashboardAnalytics({
+        supabase,
+        userId: user.id,
+      }),
     );
-    const monthWindow = computeCurrentMonthWindow({
-      timezone: reportingTimezone,
-    });
+  } catch (error) {
+    if (error instanceof DashboardAnalyticsMonthParamError) {
+      return errorJson(400, DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH_CODE, error.message);
+    }
 
-    return NextResponse.json(buildEmptyAnalyticsResponse(monthWindow));
-  } catch {
     return errorJson(500, "DASHBOARD_ANALYTICS_FAILED", "Could not load dashboard analytics.");
   }
 }

@@ -1,16 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, LoadingState } from "@/components/ui";
 
-type AnalyticsCardState = "loading" | "error" | "empty" | "ready";
+type AnalyticsCardState = "loading" | "empty" | "ready";
 
 interface AnalyticsCardProps {
   title: string;
   description: string;
   state: AnalyticsCardState;
   children?: ReactNode;
-  onRetry?: () => void;
 }
 
 export function AnalyticsCard({
@@ -18,7 +17,6 @@ export function AnalyticsCard({
   description,
   state,
   children,
-  onRetry,
 }: AnalyticsCardProps) {
   return (
     <Card className="h-full">
@@ -28,17 +26,7 @@ export function AnalyticsCard({
       </CardHeader>
       <CardContent>
         {state === "loading" ? (
-          <p className="text-sm text-muted-foreground">Loading metric…</p>
-        ) : null}
-        {state === "error" ? (
-          <div className="space-y-3">
-            <p className="text-sm text-destructive">Could not load this metric.</p>
-            {onRetry ? (
-              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-                Retry
-              </Button>
-            ) : null}
-          </div>
+          <LoadingState message="Loading metric…" />
         ) : null}
         {state === "empty" ? (
           <p className="text-sm text-muted-foreground">No data yet for this month.</p>
