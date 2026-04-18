@@ -1,9 +1,15 @@
 import { expect, test } from "@playwright/test";
+import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import {
   DEFAULT_MAILBOX_DOMAIN,
   getSignUpPassword,
 } from "./constants";
-import { signUpAndConfirmUserOnly } from "./auth-helpers";
+import { signUpAndConfirmUserOnly, completeProfileSetupMinimal } from "./auth-helpers";
+import {
+  createSessionWithNewClient,
+  goToSessionsPage,
+  expectSessionVisible,
+} from "./session-helpers";
 
 const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
@@ -56,6 +62,37 @@ test("desktop profile setup shows marketing consent checkbox", async ({ page }) 
   const checkbox = page.locator("#marketing-consent");
   await expect(checkbox).toBeVisible();
   await expect(checkbox).not.toBeChecked();
+});
+
+test("allows backdated session up to six months after profile setup", async ({ page }) => {
+  const email = `profile-backdate-${Date.now()}@${mailboxDomain}`;
+
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+
+  const sessionDateTime = formatDateTimeLocalForTimezone(
+    new Date(Date.now() - 120 * 24 * 60 * 60_000),
+    "Europe/London",
+  );
+  const clientName = `backdate-client-${Date.now()}`;
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+    sessionDateTime,
+  });
+
+  await goToSessionsPage(page);
+  await page.getByRole("button", { name: /date range:/i }).click();
+  await page.getByRole("menuitem", { name: /^all time$/i }).click();
+  await expectSessionVisible(page, {
+    clientName,
+    durationMinutes: 60,
+    priceMinor: 10_000,
+  });
 });
 
 test("profile setup blocks partial submission", async ({ page }) => {
