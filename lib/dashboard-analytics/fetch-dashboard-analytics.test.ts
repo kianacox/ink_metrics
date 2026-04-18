@@ -158,6 +158,277 @@ describe("fetchDashboardAnalytics", () => {
     });
   });
 
+  describe("averageProfitPerSession edge cases", () => {
+    it("preserves negative net take-home when expenses exceed gross", async () => {
+      // Valid month: high equipment costs push net below zero
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 50000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 80000,
+            net_minor: -30000,
+            session_count: 4,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      // Math.trunc(-30000 / 4) = Math.trunc(-7500) = -7500
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 4,
+        valueMinor: -7500,
+      });
+    });
+
+    it("truncates toward zero for negative fractional results", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 10000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 31000,
+            net_minor: -21000,
+            session_count: 7,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      // Math.trunc(-21000 / 7) = Math.trunc(-3000) = -3000
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 7,
+        valueMinor: -3000,
+      });
+    });
+
+    it("handles string-encoded session_count and net_minor from Postgres bigint serialization", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: "196000",
+            paid_to_studio_minor: "45000",
+            total_expenses_minor: "6200",
+            net_minor: "144800",
+            session_count: "10",
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 10,
+        valueMinor: 14480,
+      });
+    });
+
+    it("returns zeros when the RPC result set is empty", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.takeHome).toEqual({
+        grossMinor: 0,
+        paidToStudioMinor: 0,
+        totalExpensesMinor: 0,
+        netMinor: 0,
+      });
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 0,
+        valueMinor: 0,
+      });
+    });
+
+    it("computes correctly for a single session", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 75000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 5000,
+            net_minor: 70000,
+            session_count: 1,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 1,
+        valueMinor: 70000,
+      });
+    });
+
+    it("handles very large monetary values without overflow", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 100_000_000, // £1,000,000
+            paid_to_studio_minor: 20_000_000,
+            total_expenses_minor: 5_000_000,
+            net_minor: 75_000_000,
+            session_count: 100,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 100,
+        valueMinor: 750_000, // £7,500.00 per session
+      });
+    });
+
+    it("treats negative session_count as zero denominator (malformed data guard)", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 50000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 0,
+            net_minor: 50000,
+            session_count: -3,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      // toSafeInt(-3) = -3; toSafeAvgPerSession guard: sessionCount <= 0 → 0
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: -3,
+        valueMinor: 0,
+      });
+    });
+
+    it("truncates float session_count to integer before dividing", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 50000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 0,
+            net_minor: 50000,
+            session_count: 2.9,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      // toSafeInt(2.9) = 2; 50000 / 2 = 25000
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 2,
+        valueMinor: 25000,
+      });
+    });
+
+    it("returns zero average profit when net is zero with active sessions", async () => {
+      // Artist broke even: gross exactly covered by studio + expenses
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 50000,
+            paid_to_studio_minor: 30000,
+            total_expenses_minor: 20000,
+            net_minor: 0,
+            session_count: 5,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 5,
+        valueMinor: 0,
+      });
+    });
+
+    it("returns exact integer for evenly divisible net and session count", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 90000,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 0,
+            net_minor: 90000,
+            session_count: 3,
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 3,
+        valueMinor: 30000,
+      });
+    });
+
+    it("sanitizes signed-zero session_count to zero", async () => {
+      const mock = buildSupabaseMock({
+        takeHomeRpcData: [
+          {
+            gross_minor: 0,
+            paid_to_studio_minor: 0,
+            total_expenses_minor: 0,
+            net_minor: 0,
+            session_count: "-0",
+          },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(Object.is(result.averageProfitPerSession.sessionCount, -0)).toBe(false);
+      expect(result.averageProfitPerSession).toEqual({
+        sessionCount: 0,
+        valueMinor: 0,
+      });
+    });
+  });
+
   it("sanitizes non-finite and signed-zero values from RPC output", async () => {
     const mock = buildSupabaseMock({
       takeHomeRpcData: [

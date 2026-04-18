@@ -112,6 +112,10 @@ describe("GET /api/dashboard/analytics", () => {
       denominator: 8,
       rate: 0.375,
     });
+    expect(payload.averageProfitPerSession).toEqual({
+      valueMinor: 0,
+      sessionCount: 0,
+    });
   });
 
   it("returns a stable 500 error when analytics loading fails", async () => {

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { DEFAULT_MAILBOX_DOMAIN, getSignUpPassword } from "./constants";
 import { completeProfileSetupMinimal, loginAsUser, signUpAndConfirmUserOnly } from "./auth-helpers";
+import { goToSessionsPage, createSessionWithNewClient, createSessionWithExistingClient } from "./session-helpers";
 
 const DEMO_USER_EMAIL = "test@test.com";
 const DEMO_USER_PASSWORD = "Password123";
@@ -118,4 +119,106 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
     .locator("xpath=ancestor::div[contains(@class,'h-full')]")
     .first();
   await expect(avgProfitCard.getByText("No data yet for this month.", { exact: true })).toBeVisible();
+});
+
+test("average profit card shows correct computed value for known sessions", async ({ page }) => {
+  // Fresh user with no chair rent: net = gross, avg = gross / session_count
+  const email = `dashboard-avg-profit-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await goToSessionsPage(page);
+
+  // Three sessions: £150 + £200 + £100 = £450 gross = £450 net (no chair rent, no expenses)
+  // Average = trunc(45000 / 3) = 15000 minor = £150.00
+  await createSessionWithNewClient(page, {
+    clientName: "Avg Client A",
+    hours: "1",
+    minutes: "30",
+    price: "150.00",
+  });
+  await createSessionWithExistingClient(page, {
+    clientName: "Avg Client A",
+    hours: "2",
+    minutes: "0",
+    price: "200.00",
+  });
+  await createSessionWithNewClient(page, {
+    clientName: "Avg Client B",
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+  });
+
+  const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
+  expect(analyticsResponse.ok()).toBeTruthy();
+  const analyticsPayload = await analyticsResponse.json();
+
+  expect(analyticsPayload.averageProfitPerSession.sessionCount).toBe(3);
+  // net = gross (no chair rent, no expenses); gross = 45000 minor; avg = trunc(45000/3) = 15000
+  expect(analyticsPayload.averageProfitPerSession.valueMinor).toBe(
+    Math.trunc(analyticsPayload.takeHome.netMinor / analyticsPayload.averageProfitPerSession.sessionCount),
+  );
+  expect(analyticsPayload.takeHome.netMinor).toBe(45000);
+  expect(analyticsPayload.averageProfitPerSession.valueMinor).toBe(15000);
+
+  await page.goto("/dashboard");
+  const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
+  await expect(avgProfitTitle).toBeVisible();
+  const avgProfitCard = avgProfitTitle
+    .locator("xpath=ancestor::div[contains(@class,'h-full')]")
+    .first();
+  await expect(avgProfitCard.getByText("£150.00")).toBeVisible();
+  await expect(avgProfitCard.getByText("Sessions this month: 3", { exact: true })).toBeVisible();
+});
+
+test("average profit card reflects truncated integer division for non-round values", async ({ page }) => {
+  // Verifies floor-toward-zero division: £1,000 / 3 sessions = £333.33 → trunc = 33333 minor = £333.33
+  const email = `dashboard-avg-trunc-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await goToSessionsPage(page);
+
+  // Prices chosen so the sum is not evenly divisible by session count:
+  // £300 + £400 + £300 = £1000 gross; trunc(100000 / 3) = 33333 minor = £333.33
+  await createSessionWithNewClient(page, {
+    clientName: "Trunc Client A",
+    hours: "3",
+    minutes: "0",
+    price: "300.00",
+  });
+  await createSessionWithExistingClient(page, {
+    clientName: "Trunc Client A",
+    hours: "4",
+    minutes: "0",
+    price: "400.00",
+  });
+  await createSessionWithNewClient(page, {
+    clientName: "Trunc Client B",
+    hours: "3",
+    minutes: "0",
+    price: "300.00",
+  });
+
+  const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
+  expect(analyticsResponse.ok()).toBeTruthy();
+  const analyticsPayload = await analyticsResponse.json();
+
+  expect(analyticsPayload.averageProfitPerSession.sessionCount).toBe(3);
+  expect(analyticsPayload.takeHome.netMinor).toBe(100000);
+  // Truncated, not rounded: 100000 / 3 = 33333.33… → 33333
+  expect(analyticsPayload.averageProfitPerSession.valueMinor).toBe(33333);
+
+  await page.goto("/dashboard");
+  const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
+  const avgProfitCard = avgProfitTitle
+    .locator("xpath=ancestor::div[contains(@class,'h-full')]")
+    .first();
+  await expect(avgProfitCard.getByText("£333.33")).toBeVisible();
+  await expect(avgProfitCard.getByText("Sessions this month: 3", { exact: true })).toBeVisible();
 });
