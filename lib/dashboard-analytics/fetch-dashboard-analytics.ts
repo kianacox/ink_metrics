@@ -5,6 +5,7 @@ import {
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
 import { getDefaultReportingTimezone, getEffectiveReportingTimezone } from "@/lib/timezones";
+import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
 
 export const DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH_CODE =
   "DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH";
@@ -28,6 +29,11 @@ interface TakeHomeSummaryRpcRow {
 interface RetentionRpcRow {
   unique_clients_total: number | string | null;
   clients_with_2plus_sessions_total: number | string | null;
+}
+
+interface ExpensesByCategoryRpcRow {
+  category: string | null;
+  total_minor: number | string | null;
 }
 
 function toSafeInt(value: number | string | null | undefined): number {
@@ -145,6 +151,31 @@ export async function fetchDashboardAnalytics({
   const netMinor = toSafeInt(takeHomeRow?.net_minor);
   const sessionCount = toSafeInt(takeHomeRow?.session_count);
 
+  const { data: expensesCategoryRows, error: expensesCategoryError } = await supabase.rpc(
+    "compute_expenses_by_category",
+    {
+      p_user_id: userId,
+      p_month_start_local_date: monthWindow.monthStartLocalDate,
+      p_month_end_local_date: monthWindow.monthEndLocalDate,
+    },
+  );
+  if (expensesCategoryError) {
+    throw new Error("Could not compute dashboard expense category metrics.");
+  }
+
+  const expensesRows = (expensesCategoryRows ?? []) as ExpensesByCategoryRpcRow[];
+  const categoryTotals = new Map<string, number>(EXPENSE_CATEGORIES.map((cat) => [cat, 0]));
+  for (const row of expensesRows) {
+    if (row.category && categoryTotals.has(row.category)) {
+      categoryTotals.set(row.category, toSafeInt(row.total_minor));
+    }
+  }
+  const expenseItems = EXPENSE_CATEGORIES.map((category) => ({
+    category,
+    totalMinor: categoryTotals.get(category) ?? 0,
+  }));
+  const totalExpensesMinorByCategory = expenseItems.reduce((sum, item) => sum + item.totalMinor, 0);
+
   return {
     ...emptyResponse,
     takeHome: {
@@ -164,6 +195,10 @@ export async function fetchDashboardAnalytics({
     averageProfitPerSession: {
       sessionCount,
       valueMinor: toSafeAvgPerSession({ netMinor, sessionCount }),
+    },
+    expensesByCategory: {
+      items: expenseItems,
+      totalMinor: totalExpensesMinorByCategory,
     },
   };
 }

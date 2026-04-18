@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
+import { ExpensesByCategoryCardContent } from "@/components/dashboard/analytics/expenses-by-category-card";
 import { Button, ErrorState } from "@/components/ui";
 import {
   formatHours,
@@ -301,29 +302,12 @@ export function DashboardAnalyticsView({
             description="Monthly spend rollup by expense category."
             state={cardState}
           >
-            <div className="space-y-2 text-sm">
-              <ul className="space-y-1">
-                {(analytics?.expensesByCategory.items ?? []).map((item) => (
-                  <li key={item.category} className="flex items-center justify-between gap-2">
-                    <span className="capitalize text-muted-foreground">
-                      {item.category.replaceAll("_", " ")}
-                    </span>
-                    <span className="font-medium">
-                      {formatMinorAsCurrency(item.totalMinor, effectiveCurrencyCode)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p>
-                Total:{" "}
-                <span className="font-semibold">
-                  {formatMinorAsCurrency(
-                    analytics?.expensesByCategory.totalMinor ?? 0,
-                    effectiveCurrencyCode,
-                  )}
-                </span>
-              </p>
-            </div>
+            {analytics ? (
+              <ExpensesByCategoryCardContent
+                data={analytics.expensesByCategory}
+                currencyCode={effectiveCurrencyCode}
+              />
+            ) : null}
           </AnalyticsCard>
         </div>
       )}
