@@ -111,7 +111,7 @@ export function ExpensesView() {
           Track your supply and business costs.
         </p>
         <p className="mt-3 text-sm text-foreground">
-          {rangeTotalLabel} (count):{" "}
+          {rangeTotalLabel}:{" "}
           <span className="font-semibold">{isLoading ? "..." : expenses.length}</span>
         </p>
         <div className="mt-4">
