@@ -100,3 +100,8 @@ export async function selectCategoryFilter(page: Page, categoryLabel: string): P
 export async function clearCategoryFilters(page: Page): Promise<void> {
   await page.getByRole("button", { name: /clear all/i }).click();
 }
+
+export async function selectDateRangeFilter(page: Page, label: string): Promise<void> {
+  await page.getByRole("button", { name: /date range:/i }).click();
+  await page.getByRole("menuitem", { name: new RegExp(`^${label}$`, "i") }).click();
+}

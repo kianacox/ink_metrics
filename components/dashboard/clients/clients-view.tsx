@@ -16,6 +16,7 @@ import { formatSessionProfit } from "@/components/dashboard/sessions/utils/sessi
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { DateRangeDropdown, DATE_RANGE_OPTIONS } from "@/components/dashboard/shared/date-range-dropdown";
 import { ClientsCards } from "./clients-cards";
 import { ClientsTable } from "./clients-table";
 import { ClientCreateModal } from "./client-create-modal";
@@ -30,13 +31,6 @@ const SORT_FIELDS: Array<{ label: string; value: ClientSortField }> = [
 const DEFAULT_SORT_FIELD: ClientSortField = "session_count";
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
 const SEARCH_DEBOUNCE_DELAY_MS = 300;
-
-const DATE_RANGE_OPTIONS: Array<{ label: string; value: SessionDateRangePreset }> = [
-  { label: "Last 30 days", value: "last30Days" },
-  { label: "Last 90 days", value: "last90Days" },
-  { label: "Year to date", value: "yearToDate" },
-  { label: "All time", value: "allTime" },
-];
 
 const TOTAL_LABEL_BY_DATE_RANGE: Record<SessionDateRangePreset, string> = {
   thisMonth: "Clients this month",
@@ -175,23 +169,7 @@ export function ClientsView() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" size="sm" variant="outline" className="w-fit">
-                  Date range: {selectedDateRangeLabel}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {DATE_RANGE_OPTIONS.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    onClick={() => setDateRange(option.value)}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <DateRangeDropdown value={dateRange} onChange={setDateRange} />
           </div>
         </div>
       </div>

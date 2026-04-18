@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CompositeCursor, CursorPaginatedResult } from "@/lib/pagination/cursor";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 
 // Const-object enum: string literals remain assignable to ExpenseCategory,
 // and Object.values(ExpenseCategory) gives the canonical ordered array.
@@ -62,23 +63,26 @@ export interface FetchExpensesPageParams {
   supabase: SupabaseClient;
   userId: string;
   categories: string[];
+  dateRange: SessionDateRangePreset;
+  reportingTimezone: string;
   cursor: CompositeCursor | null;
   limit: number;
 }
 
 export interface FetchExpensesPageResult extends CursorPaginatedResult<ExpenseListItem> {
-  currentMonthTotalMinor: number;
+  rangeTotalMinor: number;
 }
 
 // Hook types for useExpenses
 export interface UseExpensesParams {
   selectedCategories: string[];
+  dateRange?: SessionDateRangePreset;
   pageSize?: number;
 }
 
 export interface UseExpensesResult {
   expenses: ExpenseListItem[];
-  currentMonthTotalMinor: number;
+  rangeTotalMinor: number;
   defaultCurrency: string;
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -92,5 +96,5 @@ export interface ExpensesApiResponse {
   data: ExpenseListItem[];
   nextCursor: string | null;
   hasNextPage: boolean;
-  currentMonthTotalMinor: number;
+  rangeTotalMinor: number;
 }
