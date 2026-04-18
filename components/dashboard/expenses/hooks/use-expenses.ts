@@ -6,6 +6,7 @@ import type {
   UseExpensesResult,
 } from "@/lib/expenses/models";
 import type { ExpenseListItem } from "@/lib/expenses/models";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -15,13 +16,15 @@ interface PreferencesApiResponse {
 }
 
 const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
 
 export function useExpenses({
   selectedCategories,
+  dateRange = DEFAULT_DATE_RANGE,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseExpensesParams): UseExpensesResult {
   const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
-  const [currentMonthTotalMinor, setCurrentMonthTotalMinor] = useState(0);
+  const [rangeTotalMinor, setRangeTotalMinor] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -32,10 +35,14 @@ export function useExpenses({
   const requestIdRef = useRef(0);
   const didLoadProfileRef = useRef(false);
   const defaultCurrencyRef = useRef(DEFAULT_CURRENCY);
+  const reportingTimezoneRef = useRef("UTC");
 
   const loadPreferences = useCallback(async () => {
     if (didLoadProfileRef.current) {
-      return { defaultCurrency: defaultCurrencyRef.current };
+      return {
+        defaultCurrency: defaultCurrencyRef.current,
+        reportingTimezone: reportingTimezoneRef.current,
+      };
     }
 
     const res = await fetch("/api/preferences");
@@ -45,12 +52,14 @@ export function useExpenses({
 
     const data = (await res.json()) as PreferencesApiResponse;
     const nextCurrency = data.defaultCurrency ?? DEFAULT_CURRENCY;
+    const nextTimezone = data.reportingTimezone ?? "UTC";
 
     setDefaultCurrency(nextCurrency);
     defaultCurrencyRef.current = nextCurrency;
+    reportingTimezoneRef.current = nextTimezone;
     didLoadProfileRef.current = true;
 
-    return { defaultCurrency: nextCurrency };
+    return { defaultCurrency: nextCurrency, reportingTimezone: nextTimezone };
   }, []);
 
   const loadPage = useCallback(
@@ -59,6 +68,8 @@ export function useExpenses({
 
       const params = new URLSearchParams({
         limit: String(pageSize),
+        dateRange,
+        tz: reportingTimezoneRef.current,
       });
       if (cursor) {
         params.set("cursor", cursor);
@@ -82,12 +93,11 @@ export function useExpenses({
       setExpenses((prev) => (append ? [...prev, ...data.data] : data.data));
       setHasNextPage(data.hasNextPage);
       setNextCursor(data.nextCursor);
-      // Always reflect the latest month total from page 0 responses
       if (!append) {
-        setCurrentMonthTotalMinor(data.currentMonthTotalMinor ?? 0);
+        setRangeTotalMinor(data.rangeTotalMinor ?? 0);
       }
     },
-    [pageSize, selectedCategories],
+    [pageSize, dateRange, selectedCategories],
   );
 
   const reload = useCallback(async () => {
@@ -99,7 +109,7 @@ export function useExpenses({
     } catch {
       setError("Could not load expenses. Please try again.");
       setExpenses([]);
-      setCurrentMonthTotalMinor(0);
+      setRangeTotalMinor(0);
       setHasNextPage(false);
       setNextCursor(null);
     } finally {
@@ -128,7 +138,7 @@ export function useExpenses({
 
   return {
     expenses,
-    currentMonthTotalMinor,
+    rangeTotalMinor,
     defaultCurrency,
     isLoading,
     isLoadingMore,

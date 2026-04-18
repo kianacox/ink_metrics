@@ -4,6 +4,7 @@ import {
   formatDateTimeLocalForTimezone,
   getEffectiveReportingTimezone,
   getDateRangeStartUtcIso,
+  getDateRangeStartDate,
 } from "./timezones";
 
 describe("timezone helpers", () => {
@@ -109,6 +110,42 @@ describe("timezone helpers", () => {
   it("formats datetime-local value in the requested timezone", () => {
     const value = formatDateTimeLocalForTimezone(new Date("2026-04-08T10:30:00.000Z"), "UTC");
     expect(value).toBe("2026-04-08T10:30");
+  });
+
+  it("computes timezone-aware date-only range starts for date columns", () => {
+    const fixedNow = new Date("2026-04-10T12:00:00.000Z");
+
+    expect(
+      getDateRangeStartDate({ preset: "allTime", timezone: "UTC", now: fixedNow }),
+    ).toBeNull();
+
+    expect(
+      getDateRangeStartDate({ preset: "last30Days", timezone: "UTC", now: fixedNow }),
+    ).toBe("2026-03-11");
+
+    expect(
+      getDateRangeStartDate({ preset: "last90Days", timezone: "UTC", now: fixedNow }),
+    ).toBe("2026-01-10");
+
+    expect(
+      getDateRangeStartDate({ preset: "yearToDate", timezone: "UTC", now: fixedNow }),
+    ).toBe("2026-01-01");
+
+    expect(
+      getDateRangeStartDate({ preset: "thisMonth", timezone: "UTC", now: fixedNow }),
+    ).toBe("2026-04-01");
+
+    // Asia/Tokyo is UTC+9 — midnight on 2026-04-01 Tokyo = 2026-03-31 15:00 UTC.
+    // The date returned should be the Tokyo date, not the UTC date.
+    expect(
+      getDateRangeStartDate({ preset: "thisMonth", timezone: "Asia/Tokyo", now: fixedNow }),
+    ).toBe("2026-04-01");
+
+    // last30Days from 2026-04-10 12:00 UTC in Asia/Tokyo (UTC+9) = 2026-04-10 21:00 JST.
+    // 30 days prior = 2026-03-11 21:00 JST → date portion is 2026-03-11.
+    expect(
+      getDateRangeStartDate({ preset: "last30Days", timezone: "Asia/Tokyo", now: fixedNow }),
+    ).toBe("2026-03-11");
   });
 
   it("falls back to default reporting timezone when unsupported", () => {

@@ -5,6 +5,8 @@ import { Button, ErrorState, LoadingState } from "@/components/ui";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
 import type { ExpenseListItem } from "@/lib/expenses/models";
+import type { SessionDateRangePreset } from "@/lib/timezones";
+import { DateRangeDropdown, DATE_RANGE_OPTIONS } from "@/components/dashboard/shared/date-range-dropdown";
 import { ExpensesCards } from "./expenses-cards";
 import { ExpensesTable } from "./expenses-table";
 import { ExpenseCategoryFilterPills } from "./expense-category-filter-pills";
@@ -13,8 +15,19 @@ import { ExpenseEditModal } from "./expense-edit-modal";
 import { ExpenseDeleteModal } from "./expense-delete-modal";
 import { formatExpenseAmount } from "./utils/expense-formatting";
 
+const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
+
+const RANGE_TOTAL_LABEL: Record<SessionDateRangePreset, string> = {
+  thisMonth: "Expenses this month",
+  last30Days: "Expenses last 30 days",
+  last90Days: "Expenses last 90 days",
+  yearToDate: "Expenses year to date",
+  allTime: "Expenses all time",
+};
+
 export function ExpensesView() {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [dateRange, setDateRange] = useState<SessionDateRangePreset>(DEFAULT_DATE_RANGE);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseListItem | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<ExpenseListItem | null>(null);
@@ -27,7 +40,7 @@ export function ExpensesView() {
 
   const {
     expenses,
-    currentMonthTotalMinor,
+    rangeTotalMinor,
     defaultCurrency,
     isLoading,
     isLoadingMore,
@@ -35,12 +48,12 @@ export function ExpensesView() {
     error,
     reload,
     loadMore,
-  } = useExpenses({ selectedCategories: selectedCategoriesArray });
+  } = useExpenses({ selectedCategories: selectedCategoriesArray, dateRange });
 
-  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
+  const selectedDateRangeLabel =
+    DATE_RANGE_OPTIONS.find((o) => o.value === dateRange)?.label ?? "Last 90 days";
+  const selectedDateRangeLabelLower = selectedDateRangeLabel.toLowerCase();
+  const rangeTotalLabel = RANGE_TOTAL_LABEL[dateRange] ?? "Expenses in this range";
 
   useEffect(() => {
     if (!toastMessage) {
@@ -79,9 +92,9 @@ export function ExpensesView() {
 
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
         <p className="text-sm text-muted-foreground">
-          Expenses {currentMonthLabel}:{" "}
+          {rangeTotalLabel}:{" "}
           <span className="font-semibold text-foreground">
-            {isLoading ? "…" : formatExpenseAmount(currentMonthTotalMinor, defaultCurrency)}
+            {isLoading ? "…" : formatExpenseAmount(rangeTotalMinor, defaultCurrency)}
           </span>
         </p>
       </div>
@@ -98,9 +111,12 @@ export function ExpensesView() {
           Track your supply and business costs.
         </p>
         <p className="mt-3 text-sm text-foreground">
-          Total expenses:{" "}
+          {rangeTotalLabel} (count):{" "}
           <span className="font-semibold">{isLoading ? "..." : expenses.length}</span>
         </p>
+        <div className="mt-4">
+          <DateRangeDropdown value={dateRange} onChange={setDateRange} />
+        </div>
       </div>
 
       {isLoading ? <LoadingState message="Loading expenses…" /> : null}
@@ -115,8 +131,8 @@ export function ExpensesView() {
       {!isLoading && !error && !hasExpenses ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground sm:p-8">
           {selectedCategories.size > 0
-            ? "No expenses found for the selected categories."
-            : "No expenses logged yet. Use the button below to log your first expense."}
+            ? `No expenses found for the selected categories in ${selectedDateRangeLabelLower}.`
+            : `No expenses found for ${selectedDateRangeLabelLower}.`}
         </div>
       ) : null}
 
@@ -150,7 +166,7 @@ export function ExpensesView() {
             </div>
           ) : (
             <p className="text-center text-sm text-muted-foreground">
-              You are viewing all expenses.
+              You are viewing all expenses for {selectedDateRangeLabelLower}.
             </p>
           )}
         </>

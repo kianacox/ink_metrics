@@ -252,3 +252,34 @@ export function getDateRangeStartUtcIso({
   const daysBack = preset === "last30Days" ? 30 : 90;
   return toUtcIso(nowInTimezone.minus({ days: daysBack }));
 }
+
+export function getDateRangeStartDate({
+  preset,
+  timezone,
+  now = new Date(),
+}: {
+  preset: SessionDateRangePreset;
+  timezone: string;
+  now?: Date;
+}): string | null {
+  if (preset === "allTime") {
+    return null;
+  }
+
+  const effectiveTimezone = getEffectiveReportingTimezone(timezone);
+  const nowInTimezone = DateTime.fromJSDate(now, { zone: "UTC" }).setZone(effectiveTimezone);
+  if (!nowInTimezone.isValid) {
+    return null;
+  }
+
+  if (preset === "thisMonth") {
+    return nowInTimezone.startOf("month").toFormat("yyyy-LL-dd");
+  }
+
+  if (preset === "yearToDate") {
+    return nowInTimezone.startOf("year").toFormat("yyyy-LL-dd");
+  }
+
+  const daysBack = preset === "last30Days" ? 30 : 90;
+  return nowInTimezone.minus({ days: daysBack }).toFormat("yyyy-LL-dd");
+}

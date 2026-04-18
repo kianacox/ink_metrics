@@ -23,24 +23,31 @@ const BASE_ROW = {
 interface PageQuery {
   eq: jest.Mock;
   in: jest.Mock;
+  gte: jest.Mock;
   order: jest.Mock;
   or: jest.Mock;
   limit: jest.Mock;
+  then: <TResult1 = unknown, TResult2 = never>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onfulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>;
+}
+
+interface RangeQuery {
+  eq: jest.Mock;
+  gte: jest.Mock;
   then: <TResult1 = unknown, TResult2 = never>(
     onfulfilled?: ((value: { data: unknown[]; error: null }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ) => Promise<TResult1 | TResult2>;
 }
 
-interface MonthQuery {
-  eq: jest.Mock;
-  gte: jest.Mock;
-}
-
 function createPageQuery(rows: unknown[] = []): PageQuery {
   const q: Partial<PageQuery> = {};
   q.eq = jest.fn(() => q);
   q.in = jest.fn(() => q);
+  q.gte = jest.fn(() => q);
   q.order = jest.fn(() => q);
   q.or = jest.fn(() => q);
   q.limit = jest.fn(() => q);
@@ -53,6 +60,7 @@ function createPageQueryError(message: string): PageQuery {
   const q: Partial<PageQuery> = {};
   q.eq = jest.fn(() => q);
   q.in = jest.fn(() => q);
+  q.gte = jest.fn(() => q);
   q.order = jest.fn(() => q);
   q.or = jest.fn(() => q);
   q.limit = jest.fn(() => q);
@@ -61,18 +69,21 @@ function createPageQueryError(message: string): PageQuery {
   return q as PageQuery;
 }
 
-function createMonthQuery(rows: Array<{ amount_minor: number }> = []): MonthQuery {
-  const q: Partial<MonthQuery> = {};
+function createRangeQuery(rows: Array<{ amount_minor: number }> = []): RangeQuery {
+  const resolveData = { data: rows, error: null };
+  const q: Partial<RangeQuery> = {};
   q.eq = jest.fn(() => q);
-  q.gte = jest.fn().mockResolvedValue({ data: rows, error: null });
-  return q as MonthQuery;
+  q.gte = jest.fn().mockResolvedValue(resolveData);
+  q.then = (onfulfilled, onrejected) =>
+    Promise.resolve(resolveData).then(onfulfilled, onrejected);
+  return q as RangeQuery;
 }
 
-function buildSupabase(pageQuery: PageQuery, monthQuery: MonthQuery) {
+function buildSupabase(pageQuery: PageQuery, rangeQuery: RangeQuery) {
   const from = jest
     .fn()
     .mockReturnValueOnce({ select: jest.fn(() => pageQuery) })
-    .mockReturnValueOnce({ select: jest.fn(() => monthQuery) });
+    .mockReturnValueOnce({ select: jest.fn(() => rangeQuery) });
   return { from } as never;
 }
 
@@ -83,12 +94,14 @@ function buildSupabase(pageQuery: PageQuery, monthQuery: MonthQuery) {
 describe("fetchExpensesPage", () => {
   it("maps DB rows to ExpenseListItem shape", async () => {
     const row = { ...BASE_ROW };
-    const supabase = buildSupabase(createPageQuery([row]), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery([row]), createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -110,12 +123,14 @@ describe("fetchExpensesPage", () => {
 
   it("applies category filter when categories are provided", async () => {
     const pageQuery = createPageQuery([]);
-    const supabase = buildSupabase(pageQuery, createMonthQuery([]));
+    const supabase = buildSupabase(pageQuery, createRangeQuery([]));
 
     await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: ["ink", "needles"],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -125,12 +140,14 @@ describe("fetchExpensesPage", () => {
 
   it("does not apply category filter when categories array is empty", async () => {
     const pageQuery = createPageQuery([]);
-    const supabase = buildSupabase(pageQuery, createMonthQuery([]));
+    const supabase = buildSupabase(pageQuery, createRangeQuery([]));
 
     await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -141,12 +158,14 @@ describe("fetchExpensesPage", () => {
   it("detects hasNextPage when rows returned exceeds pageSize", async () => {
     // We fetch pageSize + 1 rows to detect a next page
     const rows = Array.from({ length: 26 }, (_, i) => ({ ...BASE_ROW, expense_id: `exp-${i}` }));
-    const supabase = buildSupabase(createPageQuery(rows), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery(rows), createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -158,12 +177,14 @@ describe("fetchExpensesPage", () => {
 
   it("sets hasNextPage to false when rows count does not exceed pageSize", async () => {
     const rows = [BASE_ROW];
-    const supabase = buildSupabase(createPageQuery(rows), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery(rows), createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -171,42 +192,48 @@ describe("fetchExpensesPage", () => {
     expect(result.hasNextPage).toBe(false);
   });
 
-  it("sums currentMonthTotalMinor from the month query", async () => {
-    const supabase = buildSupabase(createPageQuery([]), createMonthQuery([{ amount_minor: 500 }, { amount_minor: 750 }]));
+  it("sums rangeTotalMinor from the month query", async () => {
+    const supabase = buildSupabase(createPageQuery([]), createRangeQuery([{ amount_minor: 500 }, { amount_minor: 750 }]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
 
-    expect(result.currentMonthTotalMinor).toBe(1250);
+    expect(result.rangeTotalMinor).toBe(1250);
   });
 
-  it("returns zero currentMonthTotalMinor when no month rows", async () => {
-    const supabase = buildSupabase(createPageQuery([]), createMonthQuery([]));
+  it("returns zero rangeTotalMinor when no month rows", async () => {
+    const supabase = buildSupabase(createPageQuery([]), createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
 
-    expect(result.currentMonthTotalMinor).toBe(0);
+    expect(result.rangeTotalMinor).toBe(0);
   });
 
   it("throws when the page query returns an error", async () => {
-    const supabase = buildSupabase(createPageQueryError("DB failure"), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQueryError("DB failure"), createRangeQuery([]));
 
     await expect(
       fetchExpensesPage({
         supabase,
         userId: "user-1",
         categories: [],
+        dateRange: "allTime",
+        reportingTimezone: "UTC",
         cursor: null,
         limit: 25,
       }),
@@ -220,12 +247,14 @@ describe("fetchExpensesPage", () => {
       receipt_mime_type: "image/jpeg",
       receipt_size_bytes: 204800,
     };
-    const supabase = buildSupabase(createPageQuery([row]), createMonthQuery([]));
+    const supabase = buildSupabase(createPageQuery([row]), createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: null,
       limit: 25,
     });
@@ -235,17 +264,53 @@ describe("fetchExpensesPage", () => {
     expect(result.data[0]?.receiptSizeBytes).toBe(204800);
   });
 
+  it("applies date range start filter when dateRange is not allTime", async () => {
+    const pageQuery = createPageQuery([]);
+    const supabase = buildSupabase(pageQuery, createRangeQuery([]));
+
+    await fetchExpensesPage({
+      supabase,
+      userId: "user-1",
+      categories: [],
+      dateRange: "last30Days",
+      reportingTimezone: "UTC",
+      cursor: null,
+      limit: 25,
+    });
+
+    expect(pageQuery.gte).toHaveBeenCalledWith("date_purchased", expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+  });
+
+  it("does not apply date range start filter for allTime", async () => {
+    const pageQuery = createPageQuery([]);
+    const supabase = buildSupabase(pageQuery, createRangeQuery([]));
+
+    await fetchExpensesPage({
+      supabase,
+      userId: "user-1",
+      categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
+      cursor: null,
+      limit: 25,
+    });
+
+    expect(pageQuery.gte).not.toHaveBeenCalled();
+  });
+
   it("applies composite cursor filter and serializes nextCursor", async () => {
     const pageQuery = createPageQuery([
       { ...BASE_ROW, expense_id: "exp-2", date_purchased: "2026-03-20" },
       { ...BASE_ROW, expense_id: "exp-1", date_purchased: "2026-03-19" },
     ]);
-    const supabase = buildSupabase(pageQuery, createMonthQuery([]));
+    const supabase = buildSupabase(pageQuery, createRangeQuery([]));
 
     const result = await fetchExpensesPage({
       supabase,
       userId: "user-1",
       categories: [],
+      dateRange: "allTime",
+      reportingTimezone: "UTC",
       cursor: { sortValue: "2026-03-21", id: "exp-3" },
       limit: 1,
     });

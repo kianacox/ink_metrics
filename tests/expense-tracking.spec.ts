@@ -10,6 +10,7 @@ import {
   goToExpensesPage,
   openCreateExpenseModal,
   selectCategoryFilter,
+  selectDateRangeFilter,
 } from "./expense-helpers";
 
 function uniqueItem(prefix: string): string {
@@ -60,6 +61,7 @@ test("logs an expense and sees it in the table", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const item = uniqueItem("ink-refill");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item, category: "Ink", amount: "12.50", datePurchased: PAST_DATE });
   await expectExpenseVisibleInTable(page, item);
 });
@@ -69,6 +71,7 @@ test("views multiple expenses on the expenses page", async ({ page }) => {
   const item1 = uniqueItem("needles-box");
   const item2 = uniqueItem("travel-train");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item: item1, category: "Needles", amount: "8.00", datePurchased: PAST_DATE });
   await createExpense(page, { item: item2, category: "Travel", amount: "22.00", datePurchased: PAST_DATE });
   await expectExpenseVisibleInTable(page, item1);
@@ -80,6 +83,7 @@ test("edits an expense item name and amount", async ({ page }) => {
   const item = uniqueItem("cartridge-old");
   const updatedItem = uniqueItem("cartridge-new");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item, category: "Cartridges", amount: "5.00", datePurchased: PAST_DATE });
   await editExpenseFromExpensesPage(page, item, { item: updatedItem, amount: "6.50" });
   await expectExpenseVisibleInTable(page, updatedItem);
@@ -90,6 +94,7 @@ test("deletes an expense", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const item = uniqueItem("misc-delete");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item, category: "Miscellaneous", amount: "3.00", datePurchased: PAST_DATE });
   await expectExpenseVisibleInTable(page, item);
   await deleteExpenseFromExpensesPage(page, item);
@@ -129,6 +134,7 @@ test("filters by one category", async ({ page }) => {
   const inkItem = uniqueItem("filter-ink");
   const needlesItem = uniqueItem("filter-needles");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item: inkItem, category: "Ink", amount: "5.00", datePurchased: PAST_DATE });
   await createExpense(page, { item: needlesItem, category: "Needles", amount: "3.00", datePurchased: PAST_DATE });
 
@@ -144,6 +150,7 @@ test("filters by multiple categories", async ({ page }) => {
   const needlesItem = uniqueItem("multi-needles");
   const travelItem = uniqueItem("multi-travel");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item: inkItem, category: "Ink", amount: "5.00", datePurchased: PAST_DATE });
   await createExpense(page, { item: needlesItem, category: "Needles", amount: "3.00", datePurchased: PAST_DATE });
   await createExpense(page, { item: travelItem, category: "Travel", amount: "20.00", datePurchased: PAST_DATE });
@@ -161,6 +168,7 @@ test("clears all category filters", async ({ page }) => {
   const inkItem = uniqueItem("clear-ink");
   const travelItem = uniqueItem("clear-travel");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await createExpense(page, { item: inkItem, category: "Ink", amount: "5.00", datePurchased: PAST_DATE });
   await createExpense(page, { item: travelItem, category: "Travel", amount: "20.00", datePurchased: PAST_DATE });
 
@@ -171,6 +179,41 @@ test("clears all category filters", async ({ page }) => {
 
   await expectExpenseVisibleInTable(page, inkItem);
   await expectExpenseVisibleInTable(page, travelItem);
+});
+
+// ---------------------------------------------------------------------------
+// Date range filtering
+// ---------------------------------------------------------------------------
+
+test("date range filter hides expenses outside the selected range", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const pastItem = uniqueItem("range-past");
+  const recentItem = uniqueItem("range-recent");
+
+  // Use a date well within last 30 days
+  const recentDate = new Date(Date.now() - 10 * 24 * 60 * 60_000)
+    .toISOString()
+    .slice(0, 10);
+
+  await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
+
+  await createExpense(page, { item: pastItem, category: "Ink", amount: "5.00", datePurchased: PAST_DATE });
+  await createExpense(page, { item: recentItem, category: "Ink", amount: "6.00", datePurchased: recentDate });
+
+  // Both visible in all time
+  await expectExpenseVisibleInTable(page, pastItem);
+  await expectExpenseVisibleInTable(page, recentItem);
+
+  // Switch to last 30 days — only recent expense should appear
+  await selectDateRangeFilter(page, "Last 30 days");
+  await expectExpenseVisibleInTable(page, recentItem);
+  await expectExpenseNotVisibleInTable(page, pastItem);
+
+  // Switch back to all time — both visible again
+  await selectDateRangeFilter(page, "All time");
+  await expectExpenseVisibleInTable(page, pastItem);
+  await expectExpenseVisibleInTable(page, recentItem);
 });
 
 // ---------------------------------------------------------------------------
@@ -206,6 +249,7 @@ test("shows FAB and cards on mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const item = uniqueItem("mobile-expense");
   await goToExpensesPage(page);
+  await selectDateRangeFilter(page, "All time");
   await expect(page.getByTestId("create-expense-fab")).toBeVisible();
   await createExpense(page, { item, category: "Miscellaneous", amount: "1.00", datePurchased: PAST_DATE });
   // Cards are visible on mobile (sm:hidden desktop table is hidden)

@@ -5,6 +5,7 @@ import type {
   FetchExpensesPageResult,
 } from "@/lib/expenses/models";
 import { encodeCompositeCursor } from "@/lib/pagination/cursor";
+import { getDateRangeStartDate } from "@/lib/timezones";
 
 interface DbRow {
   expense_id: string;
@@ -47,42 +48,55 @@ export async function fetchExpensesPage({
   supabase,
   userId,
   categories,
+  dateRange,
+  reportingTimezone,
   cursor,
   limit,
 }: FetchExpensesPageParams): Promise<FetchExpensesPageResult> {
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const dateRangeStart = getDateRangeStartDate({ preset: dateRange, timezone: reportingTimezone });
 
-  const [pageResult, monthResult] = await Promise.all([
-    (() => {
-      let query = supabase
-        .from("expenses")
-        .select("*")
-        .eq("user_id", userId);
+  const pageQuery = (() => {
+    let query = supabase
+      .from("expenses")
+      .select("*")
+      .eq("user_id", userId);
 
-      if (categories.length > 0) {
-        query = query.in("category", categories);
-      }
+    if (categories.length > 0) {
+      query = query.in("category", categories);
+    }
 
-      if (cursor) {
-        const cursorSortValue = formatOrValue(cursor.sortValue);
-        const cursorId = formatOrValue(cursor.id);
-        query = query.or(
-          `date_purchased.lt.${cursorSortValue},and(date_purchased.eq.${cursorSortValue},expense_id.lt.${cursorId})`,
-        );
-      }
+    if (dateRangeStart !== null) {
+      query = query.gte("date_purchased", dateRangeStart);
+    }
 
-      return query
-        .order("date_purchased", { ascending: false })
-        .order("expense_id", { ascending: false })
-        .limit(limit + 1);
-    })(),
-    supabase
+    if (cursor) {
+      const cursorSortValue = formatOrValue(cursor.sortValue);
+      const cursorId = formatOrValue(cursor.id);
+      query = query.or(
+        `date_purchased.lt.${cursorSortValue},and(date_purchased.eq.${cursorSortValue},expense_id.lt.${cursorId})`,
+      );
+    }
+
+    return query
+      .order("date_purchased", { ascending: false })
+      .order("expense_id", { ascending: false })
+      .limit(limit + 1);
+  })();
+
+  const rangeQuery = (() => {
+    let query = supabase
       .from("expenses")
       .select("amount_minor")
-      .eq("user_id", userId)
-      .gte("date_purchased", monthStart),
-  ]);
+      .eq("user_id", userId);
+
+    if (dateRangeStart !== null) {
+      query = query.gte("date_purchased", dateRangeStart);
+    }
+
+    return query;
+  })();
+
+  const [pageResult, rangeResult] = await Promise.all([pageQuery, rangeQuery]);
 
   if (pageResult.error) {
     throw new Error(pageResult.error.message ?? "Could not load expenses.");
@@ -97,8 +111,8 @@ export async function fetchExpensesPage({
     ? encodeCompositeCursor({ sortValue: lastRow.date_purchased, id: lastRow.expense_id })
     : null;
 
-  const monthRows = (monthResult.data ?? []) as Array<{ amount_minor: number }>;
-  const currentMonthTotalMinor = monthRows.reduce(
+  const rangeRows = (rangeResult.data ?? []) as Array<{ amount_minor: number }>;
+  const rangeTotalMinor = rangeRows.reduce(
     (sum, row) => sum + Number(row.amount_minor),
     0,
   );
@@ -107,6 +121,6 @@ export async function fetchExpensesPage({
     data: mappedRows,
     hasNextPage,
     nextCursor,
-    currentMonthTotalMinor,
+    rangeTotalMinor,
   };
 }

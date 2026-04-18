@@ -4,9 +4,18 @@ import { fetchExpensesPage } from "@/lib/expenses/fetch-expenses-page";
 import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
 
 const DEFAULT_LIMIT = 25;
+const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
+
+const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
+  "last30Days",
+  "last90Days",
+  "yearToDate",
+  "allTime",
+]);
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
@@ -34,6 +43,12 @@ export async function GET(request: Request) {
     EXPENSE_CATEGORIES.includes(c as (typeof EXPENSE_CATEGORIES)[number]),
   );
 
+  const rawDateRange = params.get("dateRange") ?? DEFAULT_DATE_RANGE;
+  const dateRange: SessionDateRangePreset = VALID_DATE_RANGES.has(rawDateRange as SessionDateRangePreset)
+    ? (rawDateRange as SessionDateRangePreset)
+    : DEFAULT_DATE_RANGE;
+  const reportingTimezone = params.get("tz") ?? "UTC";
+
   const limit = Math.max(
     1,
     Math.min(
@@ -50,6 +65,8 @@ export async function GET(request: Request) {
       supabase,
       userId: user.id,
       categories,
+      dateRange,
+      reportingTimezone,
       cursor,
       limit,
     });
