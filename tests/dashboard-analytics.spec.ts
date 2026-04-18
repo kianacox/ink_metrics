@@ -248,10 +248,14 @@ test("expenses by category card renders category amounts and total for seeded de
   await expect(cardTitle).toBeVisible();
   const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
 
-  await expect(card.getByText("Cartridges", { exact: true })).toBeVisible();
-  await expect(card.getByText("Miscellaneous", { exact: true })).toBeVisible();
-  await expect(card.getByText("£28.00")).toBeVisible();
-  await expect(card.getByText("£34.00")).toBeVisible();
+  const cartridgesItem = card.getByRole("listitem").filter({ hasText: "Cartridges" });
+  await expect(cartridgesItem).toBeVisible();
+  await expect(cartridgesItem).toContainText("£28.00");
+
+  const miscItem = card.getByRole("listitem").filter({ hasText: "Miscellaneous" });
+  await expect(miscItem).toBeVisible();
+  await expect(miscItem).toContainText("£34.00");
+
   await expect(card.getByLabel("Total expenses")).toBeVisible();
   await expect(card.getByLabel("Total expenses")).toContainText("£62.00");
 
@@ -269,6 +273,29 @@ test("expenses by category card renders all seven category rows for seeded demo 
   for (const label of ["Ink", "Cartridges", "Needles", "Machines", "Other equipment", "Travel", "Miscellaneous"]) {
     await expect(card.getByText(label, { exact: true })).toBeVisible();
   }
+});
+
+test("expenses by category card shows friendly empty state when sessions exist but no expenses", async ({ page }) => {
+  const email = `dashboard-no-expenses-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await createSessionWithNewClient(page, {
+    clientName: "Solo Client",
+    hours: "1",
+    minutes: "30",
+    price: "200.00",
+  });
+
+  await page.goto("/dashboard");
+
+  const cardTitle = page.getByText("Expenses by category", { exact: true });
+  await expect(cardTitle).toBeVisible();
+  const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
+
+  await expect(card.getByText("No expenses recorded this month.", { exact: true })).toBeVisible();
 });
 
 test("expenses by category card shows correct values after adding expenses via UI", async ({ page }) => {

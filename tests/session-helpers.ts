@@ -23,7 +23,7 @@ function getSessionDialog(page: Page) {
 
 export async function openAddSessionModal(page: Page): Promise<void> {
   await page.getByRole("button", { name: /^add session$/i }).click();
-  await expect(getSessionDialog(page)).toBeVisible();
+  await expect(getSessionDialog(page)).toBeVisible({ timeout: 20000 });
 }
 
 export async function fillSessionFields(

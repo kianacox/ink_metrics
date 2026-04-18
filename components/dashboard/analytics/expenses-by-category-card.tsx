@@ -25,6 +25,12 @@ export function ExpensesByCategoryCardContent({
 }: ExpensesByCategoryCardContentProps) {
   const { items, totalMinor } = data;
 
+  if (totalMinor === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No expenses recorded this month.</p>
+    );
+  }
+
   const sortedItems = [...items].sort((a, b) => {
     if (a.totalMinor !== b.totalMinor) return b.totalMinor - a.totalMinor;
     return a.category.localeCompare(b.category);
