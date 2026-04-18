@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This document teaches coding agents how to work effectively in `ink_metrics`.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Product Intent
 
@@ -31,6 +31,44 @@ High-level structure:
 - `supabase/` migrations, local config, seed data
 - `docs/` product and slice specs
 
+### Supabase client types
+
+Three client factories — use the right one:
+
+| File | When to use |
+|------|------------|
+| `lib/supabase/client.ts` (`createBrowserClient`) | Client components, browser context |
+| `lib/supabase/server.ts` (`createServerClient`) | Server components, API route handlers, auth-aware queries |
+| `lib/supabase/admin.ts` (`createAdminClient`) | Service-role operations only (e.g. seeding, bypassing RLS) — never expose to client |
+
+### API route pattern
+
+All authenticated route handlers follow this guard pattern:
+
+```ts
+const { supabase, user, errorResponse } = await requireAuthenticatedApiUser("message");
+if (errorResponse) return errorResponse;
+```
+
+Error responses use `NextResponse.json({ error, code }, { status })`. Error codes are screaming-snake-case prefixed by domain (e.g. `EXPENSES_FETCH_FAILED`).
+
+### Cursor pagination
+
+List endpoints use composite cursor pagination (`lib/pagination/cursor.ts`). The cursor encodes `{ sortValue, id }` as base64. Queries use `.or()` with `lt`/`eq` on the sort column plus `lt` on id to page correctly across ties.
+
+### Migrations
+
+Migration files live in `supabase/migrations/` and are named `YYYYMMDDHHMMSS_description.sql`. After adding a migration, run `npm run supabase:db:reset` to apply it locally. The e2e global setup (`tests/global-setup.ts`) calls `supabase db reset` before every Playwright run, so all tests start from the seeded state.
+
+### E2E test infrastructure
+
+- `tests/global-setup.ts` — resets the local DB before each run (skippable via `PLAYWRIGHT_SKIP_DB_RESET=1`)
+- `tests/auth-helpers.ts` — `loginAsSeededUser(page, "sessionComplete" | "incomplete")` for seeded fixture users
+- `tests/*-helpers.ts` — per-domain helpers (navigation, CRUD actions, assertions) imported by specs
+- Base URL is configured in `playwright.config.ts` pointing to the local dev server
+
+The `@/` path alias maps to the repo root in both TypeScript (`tsconfig.json`) and Jest (`moduleNameMapper`).
+
 ## Delivery Model
 
 Work ships in vertical slices. Prefer complete, testable increments over broad partial refactors.
@@ -51,10 +89,24 @@ Common commands:
 
 - `npm ci`
 - `npm run dev`
-- `npm run dev:local` (start Supabase + app)
+- `npm run dev:local` (start Supabase + app together)
 - `npm run lint`
-- `npm test`
-- `npm run test:e2e`
+- `npm test` (all unit tests)
+- `npm run test:e2e` (all Playwright tests — requires Docker + Supabase running)
+
+Run a single unit test file:
+
+```
+npx jest fetch-expenses-page
+```
+
+Run a single e2e spec file:
+
+```
+npx playwright test expense-tracking
+```
+
+Other test commands: `npm run test:watch`, `npm run test:coverage`, `npm run test:e2e:ui:local`
 
 Supabase helpers:
 
@@ -62,6 +114,12 @@ Supabase helpers:
 - `npm run supabase:stop`
 - `npm run supabase:status`
 - `npm run supabase:db:reset`
+
+Required environment variables (`.env.local`):
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY` (service role — server-side only)
 
 ## Testing Expectations
 
