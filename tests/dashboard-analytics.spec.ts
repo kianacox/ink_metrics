@@ -15,6 +15,10 @@ const EXPECTED_RETENTION = {
   denominator: 7,
   rate: 1,
 } as const;
+const EXPECTED_AVG_PROFIT = {
+  sessionCount: 10,
+  valueMinor: 14280, // Math.trunc(142800 / 10)
+} as const;
 const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 
@@ -27,6 +31,7 @@ test("renders take-home summary values and comparative bars for seeded data", as
   const analyticsPayload = await analyticsResponse.json();
   expect(analyticsPayload.takeHome).toEqual(EXPECTED_TAKE_HOME_MINOR);
   expect(analyticsPayload.retention).toEqual(EXPECTED_RETENTION);
+  expect(analyticsPayload.averageProfitPerSession).toEqual(EXPECTED_AVG_PROFIT);
   expect(
     analyticsPayload.takeHome.grossMinor
       - analyticsPayload.takeHome.paidToStudioMinor
@@ -60,6 +65,14 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeCard.getByText("24%", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("3%", { exact: true })).toBeVisible();
 
+  const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
+  await expect(avgProfitTitle).toBeVisible();
+  const avgProfitCard = avgProfitTitle
+    .locator("xpath=ancestor::div[contains(@class,'h-full')]")
+    .first();
+  await expect(avgProfitCard.getByText("£142.80")).toBeVisible();
+  await expect(avgProfitCard.getByText("Sessions this month: 10", { exact: true })).toBeVisible();
+
   const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();
   const retentionCard = retentionTitle
@@ -85,6 +98,10 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
     denominator: 0,
     rate: 0,
   });
+  expect(analyticsPayload.averageProfitPerSession).toEqual({
+    sessionCount: 0,
+    valueMinor: 0,
+  });
 
   const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();
@@ -94,4 +111,11 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
 
   await expect(retentionCard.getByText("No data yet for this month.", { exact: true })).toBeVisible();
   await expect(retentionCard.getByText("0%", { exact: true })).toHaveCount(0);
+
+  const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
+  await expect(avgProfitTitle).toBeVisible();
+  const avgProfitCard = avgProfitTitle
+    .locator("xpath=ancestor::div[contains(@class,'h-full')]")
+    .first();
+  await expect(avgProfitCard.getByText("No data yet for this month.", { exact: true })).toBeVisible();
 });

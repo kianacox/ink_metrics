@@ -9,6 +9,7 @@ function buildSupabaseMock({
       paid_to_studio_minor: 45000,
       total_expenses_minor: 6200,
       net_minor: 144800,
+      session_count: 10,
     },
   ],
   takeHomeRpcError = null,
@@ -27,6 +28,7 @@ function buildSupabaseMock({
     paid_to_studio_minor: number | string | null;
     total_expenses_minor: number | string | null;
     net_minor: number | string | null;
+    session_count: number | string | null;
   }>;
   takeHomeRpcError?: { message: string } | null;
   retentionRpcData?: Array<{
@@ -101,6 +103,59 @@ describe("fetchDashboardAnalytics", () => {
       denominator: 8,
       rate: 0.375,
     });
+    expect(result.averageProfitPerSession).toEqual({
+      sessionCount: 10,
+      valueMinor: 14480,
+    });
+  });
+
+  it("computes average profit per session as truncated integer division", async () => {
+    const mock = buildSupabaseMock({
+      takeHomeRpcData: [
+        {
+          gross_minor: 100000,
+          paid_to_studio_minor: 10000,
+          total_expenses_minor: 3000,
+          net_minor: 87000,
+          session_count: 7,
+        },
+      ],
+    });
+
+    const result = await fetchDashboardAnalytics({
+      supabase: mock.supabase as never,
+      userId: "user-1",
+    });
+
+    // 87000 / 7 = 12428.57… → truncated to 12428
+    expect(result.averageProfitPerSession).toEqual({
+      sessionCount: 7,
+      valueMinor: 12428,
+    });
+  });
+
+  it("returns zero average profit when session count is zero", async () => {
+    const mock = buildSupabaseMock({
+      takeHomeRpcData: [
+        {
+          gross_minor: 0,
+          paid_to_studio_minor: 0,
+          total_expenses_minor: 0,
+          net_minor: 0,
+          session_count: 0,
+        },
+      ],
+    });
+
+    const result = await fetchDashboardAnalytics({
+      supabase: mock.supabase as never,
+      userId: "user-1",
+    });
+
+    expect(result.averageProfitPerSession).toEqual({
+      sessionCount: 0,
+      valueMinor: 0,
+    });
   });
 
   it("sanitizes non-finite and signed-zero values from RPC output", async () => {
@@ -111,6 +166,7 @@ describe("fetchDashboardAnalytics", () => {
           paid_to_studio_minor: "Infinity",
           total_expenses_minor: "-0",
           net_minor: null,
+          session_count: null,
         },
       ],
       retentionRpcData: [
@@ -136,6 +192,10 @@ describe("fetchDashboardAnalytics", () => {
       numerator: 0,
       denominator: 0,
       rate: 0,
+    });
+    expect(result.averageProfitPerSession).toEqual({
+      sessionCount: 0,
+      valueMinor: 0,
     });
   });
 

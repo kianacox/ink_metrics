@@ -22,6 +22,7 @@ interface TakeHomeSummaryRpcRow {
   paid_to_studio_minor: number | string | null;
   total_expenses_minor: number | string | null;
   net_minor: number | string | null;
+  session_count: number | string | null;
 }
 
 interface RetentionRpcRow {
@@ -37,6 +38,20 @@ function toSafeInt(value: number | string | null | undefined): number {
 
   const normalized = Math.trunc(parsed);
   return Object.is(normalized, -0) ? 0 : normalized;
+}
+
+function toSafeAvgPerSession({
+  netMinor,
+  sessionCount,
+}: {
+  netMinor: number;
+  sessionCount: number;
+}): number {
+  if (sessionCount <= 0) {
+    return 0;
+  }
+  const raw = Math.trunc(netMinor / sessionCount);
+  return Object.is(raw, -0) ? 0 : raw;
 }
 
 function toSafeRate({
@@ -114,7 +129,7 @@ export async function fetchDashboardAnalytics({
     throw new Error("Could not compute dashboard take-home metrics.");
   }
 
-  const takeHome = ((takeHomeRows ?? [])[0] ?? null) as TakeHomeSummaryRpcRow | null;
+  const takeHomeRow = ((takeHomeRows ?? [])[0] ?? null) as TakeHomeSummaryRpcRow | null;
   const { data: retentionRows, error: retentionError } = await supabase.rpc(
     "compute_lifetime_client_retention",
     {
@@ -127,14 +142,16 @@ export async function fetchDashboardAnalytics({
   const retention = ((retentionRows ?? [])[0] ?? null) as RetentionRpcRow | null;
   const retentionDenominator = toSafeInt(retention?.unique_clients_total);
   const retentionNumerator = toSafeInt(retention?.clients_with_2plus_sessions_total);
+  const netMinor = toSafeInt(takeHomeRow?.net_minor);
+  const sessionCount = toSafeInt(takeHomeRow?.session_count);
 
   return {
     ...emptyResponse,
     takeHome: {
-      grossMinor: toSafeInt(takeHome?.gross_minor),
-      paidToStudioMinor: toSafeInt(takeHome?.paid_to_studio_minor),
-      totalExpensesMinor: toSafeInt(takeHome?.total_expenses_minor),
-      netMinor: toSafeInt(takeHome?.net_minor),
+      grossMinor: toSafeInt(takeHomeRow?.gross_minor),
+      paidToStudioMinor: toSafeInt(takeHomeRow?.paid_to_studio_minor),
+      totalExpensesMinor: toSafeInt(takeHomeRow?.total_expenses_minor),
+      netMinor,
     },
     retention: {
       numerator: retentionNumerator,
@@ -143,6 +160,10 @@ export async function fetchDashboardAnalytics({
         numerator: retentionNumerator,
         denominator: retentionDenominator,
       }),
+    },
+    averageProfitPerSession: {
+      sessionCount,
+      valueMinor: toSafeAvgPerSession({ netMinor, sessionCount }),
     },
   };
 }
