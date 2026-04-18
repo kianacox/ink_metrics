@@ -20,6 +20,8 @@ function buildSupabaseMock({
     },
   ],
   retentionRpcError = null,
+  expensesCategoryRpcData = [] as Array<{ category: string; total_minor: number | string | null }>,
+  expensesCategoryRpcError = null,
 }: {
   profileError?: { message: string } | null;
   profileTimezone?: string;
@@ -36,6 +38,8 @@ function buildSupabaseMock({
     clients_with_2plus_sessions_total: number | string | null;
   }>;
   retentionRpcError?: { message: string } | null;
+  expensesCategoryRpcData?: Array<{ category: string; total_minor: number | string | null }>;
+  expensesCategoryRpcError?: { message: string } | null;
 }) {
   const limit = jest.fn().mockResolvedValue({
     data: [{ reporting_timezone: profileTimezone }],
@@ -56,6 +60,13 @@ function buildSupabaseMock({
       return Promise.resolve({
         data: retentionRpcData,
         error: retentionRpcError,
+      });
+    }
+
+    if (functionName === "compute_expenses_by_category") {
+      return Promise.resolve({
+        data: expensesCategoryRpcData,
+        error: expensesCategoryRpcError,
       });
     }
 
@@ -529,5 +540,130 @@ describe("fetchDashboardAnalytics", () => {
         userId: "user-1",
       }),
     ).rejects.toThrow("Could not compute dashboard retention metrics.");
+  });
+
+  describe("expensesByCategory", () => {
+    it("maps RPC rows into category items with correct totals", async () => {
+      const mock = buildSupabaseMock({
+        expensesCategoryRpcData: [
+          { category: "cartridges", total_minor: 2800 },
+          { category: "miscellaneous", total_minor: 3400 },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(mock.rpc).toHaveBeenCalledWith(
+        "compute_expenses_by_category",
+        expect.objectContaining({ p_user_id: "user-1" }),
+      );
+
+      const cartridges = result.expensesByCategory.items.find((i) => i.category === "cartridges");
+      const misc = result.expensesByCategory.items.find((i) => i.category === "miscellaneous");
+      expect(cartridges).toEqual({ category: "cartridges", totalMinor: 2800 });
+      expect(misc).toEqual({ category: "miscellaneous", totalMinor: 3400 });
+      expect(result.expensesByCategory.totalMinor).toBe(6200);
+    });
+
+    it("fills missing categories with zero", async () => {
+      const mock = buildSupabaseMock({
+        expensesCategoryRpcData: [{ category: "ink", total_minor: 5000 }],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      const allCategories = result.expensesByCategory.items.map((i) => i.category);
+      expect(allCategories).toContain("cartridges");
+      expect(allCategories).toContain("needles");
+      const needles = result.expensesByCategory.items.find((i) => i.category === "needles");
+      expect(needles?.totalMinor).toBe(0);
+    });
+
+    it("returns all zeros when no expenses in window", async () => {
+      const mock = buildSupabaseMock({ expensesCategoryRpcData: [] });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.expensesByCategory.totalMinor).toBe(0);
+      expect(result.expensesByCategory.items.every((i) => i.totalMinor === 0)).toBe(true);
+    });
+
+    it("handles string-encoded total_minor from Postgres bigint serialization", async () => {
+      const mock = buildSupabaseMock({
+        expensesCategoryRpcData: [{ category: "machines", total_minor: "22000" }],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      const machines = result.expensesByCategory.items.find((i) => i.category === "machines");
+      expect(machines?.totalMinor).toBe(22000);
+    });
+
+    it("ignores unknown categories from RPC output", async () => {
+      const mock = buildSupabaseMock({
+        expensesCategoryRpcData: [
+          { category: "unknown_future_category", total_minor: 9999 },
+          { category: "ink", total_minor: 1000 },
+        ],
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(result.expensesByCategory.items.find((i) => i.category === "unknown_future_category")).toBeUndefined();
+      const ink = result.expensesByCategory.items.find((i) => i.category === "ink");
+      expect(ink?.totalMinor).toBe(1000);
+      expect(result.expensesByCategory.totalMinor).toBe(1000);
+    });
+
+    it("throws a stable error when expenses category RPC fails", async () => {
+      const mock = buildSupabaseMock({
+        expensesCategoryRpcError: { message: "rpc failed" },
+      });
+
+      await expect(
+        fetchDashboardAnalytics({
+          supabase: mock.supabase as never,
+          userId: "user-1",
+        }),
+      ).rejects.toThrow("Could not compute dashboard expense category metrics.");
+    });
+
+    it("includes all seven canonical expense categories in response items", async () => {
+      const mock = buildSupabaseMock({ expensesCategoryRpcData: [] });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      const categories = result.expensesByCategory.items.map((i) => i.category);
+      expect(categories).toEqual(
+        expect.arrayContaining([
+          "ink",
+          "cartridges",
+          "needles",
+          "machines",
+          "other_equipment",
+          "travel",
+          "miscellaneous",
+        ]),
+      );
+      expect(categories).toHaveLength(7);
+    });
   });
 });

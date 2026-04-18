@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { DEFAULT_MAILBOX_DOMAIN, getSignUpPassword } from "./constants";
 import { completeProfileSetupMinimal, loginAsUser, signUpAndConfirmUserOnly } from "./auth-helpers";
 import { createSessionWithNewClient, createSessionWithExistingClient } from "./session-helpers";
+import { createExpense, goToExpensesPage } from "./expense-helpers";
 
 const DEMO_USER_EMAIL = "test@test.com";
 const DEMO_USER_PASSWORD = "Password123";
@@ -217,4 +218,89 @@ test("average profit card reflects truncated integer division for non-round valu
     .first();
   await expect(avgProfitCard.getByText("£333.33")).toBeVisible();
   await expect(avgProfitCard.getByText("Sessions this month: 3", { exact: true })).toBeVisible();
+});
+
+test("expenses by category card shows correct API values for seeded demo user", async ({ page }) => {
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
+  expect(analyticsResponse.ok()).toBeTruthy();
+  const payload = await analyticsResponse.json();
+
+  const cartridges = payload.expensesByCategory.items.find(
+    (i: { category: string }) => i.category === "cartridges",
+  );
+  const misc = payload.expensesByCategory.items.find(
+    (i: { category: string }) => i.category === "miscellaneous",
+  );
+  expect(cartridges?.totalMinor).toBe(2800);
+  expect(misc?.totalMinor).toBe(3400);
+  expect(payload.expensesByCategory.totalMinor).toBe(6200);
+  expect(payload.expensesByCategory.items).toHaveLength(7);
+});
+
+test("expenses by category card renders category amounts and total for seeded demo user", async ({ page }) => {
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  const cardTitle = page.getByText("Expenses by category", { exact: true });
+  await expect(cardTitle).toBeVisible();
+  const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
+
+  await expect(card.getByText("Cartridges", { exact: true })).toBeVisible();
+  await expect(card.getByText("Miscellaneous", { exact: true })).toBeVisible();
+  await expect(card.getByText("£28.00")).toBeVisible();
+  await expect(card.getByText("£34.00")).toBeVisible();
+  await expect(card.getByLabel("Total expenses")).toBeVisible();
+  await expect(card.getByLabel("Total expenses")).toContainText("£62.00");
+
+  await expect(card.getByRole("img", { name: "Cartridges expense bar" })).toBeVisible();
+  await expect(card.getByRole("img", { name: "Miscellaneous expense bar" })).toBeVisible();
+});
+
+test("expenses by category card renders all seven category rows for seeded demo user", async ({ page }) => {
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  const cardTitle = page.getByText("Expenses by category", { exact: true });
+  const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
+
+  for (const label of ["Ink", "Cartridges", "Needles", "Machines", "Other equipment", "Travel", "Miscellaneous"]) {
+    await expect(card.getByText(label, { exact: true })).toBeVisible();
+  }
+});
+
+test("expenses by category card shows correct values after adding expenses via UI", async ({ page }) => {
+  const email = `dashboard-expenses-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await goToExpensesPage(page);
+  await createExpense(page, { item: "Black ink bottle", category: "Ink", amount: "25.00" });
+  await createExpense(page, { item: "Needle pack", category: "Needles", amount: "15.00" });
+
+  await page.goto("/dashboard");
+
+  const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
+  expect(analyticsResponse.ok()).toBeTruthy();
+  const payload = await analyticsResponse.json();
+
+  const ink = payload.expensesByCategory.items.find(
+    (i: { category: string }) => i.category === "ink",
+  );
+  const needles = payload.expensesByCategory.items.find(
+    (i: { category: string }) => i.category === "needles",
+  );
+  expect(ink?.totalMinor).toBe(2500);
+  expect(needles?.totalMinor).toBe(1500);
+  expect(payload.expensesByCategory.totalMinor).toBe(4000);
+
+  const cardTitle = page.getByText("Expenses by category", { exact: true });
+  const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
+  await expect(card.getByText("£25.00")).toBeVisible();
+  await expect(card.getByText("£15.00")).toBeVisible();
+  await expect(card.getByLabel("Total expenses")).toContainText("£40.00");
 });
