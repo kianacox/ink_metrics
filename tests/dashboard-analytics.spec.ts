@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { DEFAULT_MAILBOX_DOMAIN, getSignUpPassword } from "./constants";
 import { completeProfileSetupMinimal, loginAsUser, signUpAndConfirmUserOnly } from "./auth-helpers";
-import { goToSessionsPage, createSessionWithNewClient, createSessionWithExistingClient } from "./session-helpers";
+import { createSessionWithNewClient, createSessionWithExistingClient } from "./session-helpers";
 
 const DEMO_USER_EMAIL = "test@test.com";
 const DEMO_USER_PASSWORD = "Password123";
@@ -129,8 +129,6 @@ test("average profit card shows correct computed value for known sessions", asyn
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await goToSessionsPage(page);
-
   // Three sessions: £150 + £200 + £100 = £450 gross = £450 net (no chair rent, no expenses)
   // Average = trunc(45000 / 3) = 15000 minor = £150.00
   await createSessionWithNewClient(page, {
@@ -181,8 +179,6 @@ test("average profit card reflects truncated integer division for non-round valu
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
-
-  await goToSessionsPage(page);
 
   // Prices chosen so the sum is not evenly divisible by session count:
   // £300 + £400 + £300 = £1000 gross; trunc(100000 / 3) = 33333 minor = £333.33
