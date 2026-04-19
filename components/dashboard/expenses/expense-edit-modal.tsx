@@ -251,7 +251,7 @@ export function ExpenseEditModal({
         </div>
 
         {receiptWarning ? (
-          <p className="rounded-md border border-amber-400/60 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:border-amber-300/60 dark:bg-amber-400/20 dark:text-amber-100" role="status">
+          <p className="rounded-none border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-gold" role="status">
             {receiptWarning}
           </p>
         ) : null}

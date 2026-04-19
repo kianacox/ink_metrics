@@ -45,7 +45,7 @@ export function SessionsTable({
                   </span>
                 ) : null}
                 {session.inProgress && session.isLatestForClient ? (
-                  <span className="ml-2 inline-flex rounded border border-amber-400/50 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-400/40 dark:text-amber-400">
+                  <span className="ml-2 inline-flex rounded-none border border-gold/50 bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">
                     Follow-up needed
                   </span>
                 ) : null}
