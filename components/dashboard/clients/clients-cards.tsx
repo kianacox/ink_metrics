@@ -1,4 +1,5 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Button, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { AnimatedCard } from "@/components/ui/animated-card";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem } from "@/lib/clients/models";
 
@@ -30,12 +31,12 @@ export function ClientsCards({
 }: ClientsCardsProps) {
   return (
     <div className="grid gap-3 sm:hidden">
-      {clients.map((client) => {
+      {clients.map((client, idx) => {
         const isReturning = client.lifetimeSessionCount > 1;
         const lastSessionLabel = formatLastSessionDate(client.lastSessionAt);
 
         return (
-          <Card key={client.id} className="border-border">
+          <AnimatedCard key={client.id} index={idx} className="border-border">
             <CardHeader className="p-4 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -118,7 +119,7 @@ export function ClientsCards({
                 </div>
               ) : null}
             </CardContent>
-          </Card>
+          </AnimatedCard>
         );
       })}
     </div>

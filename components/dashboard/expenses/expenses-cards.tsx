@@ -1,4 +1,5 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Button, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { AnimatedCard } from "@/components/ui/animated-card";
 import {
   formatExpenseAmount,
   formatPurchaseDate,
@@ -22,12 +23,12 @@ export function ExpensesCards({
 }: ExpensesCardsProps) {
   return (
     <div className="grid min-w-0 gap-3 sm:hidden">
-      {expenses.map((expense) => (
-        <Card key={expense.id} className="w-full border-border">
+      {expenses.map((expense, idx) => (
+        <AnimatedCard key={expense.id} index={idx} className="w-full border-border">
           <CardHeader className="p-4 pb-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="mb-1.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                <span className="mb-1.5 inline-flex items-center rounded-none bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   {EXPENSE_CATEGORY_LABELS[expense.category]}
                 </span>
                 <CardTitle className="truncate text-base">{expense.item}</CardTitle>
@@ -37,7 +38,6 @@ export function ExpensesCards({
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="border-emerald-500/70 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-400/70 dark:text-emerald-300 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200"
                   onClick={() => onEditExpense(expense)}
                   aria-label={`Edit expense: ${expense.item}`}
                 >
@@ -75,7 +75,7 @@ export function ExpensesCards({
               </div>
             ) : null}
           </CardContent>
-        </Card>
+        </AnimatedCard>
       ))}
     </div>
   );
