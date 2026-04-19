@@ -33,7 +33,8 @@ function mockSupabase({
   const selectEq = jest.fn().mockReturnValue({ single });
   const select = jest.fn().mockReturnValue({ eq: selectEq });
 
-  const updateEq = jest.fn().mockResolvedValue({ error: updateError });
+  const updateEq2 = jest.fn().mockResolvedValue({ error: updateError });
+  const updateEq = jest.fn().mockReturnValue({ eq: updateEq2 });
   const update = jest.fn().mockReturnValue({ eq: updateEq });
 
   return {
@@ -94,8 +95,10 @@ describe("POST /api/dashboard/actions/[actionId]/dismiss", () => {
 
     const { request, params } = makeRequest("action-1");
     const response = await POST(request, { params });
+    const payload = await response.json();
 
     expect(response.status).toBe(403);
+    expect(payload.code).toBe("ACTION_FORBIDDEN");
   });
 
   it("sets dismissed_at and returns 200 on success", async () => {

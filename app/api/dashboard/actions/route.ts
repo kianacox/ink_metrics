@@ -7,12 +7,9 @@ export async function GET() {
     "You must be signed in to view actions.",
   );
   if (errorResponse) return errorResponse;
-  if (!user) {
-    return NextResponse.json({ error: "You must be signed in to view actions." }, { status: 401 });
-  }
 
   try {
-    const actions = await computeAndUpsertActions(supabase, user.id);
+    const actions = await computeAndUpsertActions(supabase, user!.id);
     return NextResponse.json({ actions });
   } catch (err) {
     const code = err instanceof Error ? err.message : "ACTIONS_FETCH_FAILED";
