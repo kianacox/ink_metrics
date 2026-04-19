@@ -262,38 +262,48 @@ Substitute `{{client_name}}` with `clients.name` at response serialisation time.
 
 ### 9.1 Tab layout
 
-- Replace current dashboard content wrapper with a two-tab layout.
-- Tab labels: **Actions** | **Insights**.
+- Existing "Quick actions" section (Add session) stays pinned above the tab bar — visible on all tabs.
+- Tab bar sits below quick actions. Labels: **Actions** | **Insights**.
 - Default active tab: **Actions**.
-- Tab state: URL param `?tab=actions` / `?tab=insights` for deep-linking and back-button support.
+- Tab state: URL param `?tab=actions` / `?tab=insights` via `useSearchParams` + `router.replace` for deep-linking and back-button support.
 - Insights tab renders existing `<DashboardAnalyticsView />` component unchanged.
 
 ### 9.2 Actions tab
 
+- Section greeting above cards: `"Hey [display_name], here's who needs a message:"`. Falls back to `"Hey there"` if `display_name` is null. Sourced from server component prop — no extra fetch.
 - Fetch `GET /api/dashboard/actions` on mount.
-- Loading state: skeleton cards.
-- Empty state: "No actions right now — your client list looks healthy."
-- Error state: "Couldn't load actions. Try refreshing."
-- Render one action card per result, ordered by `revenueAtRiskMinor DESC` (server-sorted).
+- Single-column card list, `max-w-2xl`, centred on wide screens.
+- Loading state: 2–3 shaped skeleton cards (`animate-pulse`) mirroring real card zones.
+- Empty state: checkmark/sparkle icon + heading `"All caught up"` + subtext `"No actions right now — your client list looks healthy."`.
+- Error state: `RefreshCw` icon + heading `"Something went wrong"` + subtext `"Couldn't load actions. Try refreshing."` + "Try again" button that re-triggers the fetch.
+- Render one card per client result, ordered by `revenueAtRiskMinor DESC` (server-sorted).
 
 ### 9.3 Action card
 
-Each card displays:
+Two-zone shadcn `Card`:
 
-- Client name
-- Action label (see below)
-- Weeks since last session
-- Revenue at risk (formatted in profile currency)
-- Collapsible message template with copy-to-clipboard button
-- Dismiss button
+**Top zone (always visible):**
+- Client name as card title (bold).
+- Friendly nudge sentence (see copy below).
+- Revenue at risk: `£X at risk` in `text-sm text-muted-foreground`.
 
-**Action labels:**
+**Footer row:**
+- Left: "View message" / "Hide message" toggle (`ghost` variant) — label swaps when template panel is open.
+- Right: "Dismiss" button (`ghost` variant).
 
-| Type | Label |
-|------|-------|
-| `lapsed_repeat` | Repeat client hasn't booked in {{weeks}} weeks |
-| `new_client` | New client hasn't returned in {{weeks}} weeks |
-| `in_progress` | In-progress tattoo — follow up after {{weeks}} weeks |
+**Expanded template panel:**
+- Inline accordion, animated via Framer Motion `AnimatePresence`.
+- Message text displayed first.
+- "Copy message" button (`outline` variant) below the text.
+- On copy: button shows "Copied!" for 2 s then reverts. No toast.
+
+**Friendly nudge copy per action type:**
+
+| Type | Copy |
+|------|------|
+| `lapsed_repeat` | "It's been {{weeks}} weeks since their last session — worth a check-in." |
+| `new_client` | "{{weeks}} weeks since their first visit — a quick message could bring them back." |
+| `in_progress` | "Their piece is still in progress and it's been {{weeks}} weeks — time to follow up." |
 
 ### 9.4 Session form — in-progress checkbox
 
@@ -303,9 +313,10 @@ Each card displays:
 
 ### 9.5 Dismiss interaction
 
-- Clicking dismiss calls `POST /api/dashboard/actions/[actionId]/dismiss`.
-- On success: remove card from list with exit animation.
-- On error: show inline toast, card remains.
+- Clicking "Dismiss" calls `POST /api/dashboard/actions/[actionId]/dismiss`.
+- On success: card fades out and collapses via Framer Motion `AnimatePresence` (`exit={{ opacity: 0, height: 0 }}`).
+- On error: inline toast (`fixed right-4 top-4`), card remains.
+- No confirmation modal required.
 
 ## 10) Validation and Edge Cases
 
@@ -382,10 +393,78 @@ Cover:
 
 ### PR 4: Actions tab UI
 
-- Two-tab layout wrapping existing dashboard.
-- Action card component with template copy and dismiss.
-- Loading, empty, and error states.
-- E2e coverage for action cards and dismiss flow.
+#### Layout
+
+- Existing "Quick actions" section (Add session) stays pinned above the tab bar on all tabs.
+- Two-tab bar sits below quick actions: **Actions** | **Insights**.
+- Tab state driven by URL param `?tab=actions` (default) / `?tab=insights` via `useSearchParams` + `router.replace`.
+- Insights tab renders existing `<DashboardAnalyticsView />` unchanged.
+- Actions tab content is a single-column list, capped at `max-w-2xl`, centred on wide screens.
+
+#### Section greeting
+
+- Above the card list: `"Hey [display_name], here's who needs a message:"`.
+- `display_name` passed as prop from the server component (already fetched via `bootstrapUserProfile`). Falls back to `"there"` if null.
+
+#### Action card anatomy
+
+Each card is a shadcn `Card` with two zones:
+
+**Top zone (always visible):**
+- Card title: client name (bold).
+- Friendly nudge sentence (see copy below).
+- Subtle revenue line: `£X at risk` in `text-sm text-muted-foreground`.
+
+**Footer row:**
+- Left: "View message" / "Hide message" toggle button (`ghost` variant) — label swaps on open.
+- Right: "Dismiss" button (`ghost` variant).
+
+**Expanded template panel (inline accordion):**
+- Slides open below the top zone using Framer Motion `AnimatePresence`.
+- Message text displayed first.
+- "Copy message" button (`outline` variant) below the text.
+- On copy: button label changes to "Copied!" for 2 s then reverts — no toast needed.
+
+#### Friendly nudge copy per action type
+
+| Type | Copy |
+|------|------|
+| `lapsed_repeat` | "It's been {{weeks}} weeks since their last session — worth a check-in." |
+| `new_client` | "{{weeks}} weeks since their first visit — a quick message could bring them back." |
+| `in_progress` | "Their piece is still in progress and it's been {{weeks}} weeks — time to follow up." |
+
+#### Dismiss interaction
+
+- Clicking "Dismiss" calls `POST /api/dashboard/actions/[actionId]/dismiss`.
+- On success: card fades out and collapses via Framer Motion `AnimatePresence` (`exit={{ opacity: 0, height: 0 }}`).
+- On error: inline toast (existing toast pattern — `fixed right-4 top-4`), card remains.
+- No confirmation modal — action is reversible via re-trigger threshold.
+
+#### Loading state
+
+- 2–3 shaped skeleton cards using `animate-pulse`.
+- Each skeleton mirrors the real card zones: title bar, body lines, footer row.
+
+#### Empty state
+
+- Icon (checkmark or sparkle) + heading `"All caught up"` + subtext `"No actions right now — your client list looks healthy."`.
+- Centred within the content area.
+
+#### Error state
+
+- `RefreshCw` icon + heading `"Something went wrong"` + subtext `"Couldn't load actions. Try refreshing."` + `outline` variant "Try again" button that re-triggers the fetch.
+
+#### Dependencies
+
+- Install `framer-motion` for card list enter/exit animations.
+- `display_name` sourced from existing server-side profile fetch — no new API call.
+
+#### Deliverables
+
+- Two-tab layout component wrapping existing dashboard.
+- `<ActionCard />` component with template accordion and dismiss.
+- Skeleton, empty, and error state components.
+- E2e coverage for: tab switching, card render, template expand/copy, dismiss animation, empty state.
 
 ### PR 5: Hardening
 
