@@ -22,7 +22,11 @@ function getSessionDialog(page: Page) {
 }
 
 export async function openAddSessionModal(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /^add session$/i }).click();
+  // Wait for DOM to settle so React event handlers are attached before clicking.
+  await page.waitForLoadState("domcontentloaded");
+  const btn = page.getByRole("button", { name: /^add session$/i });
+  await expect(btn).toBeVisible({ timeout: 10000 });
+  await btn.click();
   await expect(getSessionDialog(page)).toBeVisible({ timeout: 20000 });
 }
 
