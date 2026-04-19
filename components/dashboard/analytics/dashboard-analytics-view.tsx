@@ -198,6 +198,7 @@ export function DashboardAnalyticsView({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <AnalyticsCard
+            index={0}
             title="Take-home summary"
             description="Gross, studio deductions, expenses, and net."
             state={cardState}
@@ -237,6 +238,7 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
+            index={1}
             title="Lifetime client retention rate"
             description="Clients who have come back at least once."
             state={cardState}
@@ -265,6 +267,7 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
+            index={2}
             title="Average profit per session"
             description="Net take-home divided by session count."
             state={cardState}
@@ -283,6 +286,7 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
+            index={3}
             title="Hours spent tattooing"
             description="Total session time across the month."
             state={cardState}
@@ -298,6 +302,7 @@ export function DashboardAnalyticsView({
           </AnalyticsCard>
 
           <AnalyticsCard
+            index={4}
             title="Expenses by category"
             description="Monthly spend rollup by expense category."
             state={cardState}
