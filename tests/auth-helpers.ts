@@ -258,6 +258,8 @@ export async function loginAsUser(
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: /^login$/i }).click();
+  // Wait for post-login redirect to complete before returning.
+  await page.waitForURL(/\/dashboard/, { timeout: 20000 });
 }
 
 export async function loginAsSeededUser(
