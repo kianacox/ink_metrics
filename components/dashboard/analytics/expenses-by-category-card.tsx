@@ -5,13 +5,13 @@ import { EXPENSE_CATEGORY_LABELS } from "@/lib/expenses/models";
 import type { ExpensesByCategoryStat } from "@/lib/dashboard-analytics/models";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  ink: "bg-indigo-500",
-  cartridges: "bg-amber-500",
-  needles: "bg-rose-500",
-  machines: "bg-cyan-500",
-  other_equipment: "bg-violet-500",
-  travel: "bg-emerald-500",
-  miscellaneous: "bg-slate-400",
+  ink: "bg-[#7B6FA0]",
+  cartridges: "bg-[#A08050]",
+  needles: "bg-[#8B4A4A]",
+  machines: "bg-[#4A7A8B]",
+  other_equipment: "bg-[#5A7A5A]",
+  travel: "bg-[#8B7A4A]",
+  miscellaneous: "bg-[#6A6A6A]",
 };
 
 interface ExpensesByCategoryCardContentProps {
