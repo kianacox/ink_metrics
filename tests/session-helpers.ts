@@ -22,8 +22,8 @@ function getSessionDialog(page: Page) {
 }
 
 export async function openAddSessionModal(page: Page): Promise<void> {
-  // Wait for DOM to settle so React event handlers are attached before clicking.
-  await page.waitForLoadState("domcontentloaded");
+  // networkidle ensures React has hydrated and event handlers are attached.
+  await page.waitForLoadState("networkidle");
   const btn = page.getByRole("button", { name: /^add session$/i });
   await expect(btn).toBeVisible({ timeout: 10000 });
   await btn.click();

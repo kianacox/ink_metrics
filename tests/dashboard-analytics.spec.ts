@@ -25,7 +25,7 @@ const signUpPassword = getSignUpPassword();
 const mailboxDomain = process.env.E2E_MAILBOX_DOMAIN ?? DEFAULT_MAILBOX_DOMAIN;
 
 test("renders take-home summary values and comparative bars for seeded data", async ({ page }) => {
-  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
 
   const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
@@ -221,7 +221,7 @@ test("average profit card reflects truncated integer division for non-round valu
 });
 
 test("expenses by category card shows correct API values for seeded demo user", async ({ page }) => {
-  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
 
   const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
@@ -241,7 +241,7 @@ test("expenses by category card shows correct API values for seeded demo user", 
 });
 
 test("expenses by category card renders category amounts and total for seeded demo user", async ({ page }) => {
-  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
 
   const cardTitle = page.getByText("Expenses by category", { exact: true });
@@ -264,7 +264,7 @@ test("expenses by category card renders category amounts and total for seeded de
 });
 
 test("expenses by category card renders all seven category rows for seeded demo user", async ({ page }) => {
-  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
+  await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
 
   const cardTitle = page.getByText("Expenses by category", { exact: true });
