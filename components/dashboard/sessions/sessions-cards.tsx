@@ -69,6 +69,11 @@ export function SessionsCards({
                 Through Ads
               </p>
             ) : null}
+            {session.inProgress ? (
+              <p className="col-span-2 rounded-md border border-amber-400/50 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:border-amber-400/40 dark:text-amber-400">
+                Follow-up session needed
+              </p>
+            ) : null}
             <div>
               <p className="text-xs text-muted-foreground">Length</p>
               <p className="text-sm font-medium text-foreground">
