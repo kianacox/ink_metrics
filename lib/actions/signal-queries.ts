@@ -16,6 +16,17 @@ function daysSince(isoTimestamp: string, now: Date): number {
   return (now.getTime() - new Date(isoTimestamp).getTime()) / DAYS_MS;
 }
 
+/**
+ * Threshold comparison is inclusive: fires when daysSince >= threshold.
+ * PR 2 SQL queries must use `<=` (not `<`) to match this behaviour.
+ * e.g. `MAX(session_at) <= now() - INTERVAL '56 days'`
+ */
+
+/**
+ * Returns lapsed-repeat signals for clients with 2+ sessions whose most
+ * recent session is at or beyond the 56-day threshold.
+ * Caller must pre-filter sessions to a single authenticated user.
+ */
 export function computeLapsedRepeatSignals(
   sessions: SessionRow[],
   now: Date = new Date(),
@@ -43,6 +54,11 @@ export function computeLapsedRepeatSignals(
   return signals;
 }
 
+/**
+ * Returns new-client signals for clients with exactly 1 session at or
+ * beyond the 42-day threshold.
+ * Caller must pre-filter sessions to a single authenticated user.
+ */
 export function computeNewClientSignals(
   sessions: SessionRow[],
   now: Date = new Date(),
@@ -64,6 +80,11 @@ export function computeNewClientSignals(
   return signals;
 }
 
+/**
+ * Returns in-progress signals for clients whose most recent session has
+ * in_progress=true and is at or beyond the 28-day threshold.
+ * Caller must pre-filter sessions to a single authenticated user.
+ */
 export function computeInProgressSignals(
   sessions: SessionRow[],
   now: Date = new Date(),

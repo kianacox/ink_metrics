@@ -90,6 +90,16 @@ describe("computeLapsedRepeatSignals", () => {
     expect(computeLapsedRepeatSignals([], NOW)).toHaveLength(0);
   });
 
+  it("produces signal with revenueAtRiskMinor 0 when all sessions have priceMinor 0", () => {
+    const sessions = [
+      makeSession({ clientId: "c1", sessionAt: daysAgo(60), priceMinor: 0 }),
+      makeSession({ clientId: "c1", sessionAt: daysAgo(70), priceMinor: 0 }),
+    ];
+    const signals = computeLapsedRepeatSignals(sessions, NOW);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].revenueAtRiskMinor).toBe(0);
+  });
+
   it("handles multiple qualifying clients independently", () => {
     const sessions = [
       makeSession({ clientId: "c1", sessionAt: daysAgo(60), priceMinor: 5000 }),
@@ -139,6 +149,13 @@ describe("computeNewClientSignals", () => {
 
   it("returns empty when no sessions provided", () => {
     expect(computeNewClientSignals([], NOW)).toHaveLength(0);
+  });
+
+  it("produces signal with revenueAtRiskMinor 0 when session has priceMinor 0", () => {
+    const sessions = [makeSession({ clientId: "c1", sessionAt: daysAgo(50), priceMinor: 0 })];
+    const signals = computeNewClientSignals(sessions, NOW);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].revenueAtRiskMinor).toBe(0);
   });
 });
 
@@ -200,6 +217,15 @@ describe("computeInProgressSignals", () => {
   it("returns empty when no sessions provided", () => {
     expect(computeInProgressSignals([], NOW)).toHaveLength(0);
   });
+
+  it("produces signal with revenueAtRiskMinor 0 when session has priceMinor 0", () => {
+    const sessions = [
+      makeSession({ clientId: "c1", sessionAt: daysAgo(35), inProgress: true, priceMinor: 0, sessionId: "s1" }),
+    ];
+    const signals = computeInProgressSignals(sessions, NOW);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].revenueAtRiskMinor).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -238,5 +264,13 @@ describe("resolveUpsertOperation", () => {
 
     expect(resolveUpsertOperation(lapsed, LAPSED_REPEAT_THRESHOLD_DAYS, NOW)).toBe("skip");
     expect(resolveUpsertOperation(newClient, NEW_CLIENT_THRESHOLD_DAYS, NOW)).toBe("reactivate");
+  });
+
+  it("uses in_progress threshold (28 days)", () => {
+    const withinWindow = makeAction({ dismissedAt: daysAgo(20), actionType: "in_progress" });
+    const pastWindow = makeAction({ dismissedAt: daysAgo(29), actionType: "in_progress" });
+
+    expect(resolveUpsertOperation(withinWindow, IN_PROGRESS_THRESHOLD_DAYS, NOW)).toBe("skip");
+    expect(resolveUpsertOperation(pastWindow, IN_PROGRESS_THRESHOLD_DAYS, NOW)).toBe("reactivate");
   });
 });
