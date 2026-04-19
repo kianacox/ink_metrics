@@ -56,8 +56,8 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "max(0rem, calc(var(--radius) - 2px))",
+        sm: "max(0rem, calc(var(--radius) - 4px))",
       },
     },
   },
