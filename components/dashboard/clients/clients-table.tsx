@@ -54,7 +54,7 @@ export function ClientsTable({
                 <td className="px-4 py-3 text-sm font-medium text-foreground">
                   <div className="flex flex-col items-start gap-1">
                     {isReturning ? (
-                      <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      <span className="inline-flex items-center whitespace-nowrap rounded-none bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
                         Returning client
                       </span>
                     ) : null}
