@@ -67,6 +67,20 @@ describe("GET /api/dashboard/actions", () => {
     expect(mockedComputeAndUpsert).toHaveBeenCalledWith({}, "user-1");
   });
 
+  it("scopes query to the authenticated user — never leaks another user's actions", async () => {
+    mockedAuth.mockResolvedValue({
+      supabase: {} as never,
+      user: { id: "user-2" } as never,
+      errorResponse: null,
+    });
+    mockedComputeAndUpsert.mockResolvedValue([]);
+
+    await GET();
+
+    expect(mockedComputeAndUpsert).toHaveBeenCalledWith({}, "user-2");
+    expect(mockedComputeAndUpsert).not.toHaveBeenCalledWith({}, "user-1");
+  });
+
   it("returns empty actions array when no signals", async () => {
     mockedAuth.mockResolvedValue({
       supabase: {} as never,
