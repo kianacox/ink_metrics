@@ -22,10 +22,12 @@ import type {
 
 const DAYS_MS = 24 * 60 * 60 * 1000;
 
+/** Returns the number of fractional days elapsed since the given ISO timestamp. */
 function daysSince(isoTimestamp: string, now: Date): number {
   return (now.getTime() - new Date(isoTimestamp).getTime()) / DAYS_MS;
 }
 
+/** Maps raw Supabase session rows to typed SessionRow objects. */
 function toSessionRows(rawSessions: Array<Record<string, unknown>>): SessionRow[] {
   return rawSessions.map((s) => ({
     sessionId: s.session_id as string,
@@ -36,6 +38,7 @@ function toSessionRows(rawSessions: Array<Record<string, unknown>>): SessionRow[
   }));
 }
 
+/** Maps a raw Supabase client_actions row to a typed ClientAction. */
 function toClientAction(a: Record<string, unknown>): ClientAction {
   return {
     actionId: a.action_id as string,
@@ -49,6 +52,7 @@ function toClientAction(a: Record<string, unknown>): ClientAction {
   };
 }
 
+/** Fetches all sessions for a user, scoped by userId. */
 async function loadUserSessions(supabase: SupabaseClient, userId: string): Promise<SessionRow[]> {
   const { data, error } = await supabase
     .from("sessions")
@@ -59,6 +63,7 @@ async function loadUserSessions(supabase: SupabaseClient, userId: string): Promi
   return toSessionRows(data ?? []);
 }
 
+/** Loads all existing client_actions for a user, keyed by "clientId:actionType". */
 async function loadExistingActions(
   supabase: SupabaseClient,
   userId: string,
@@ -77,6 +82,10 @@ async function loadExistingActions(
   return byKey;
 }
 
+/**
+ * Deletes in_progress actions for clients no longer flagged as in-progress.
+ * If activeClientIds is empty, all in_progress actions for the user are deleted.
+ */
 async function deleteStaleInProgressActions(
   supabase: SupabaseClient,
   userId: string,
@@ -96,6 +105,10 @@ async function deleteStaleInProgressActions(
   if (error) throw new Error("ACTIONS_UPSERT_FAILED");
 }
 
+/**
+ * Builds the upsert rows for signals that need inserting or reactivating.
+ * Skips signals whose existing action is still within the dismissal threshold.
+ */
 function collectUpserts(
   userId: string,
   lapsedSignals: LapsedRepeatSignal[],
@@ -154,6 +167,7 @@ function collectUpserts(
   return upserts;
 }
 
+/** Upserts action rows, resolving conflicts on (user_id, client_id, action_type). */
 async function executeUpserts(supabase: SupabaseClient, upserts: UpsertRow[]): Promise<void> {
   if (upserts.length === 0) return;
 
@@ -164,6 +178,7 @@ async function executeUpserts(supabase: SupabaseClient, upserts: UpsertRow[]): P
   if (error) throw new Error("ACTIONS_UPSERT_FAILED");
 }
 
+/** Fetches non-dismissed action rows for the user, ordered by revenue_at_risk_minor descending. */
 async function fetchActiveActionRows(
   supabase: SupabaseClient,
   userId: string,
@@ -179,6 +194,7 @@ async function fetchActiveActionRows(
   return (data ?? []) as Array<Record<string, unknown>>;
 }
 
+/** Builds lookup maps for most-recent session timestamps, used to compute weeksSince. */
 function buildSessionLookups(sessions: SessionRow[]): {
   mostRecentByClient: Map<string, string>;
   sessionAtById: Map<string, string>;
@@ -197,6 +213,7 @@ function buildSessionLookups(sessions: SessionRow[]): {
   return { mostRecentByClient, sessionAtById };
 }
 
+/** Converts a raw action row from Supabase into the ActionResponse shape for the API. */
 function serializeActionRow(
   row: Record<string, unknown>,
   sessionAtById: Map<string, string>,
@@ -230,6 +247,10 @@ function serializeActionRow(
   };
 }
 
+/**
+ * Computes action signals from the user's sessions, upserts them into client_actions,
+ * and returns the active (non-dismissed) actions sorted by revenue at risk descending.
+ */
 export async function computeAndUpsertActions(
   supabase: SupabaseClient,
   userId: string,
