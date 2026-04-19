@@ -15,6 +15,7 @@ const sessions: SessionListItem[] = [
     createdAt: "2026-03-30T10:00:00.000Z",
     throughAds: false,
     inProgress: false,
+    isLatestForClient: true,
   },
   {
     id: "s2",
@@ -24,6 +25,7 @@ const sessions: SessionListItem[] = [
     createdAt: "2026-03-31T10:00:00.000Z",
     throughAds: false,
     inProgress: false,
+    isLatestForClient: true,
   },
   {
     id: "s3",
@@ -33,6 +35,7 @@ const sessions: SessionListItem[] = [
     createdAt: "2026-03-29T10:00:00.000Z",
     throughAds: true,
     inProgress: false,
+    isLatestForClient: true,
   },
 ];
 

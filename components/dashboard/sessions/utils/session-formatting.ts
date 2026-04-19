@@ -6,11 +6,13 @@ const UNKNOWN_CLIENT_NAME = "Unknown client";
 
 export interface SessionRow {
   session_id: string;
+  client_id?: string | null;
   price: number | null;
   session_duration: number | null;
   session_at: string | null;
   through_ads?: boolean | null;
   in_progress?: boolean | null;
+  is_latest_for_client?: boolean | null;
   created_at?: string | null;
   compensation_version_id?: string | null;
   artist_compensation_versions?:
@@ -66,6 +68,7 @@ export function mapSessionRowsToListItems(rows: SessionRow[]): SessionListItem[]
     createdAt: row.session_at ?? row.created_at ?? new Date(0).toISOString(),
     throughAds: row.through_ads === true,
     inProgress: row.in_progress === true,
+    isLatestForClient: row.is_latest_for_client !== false,
   }));
 }
 

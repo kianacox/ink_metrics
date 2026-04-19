@@ -29,6 +29,7 @@ describe("session-formatting utils", () => {
         createdAt: "2026-03-31T10:00:00.000Z",
         throughAds: false,
         inProgress: false,
+        isLatestForClient: true,
       },
     ]);
   });
@@ -52,6 +53,7 @@ describe("session-formatting utils", () => {
     expect(typeof mapped[0]?.createdAt).toBe("string");
     expect(mapped[0]?.throughAds).toBe(false);
     expect(mapped[0]?.inProgress).toBe(false);
+    expect(mapped[0]?.isLatestForClient).toBe(true);
   });
 
   it("supports mapping when clients relation is an array", () => {
