@@ -2,62 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Slice 1 palette → semantic tokens (see docs/slice1.spec.md)
-   Lightest swatch (#F7FEF6) = base canvas (background/card/popover), not accent.
-   Light mint (#C7FABD) = muted surfaces. Accent = interactive/hover (slate tint). */
 @layer base {
   :root {
-    --background: 100 55% 98%;
-    --foreground: 202 40% 12%;
-    --card: 100 55% 98%;
-    --card-foreground: 202 40% 12%;
-    --popover: 100 55% 98%;
-    --popover-foreground: 202 40% 12%;
-    --primary: 104 86% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 202 34% 44%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 109 86% 86%;
-    --muted-foreground: 202 28% 36%;
-    --accent: 202 22% 90%;
-    --accent-foreground: 202 38% 22%;
-    --destructive: 0 84% 60%;
+    --background: 40 31% 94%;
+    --foreground: 0 0% 4%;
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 4%;
+    --popover: 0 0% 99%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 0 0% 4%;
+    --primary-foreground: 40 31% 94%;
+    --secondary: 0 0% 88%;
+    --secondary-foreground: 0 0% 4%;
+    --muted: 40 15% 88%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 40 15% 85%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 54% 42%;
     --destructive-foreground: 0 0% 98%;
-    --border: 109 28% 84%;
-    --input: 109 28% 84%;
-    --ring: 104 86% 42%;
-    --chart-1: 104 86% 42%;
-    --chart-2: 202 34% 44%;
-    --chart-3: 142 59% 43%;
-    --chart-4: 109 86% 76%;
-    --chart-5: 110 67% 88%;
-    --radius: 0.5rem;
+    --border: 40 10% 80%;
+    --input: 40 10% 80%;
+    --ring: 44 54% 44%;
+    --gold: 44 54% 54%;
+    --chart-1: 44 54% 44%;
+    --chart-2: 0 0% 35%;
+    --chart-3: 44 40% 55%;
+    --chart-4: 0 0% 55%;
+    --chart-5: 0 0% 70%;
+    --radius: 0rem;
   }
   .dark {
-    --background: 202 35% 8%;
-    --foreground: 110 40% 96%;
-    --card: 202 32% 11%;
-    --card-foreground: 110 40% 96%;
-    --popover: 202 32% 11%;
-    --popover-foreground: 110 40% 96%;
-    --primary: 104 75% 48%;
-    --primary-foreground: 202 40% 8%;
-    --secondary: 202 28% 35%;
-    --secondary-foreground: 110 40% 98%;
-    --muted: 202 25% 18%;
-    --muted-foreground: 110 20% 70%;
-    --accent: 202 25% 22%;
-    --accent-foreground: 109 86% 88%;
-    --destructive: 0 62% 45%;
+    --background: 0 0% 4%;
+    --foreground: 48 20% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 48 20% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 48 20% 95%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 48 10% 85%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 48 20% 95%;
+    --destructive: 0 54% 42%;
     --destructive-foreground: 0 0% 98%;
-    --border: 202 25% 20%;
-    --input: 202 25% 20%;
-    --ring: 104 75% 48%;
-    --chart-1: 104 75% 48%;
-    --chart-2: 202 34% 55%;
-    --chart-3: 142 50% 50%;
-    --chart-4: 109 40% 40%;
-    --chart-5: 110 30% 35%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 44 54% 54%;
+    --gold: 44 54% 54%;
+    --chart-1: 44 54% 54%;
+    --chart-2: 0 0% 55%;
+    --chart-3: 44 40% 40%;
+    --chart-4: 0 0% 35%;
+    --chart-5: 0 0% 25%;
+    --radius: 0rem;
   }
 }
 
@@ -70,5 +70,31 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-barlow-condensed), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Grain overlay — fixed pseudo-element adds tactile noise texture without affecting layout */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 300px 300px;
+}
+
+@layer utilities {
+  .gold-rule {
+    border-bottom: 1px solid hsl(var(--gold) / 0.15);
   }
 }
