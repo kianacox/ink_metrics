@@ -28,6 +28,7 @@ describe("session-formatting utils", () => {
         durationMinutes: 75,
         createdAt: "2026-03-31T10:00:00.000Z",
         throughAds: false,
+        inProgress: false,
       },
     ]);
   });
@@ -50,6 +51,7 @@ describe("session-formatting utils", () => {
     expect(mapped[0]?.durationMinutes).toBe(0);
     expect(typeof mapped[0]?.createdAt).toBe("string");
     expect(mapped[0]?.throughAds).toBe(false);
+    expect(mapped[0]?.inProgress).toBe(false);
   });
 
   it("supports mapping when clients relation is an array", () => {

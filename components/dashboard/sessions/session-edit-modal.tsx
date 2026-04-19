@@ -42,6 +42,7 @@ export function SessionEditModal({
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
   const [sessionDateTime, setSessionDateTime] = useState("");
+  const [inProgress, setInProgress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +57,7 @@ export function SessionEditModal({
     setSessionDateTime(
       formatDateTimeLocalForTimezone(new Date(session.createdAt), reportingTimezone),
     );
+    setInProgress(session.inProgress);
     setError(null);
   }, [open, reportingTimezone, session]);
 
@@ -90,6 +92,7 @@ export function SessionEditModal({
           priceMinor: validationResult.priceMinor,
           sessionDurationMinutes: validationResult.sessionDurationMinutes,
           sessionAtIso: validationResult.sessionAtIso,
+          inProgress,
         }),
       });
 
@@ -128,10 +131,12 @@ export function SessionEditModal({
           sessionDateTime={sessionDateTime}
           profit={profit}
           currencyCode={currencyCode}
+          inProgress={inProgress}
           onHoursChange={setHours}
           onMinutesChange={setMinutes}
           onSessionDateTimeChange={setSessionDateTime}
           onProfitChange={setProfit}
+          onInProgressChange={setInProgress}
         />
         {error ? (
           <p className="text-sm text-destructive" role="status">

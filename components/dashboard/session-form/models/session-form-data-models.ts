@@ -7,6 +7,7 @@ export interface SaveSessionParams {
   sessionDurationMinutes: number;
   sessionAtIso: string;
   throughAds: boolean | null;
+  inProgress: boolean;
 }
 
 export interface SaveSessionResult {

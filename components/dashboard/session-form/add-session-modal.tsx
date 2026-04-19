@@ -58,6 +58,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
   const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
   const [throughAds, setThroughAds] = useState(false);
+  const [inProgress, setInProgress] = useState(false);
   const {
     clients,
     isClientsLoading,
@@ -83,6 +84,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     setMinutes("");
     setProfit("");
     setThroughAds(false);
+    setInProgress(false);
     setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
     if (!preserveStatus) {
       setStatus(null);
@@ -167,6 +169,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
         sessionDurationMinutes: validationResult.sessionDurationMinutes,
         sessionAtIso: validationResult.sessionAtIso,
         throughAds: displayAdvertCheckbox && createNewClient ? throughAds : null,
+        inProgress,
       });
 
       if (!result.success) {
@@ -339,10 +342,12 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
                   sessionDateTime={sessionDateTime}
                   profit={profit}
                   currencyCode={defaultCurrency}
+                  inProgress={inProgress}
                   onHoursChange={setHours}
                   onMinutesChange={setMinutes}
                   onSessionDateTimeChange={setSessionDateTime}
                   onProfitChange={setProfit}
+                  onInProgressChange={setInProgress}
                 />
                 {displayAdvertCheckbox && createNewClient ? (
                   <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2">

@@ -66,6 +66,7 @@ export async function PATCH(
     p_price_minor: payload.priceMinor,
     p_session_duration_minutes: payload.sessionDurationMinutes,
     p_session_at: payload.sessionAtIso,
+    p_in_progress: payload.inProgress,
   });
   if (rpcError) {
     return NextResponse.json(

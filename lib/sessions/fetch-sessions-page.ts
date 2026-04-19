@@ -128,7 +128,7 @@ export async function fetchSessionsPage({
   let rowsQuery = supabase
     .from("sessions")
     .select(
-      "session_id,price,session_duration,session_at,through_ads,created_at,compensation_version_id,clients!inner(name),artist_compensation_versions!sessions_compensation_version_id_fkey(compensation_version_id,pay_chair_rent,rent_type,fixed_frequency,fixed_amount_minor,commission_rate_bps,commission_capped,commission_cap_frequency,commission_cap_amount_minor)",
+      "session_id,price,session_duration,session_at,through_ads,in_progress,created_at,compensation_version_id,clients!inner(name),artist_compensation_versions!sessions_compensation_version_id_fkey(compensation_version_id,pay_chair_rent,rent_type,fixed_frequency,fixed_amount_minor,commission_rate_bps,commission_capped,commission_cap_frequency,commission_cap_amount_minor)",
     )
     .eq("user_id", userId)
     .order(sortColumn, { ascending: false })

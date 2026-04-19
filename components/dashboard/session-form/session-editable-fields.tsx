@@ -10,10 +10,12 @@ interface SessionEditableFieldsProps {
   sessionDateTime: string;
   profit: string;
   currencyCode: string;
+  inProgress: boolean;
   onHoursChange: (value: string) => void;
   onMinutesChange: (value: string) => void;
   onSessionDateTimeChange: (value: string) => void;
   onProfitChange: (value: string) => void;
+  onInProgressChange: (value: boolean) => void;
 }
 
 function getCurrencySymbol(currencyCode: string): string {
@@ -37,15 +39,18 @@ export function SessionEditableFields({
   sessionDateTime,
   profit,
   currencyCode,
+  inProgress,
   onHoursChange,
   onMinutesChange,
   onSessionDateTimeChange,
   onProfitChange,
+  onInProgressChange,
 }: SessionEditableFieldsProps) {
   const hoursId = `${fieldIdPrefix}-session-hours`;
   const minutesId = `${fieldIdPrefix}-session-minutes`;
   const dateTimeId = `${fieldIdPrefix}-session-date-time`;
   const priceId = `${fieldIdPrefix}-session-price`;
+  const inProgressId = `${fieldIdPrefix}-in-progress`;
   const currencySymbol = getCurrencySymbol(currencyCode);
 
   return (
@@ -121,6 +126,23 @@ export function SessionEditableFields({
             className="pl-8"
             required
           />
+        </div>
+      </div>
+      <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
+        <input
+          id={inProgressId}
+          type="checkbox"
+          checked={inProgress}
+          onChange={(event) => onInProgressChange(event.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border border-input"
+        />
+        <div className="grid gap-0.5">
+          <Label htmlFor={inProgressId} className="cursor-pointer leading-5">
+            Follow-up session needed
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            For multi-session pieces billed per session — not touch-ups.
+          </p>
         </div>
       </div>
     </>

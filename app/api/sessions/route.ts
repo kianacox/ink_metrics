@@ -141,6 +141,7 @@ export async function POST(request: Request) {
       p_session_duration_minutes: payload.sessionDurationMinutes,
       p_session_at: payload.sessionAtIso,
       p_through_ads: payload.throughAds,
+      p_in_progress: payload.inProgress,
     },
   );
 
