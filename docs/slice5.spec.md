@@ -347,7 +347,7 @@ All dashboard additions must be implemented as separate PRs. Each PR should be s
 
 - Implement grouped expense totals by `expenses.category` and month total.
 - Build category bar chart + total expenses display.
-- Add tests for sparse category data and full-category fixtures.
+- Add comprehensive tests for all scenarios and edge cases.
 
 ### PR 7: Dashboard Hardening
 
