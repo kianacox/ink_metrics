@@ -17,22 +17,22 @@ const TAKE_HOME_COMPARISON_ITEMS = [
   {
     key: "gross" as const,
     label: "Gross",
-    colorClassName: "bg-emerald-500/85",
+    colorClassName: "bg-chart-2",
   },
   {
     key: "paidToStudio" as const,
     label: "Paid to studio",
-    colorClassName: "bg-amber-500/85",
+    colorClassName: "bg-chart-4",
   },
   {
     key: "totalExpenses" as const,
     label: "Expenses",
-    colorClassName: "bg-orange-500/85",
+    colorClassName: "bg-chart-5",
   },
   {
     key: "net" as const,
     label: "Total Take-Home",
-    colorClassName: "bg-blue-600",
+    colorClassName: "bg-gold",
   },
 ];
 
