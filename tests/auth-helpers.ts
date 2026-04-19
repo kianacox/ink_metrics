@@ -253,13 +253,16 @@ export async function loginAsUser(
   page: Page,
   email: string,
   password: string,
+  { waitForDashboard = false }: { waitForDashboard?: boolean } = {},
 ) {
   await page.goto("/auth/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: /^login$/i }).click();
-  // Wait for post-login redirect to complete before returning.
-  await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+  if (waitForDashboard) {
+    // Wait for post-login redirect to complete so callers don't race against navigation.
+    await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+  }
 }
 
 export async function loginAsSeededUser(
@@ -268,6 +271,6 @@ export async function loginAsSeededUser(
 ) {
   const email =
     userType === "sessionComplete" ? seededSessionUserEmail : seededIncompleteUserEmail;
-  await loginAsUser(page, email, seededUserPassword);
+  await loginAsUser(page, email, seededUserPassword, { waitForDashboard: true });
   return email;
 }
