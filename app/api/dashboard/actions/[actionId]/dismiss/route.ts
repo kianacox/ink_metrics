@@ -9,14 +9,9 @@ export async function POST(
     "You must be signed in to dismiss actions.",
   );
   if (errorResponse) return errorResponse;
-  if (!user) {
-    return NextResponse.json(
-      { error: "You must be signed in to dismiss actions." },
-      { status: 401 },
-    );
-  }
 
   const { actionId } = await params;
+  const userId = user!.id;
 
   const { data: action, error: fetchError } = await supabase
     .from("client_actions")
@@ -28,14 +23,15 @@ export async function POST(
     return NextResponse.json({ error: "Action not found.", code: "ACTION_NOT_FOUND" }, { status: 404 });
   }
 
-  if (action.user_id !== user.id) {
-    return NextResponse.json({ error: "Forbidden.", code: "ACTION_NOT_FOUND" }, { status: 403 });
+  if (action.user_id !== userId) {
+    return NextResponse.json({ error: "Forbidden.", code: "ACTION_FORBIDDEN" }, { status: 403 });
   }
 
   const { error: updateError } = await supabase
     .from("client_actions")
     .update({ dismissed_at: new Date().toISOString() })
-    .eq("action_id", actionId);
+    .eq("action_id", actionId)
+    .eq("user_id", userId);
 
   if (updateError) {
     return NextResponse.json(

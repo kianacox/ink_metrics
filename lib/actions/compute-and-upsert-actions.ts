@@ -21,6 +21,15 @@ export interface ActionResponse {
   messageTemplate: string;
 }
 
+interface UpsertRow {
+  user_id: string;
+  client_id: string;
+  action_type: ActionType;
+  session_id: string | null;
+  revenue_at_risk_minor: number;
+  dismissed_at: null;
+}
+
 const DAYS_MS = 24 * 60 * 60 * 1000;
 
 function daysSince(isoTimestamp: string, now: Date): number {
@@ -31,9 +40,9 @@ function toSessionRows(rawSessions: Array<Record<string, unknown>>): SessionRow[
   return rawSessions.map((s) => ({
     sessionId: s.session_id as string,
     clientId: s.client_id as string,
-    priceMinor: (s.price as number) ?? 0,
+    priceMinor: typeof s.price === "number" ? s.price : 0,
     sessionAt: s.session_at as string,
-    inProgress: (s.in_progress as boolean) ?? false,
+    inProgress: typeof s.in_progress === "boolean" ? s.in_progress : false,
   }));
 }
 
@@ -43,9 +52,9 @@ function toClientAction(a: Record<string, unknown>): ClientAction {
     userId: a.user_id as string,
     clientId: a.client_id as string,
     actionType: a.action_type as ActionType,
-    sessionId: (a.session_id as string) ?? null,
-    revenueAtRiskMinor: (a.revenue_at_risk_minor as number) ?? null,
-    dismissedAt: (a.dismissed_at as string) ?? null,
+    sessionId: typeof a.session_id === "string" ? a.session_id : null,
+    revenueAtRiskMinor: typeof a.revenue_at_risk_minor === "number" ? a.revenue_at_risk_minor : null,
+    dismissedAt: typeof a.dismissed_at === "string" ? a.dismissed_at : null,
     createdAt: a.created_at as string,
   };
 }
@@ -86,29 +95,23 @@ export async function computeAndUpsertActions(
   // 4. Delete stale in_progress actions (§6.2): clients not in current signal set.
   const inProgressClientIds = inProgressSignals.map((s) => s.clientId);
   if (inProgressClientIds.length > 0) {
-    await supabase
+    const { error: deleteError } = await supabase
       .from("client_actions")
       .delete()
       .eq("user_id", userId)
       .eq("action_type", "in_progress")
       .not("client_id", "in", `(${inProgressClientIds.join(",")})`);
+    if (deleteError) throw new Error("ACTIONS_UPSERT_FAILED");
   } else {
-    await supabase
+    const { error: deleteError } = await supabase
       .from("client_actions")
       .delete()
       .eq("user_id", userId)
       .eq("action_type", "in_progress");
+    if (deleteError) throw new Error("ACTIONS_UPSERT_FAILED");
   }
 
   // 5. Collect upserts for signals that need inserting or reactivating.
-  type UpsertRow = {
-    user_id: string;
-    client_id: string;
-    action_type: ActionType;
-    session_id: string | null;
-    revenue_at_risk_minor: number;
-    dismissed_at: null;
-  };
   const upserts: UpsertRow[] = [];
 
   for (const signal of lapsedSignals) {
@@ -187,7 +190,8 @@ export async function computeAndUpsertActions(
   return (activeRaw ?? []).map((row) => {
     const actionType = row.action_type as ActionType;
     const clientName = (row.clients as { name: string } | null)?.name ?? "Client";
-    const revenueAtRiskMinor = (row.revenue_at_risk_minor as number) ?? 0;
+    const revenueAtRiskMinor =
+      typeof row.revenue_at_risk_minor === "number" ? row.revenue_at_risk_minor : 0;
 
     let sessionAt: string | null = null;
     if (actionType === "in_progress" && row.session_id) {
