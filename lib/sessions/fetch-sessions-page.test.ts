@@ -43,6 +43,24 @@ function createRowsQuery(rows: unknown[] = []): MockRowsQuery {
   return query as MockRowsQuery;
 }
 
+interface MockAnnotateQuery {
+  eq: jest.Mock;
+  in: jest.Mock;
+  order: jest.Mock;
+  select: jest.Mock;
+}
+
+function createAnnotateQuery(rows: { client_id: string; session_at: string }[]): MockAnnotateQuery {
+  const query: Partial<MockAnnotateQuery> = {};
+  query.eq = jest.fn(() => query);
+  query.in = jest.fn(() => query);
+  query.order = jest.fn()
+    .mockReturnValueOnce(query)
+    .mockResolvedValueOnce({ data: rows, error: null });
+  query.select = jest.fn(() => query);
+  return query as MockAnnotateQuery;
+}
+
 function createVersionQuery(
   row: {
     compensation_version_id: string;
@@ -260,5 +278,85 @@ describe("fetchSessionsPage", () => {
       sortValue: "2026-03-12T10:00:00.000Z",
       id: "s-2",
     });
+  });
+
+  it("marks the most recent session for a client as isLatestForClient", async () => {
+    const rowsQuery = createRowsQuery([
+      {
+        session_id: "s-2",
+        client_id: "c-1",
+        price: 5000,
+        session_duration: 60,
+        session_at: "2026-03-12T10:00:00.000Z",
+        clients: { name: "Alice" },
+      },
+      {
+        session_id: "s-1",
+        client_id: "c-1",
+        price: 4500,
+        session_duration: 45,
+        session_at: "2026-03-11T10:00:00.000Z",
+        clients: { name: "Alice" },
+      },
+    ]);
+    const annotateQuery = createAnnotateQuery([
+      { client_id: "c-1", session_at: "2026-03-12T10:00:00.000Z" },
+      { client_id: "c-1", session_at: "2026-03-11T10:00:00.000Z" },
+    ]);
+
+    const from = jest
+      .fn()
+      .mockReturnValueOnce({ select: jest.fn(() => rowsQuery) })
+      .mockReturnValueOnce({ select: jest.fn(() => annotateQuery) });
+    const supabase = { from } as never;
+
+    const result = await fetchSessionsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "date",
+      cursor: null,
+      limit: 25,
+      dateRange: "allTime",
+    });
+
+    expect(result.data[0]?.is_latest_for_client).toBe(true);
+    expect(result.data[1]?.is_latest_for_client).toBe(false);
+  });
+
+  it("marks session as latest when client has only one session", async () => {
+    const rowsQuery = createRowsQuery([
+      {
+        session_id: "s-1",
+        client_id: "c-1",
+        price: 5000,
+        session_duration: 60,
+        session_at: "2026-03-12T10:00:00.000Z",
+        clients: { name: "Alice" },
+      },
+    ]);
+    const annotateQuery = createAnnotateQuery([
+      { client_id: "c-1", session_at: "2026-03-12T10:00:00.000Z" },
+    ]);
+
+    const from = jest
+      .fn()
+      .mockReturnValueOnce({ select: jest.fn(() => rowsQuery) })
+      .mockReturnValueOnce({ select: jest.fn(() => annotateQuery) });
+    const supabase = { from } as never;
+
+    const result = await fetchSessionsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "date",
+      cursor: null,
+      limit: 25,
+      dateRange: "allTime",
+    });
+
+    expect(result.data[0]?.is_latest_for_client).toBe(true);
   });
 });

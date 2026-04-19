@@ -105,6 +105,43 @@ function getSortValueForCursor(row: SessionRow, sortField: SessionSortField): st
   return row.session_at ?? "";
 }
 
+async function annotateLatestForClient({
+  supabase,
+  userId,
+  rows,
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  rows: SessionRow[];
+}): Promise<SessionRow[]> {
+  const clientIds = [...new Set(rows.map((r) => r.client_id).filter((id): id is string => !!id))];
+  if (clientIds.length === 0) {
+    return rows.map((r) => ({ ...r, is_latest_for_client: true }));
+  }
+
+  const { data: latestData } = await supabase
+    .from("sessions")
+    .select("client_id,session_at")
+    .eq("user_id", userId)
+    .in("client_id", clientIds)
+    .order("client_id")
+    .order("session_at", { ascending: false });
+
+  const latestByClient = new Map<string, string>();
+  for (const row of latestData ?? []) {
+    if (row.client_id && !latestByClient.has(row.client_id)) {
+      latestByClient.set(row.client_id, row.session_at as string);
+    }
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    is_latest_for_client:
+      !row.client_id ||
+      row.session_at === latestByClient.get(row.client_id),
+  }));
+}
+
 export async function fetchSessionsPage({
   supabase,
   userId,
@@ -128,7 +165,7 @@ export async function fetchSessionsPage({
   let rowsQuery = supabase
     .from("sessions")
     .select(
-      "session_id,price,session_duration,session_at,through_ads,in_progress,created_at,compensation_version_id,clients!inner(name),artist_compensation_versions!sessions_compensation_version_id_fkey(compensation_version_id,pay_chair_rent,rent_type,fixed_frequency,fixed_amount_minor,commission_rate_bps,commission_capped,commission_cap_frequency,commission_cap_amount_minor)",
+      "session_id,client_id,price,session_duration,session_at,through_ads,in_progress,created_at,compensation_version_id,clients!inner(name),artist_compensation_versions!sessions_compensation_version_id_fkey(compensation_version_id,pay_chair_rent,rent_type,fixed_frequency,fixed_amount_minor,commission_rate_bps,commission_capped,commission_cap_frequency,commission_cap_amount_minor)",
     )
     .eq("user_id", userId)
     .order(sortColumn, { ascending: false })
@@ -167,6 +204,8 @@ export async function fetchSessionsPage({
     rows: pageRows,
   });
 
+  const annotatedRows = await annotateLatestForClient({ supabase, userId, rows: hydratedRows });
+
   const lastRow = pageRows[pageRows.length - 1] ?? null;
   const nextCursor = hasNextPage && lastRow
     ? encodeCompositeCursor({
@@ -176,7 +215,7 @@ export async function fetchSessionsPage({
     : null;
 
   return {
-    data: hydratedRows,
+    data: annotatedRows,
     hasNextPage,
     nextCursor,
   };

@@ -9,6 +9,7 @@ export interface SessionListItem {
   createdAt: string;
   throughAds: boolean;
   inProgress: boolean;
+  isLatestForClient: boolean;
 }
 
 export interface SessionSortState {
