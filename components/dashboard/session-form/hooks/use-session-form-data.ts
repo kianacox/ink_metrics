@@ -87,6 +87,7 @@ export function useSessionFormData(open: boolean) {
       sessionDurationMinutes,
       sessionAtIso,
       throughAds,
+      inProgress,
     }: SaveSessionParams): Promise<SaveSessionResult> => {
       const response = await fetch("/api/sessions", {
         method: "POST",
@@ -102,6 +103,7 @@ export function useSessionFormData(open: boolean) {
           sessionDurationMinutes,
           sessionAtIso,
           throughAds,
+          inProgress,
         }),
       });
       const responseBody = (await response.json()) as SaveSessionApiResponse;

@@ -199,6 +199,83 @@ test("shows mobile session card actions for edit and delete", async ({ page }) =
   ).toBeVisible();
 });
 
+test("shows follow-up session checkbox unchecked by default in add modal", async ({ page }) => {
+  await openAddSessionModal(page);
+  const checkbox = page.getByLabel("Follow-up session needed");
+  await expect(checkbox).toBeVisible();
+  await expect(checkbox).not.toBeChecked();
+});
+
+test("saves session with follow-up session checkbox checked", async ({ page }) => {
+  const clientName = uniqueClientName("client-in-progress");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+    inProgress: true,
+  });
+});
+
+test("follow-up checkbox resets to unchecked after saving a session", async ({ page }) => {
+  const clientName = uniqueClientName("client-reset-checkbox");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+    inProgress: true,
+  });
+
+  await openAddSessionModal(page);
+  const checkbox = page.getByLabel("Follow-up session needed");
+  await expect(checkbox).not.toBeChecked();
+});
+
+test("edit modal shows follow-up checkbox pre-populated from saved value", async ({ page }) => {
+  const clientName = uniqueClientName("client-edit-in-progress");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+    inProgress: true,
+  });
+
+  await goToSessionsPage(page);
+  const row = page.locator("tbody tr", { hasText: clientName }).first();
+  await row.getByRole("button", { name: `Edit session for ${clientName}` }).click();
+
+  const dialog = page.getByRole("dialog", { name: /edit session/i });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Follow-up session needed")).toBeChecked();
+});
+
+test("edit modal can uncheck follow-up and save", async ({ page }) => {
+  const clientName = uniqueClientName("client-uncheck-in-progress");
+
+  await createSessionWithNewClient(page, {
+    clientName,
+    hours: "1",
+    minutes: "0",
+    price: "100.00",
+    inProgress: true,
+  });
+
+  await goToSessionsPage(page);
+  const row = page.locator("tbody tr", { hasText: clientName }).first();
+  await row.getByRole("button", { name: `Edit session for ${clientName}` }).click();
+
+  const dialog = page.getByRole("dialog", { name: /edit session/i });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Follow-up session needed").uncheck();
+  await dialog.getByRole("button", { name: /^confirm$/i }).click();
+  await expect(page.getByRole("status")).toContainText("Session updated successfully.");
+});
+
 test("keeps create session modal within mobile viewport bounds", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openAddSessionModal(page);

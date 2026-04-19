@@ -31,7 +31,55 @@ describe("parseSessionCreatePayload", () => {
       sessionDurationMinutes: 90,
       sessionAtIso: "2026-04-09T10:30:00.000Z",
       throughAds: true,
+      inProgress: false,
     });
+  });
+
+  it("accepts inProgress true and preserves it in output", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "Alice",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDurationMinutes: 90,
+      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      throughAds: null,
+      inProgress: true,
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data?.inProgress).toBe(true);
+  });
+
+  it("defaults inProgress to false when omitted", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDurationMinutes: 90,
+      sessionAtIso: "2026-04-09T10:30:00.000Z",
+    });
+
+    expect(result.data?.inProgress).toBe(false);
+  });
+
+  it("rejects inProgress when it is not a boolean or null", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDurationMinutes: 90,
+      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      inProgress: "yes",
+    });
+
+    expect(result.error).toBe("Follow-up status is invalid.");
+    expect(result.data).toBeNull();
   });
 
   it("requires a client selection when not creating a new client", () => {
@@ -112,6 +160,7 @@ describe("parseSessionUpdatePayload", () => {
       priceMinor: 12_500,
       sessionDurationMinutes: 120,
       sessionAtIso: "2026-04-09T10:00:00.000Z",
+      inProgress: false,
     });
 
     expect(result.error).toBeNull();
@@ -119,7 +168,43 @@ describe("parseSessionUpdatePayload", () => {
       priceMinor: 12_500,
       sessionDurationMinutes: 120,
       sessionAtIso: "2026-04-09T10:00:00.000Z",
+      inProgress: false,
     });
+  });
+
+  it("accepts inProgress true in update payload", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      inProgress: true,
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data?.inProgress).toBe(true);
+  });
+
+  it("defaults inProgress to false when omitted from update payload", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data?.inProgress).toBe(false);
+  });
+
+  it("rejects inProgress when it is not a boolean in update payload", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDurationMinutes: 120,
+      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      inProgress: "yes",
+    });
+
+    expect(result.error).toBe("Follow-up status is invalid.");
+    expect(result.data).toBeNull();
   });
 
   it("rejects payloads that include non-editable fields", () => {
@@ -130,7 +215,7 @@ describe("parseSessionUpdatePayload", () => {
       clientId: "client-1",
     });
 
-    expect(result.error).toBe("Only price, session duration, and session date/time can be updated.");
+    expect(result.error).toBe("Only price, session duration, session date/time, and follow-up status can be updated.");
     expect(result.data).toBeNull();
   });
 

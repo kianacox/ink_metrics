@@ -11,6 +11,7 @@ interface SessionInput {
   minutes: string;
   price: string;
   sessionDateTime?: string;
+  inProgress?: boolean;
 }
 
 const SUCCESS_TOAST_TEXT = "Session saved successfully.";
@@ -32,7 +33,7 @@ export async function openAddSessionModal(page: Page): Promise<void> {
 
 export async function fillSessionFields(
   page: Page,
-  { clientName, hours, minutes, price, sessionDateTime }: SessionInput,
+  { clientName, hours, minutes, price, sessionDateTime, inProgress }: SessionInput,
 ): Promise<void> {
   await page.getByLabel("Client (type to search existing or create new)").fill(clientName);
   await page.getByLabel("Hours").fill(hours);
@@ -41,6 +42,13 @@ export async function fillSessionFields(
     await page.getByLabel("Session date and time").fill(sessionDateTime);
   }
   await page.getByLabel("Price").fill(price);
+  if (inProgress !== undefined) {
+    const checkbox = page.getByLabel("Follow-up session needed");
+    const isChecked = await checkbox.isChecked();
+    if (inProgress !== isChecked) {
+      await checkbox.click();
+    }
+  }
 }
 
 export async function selectCreateNewClientOption(

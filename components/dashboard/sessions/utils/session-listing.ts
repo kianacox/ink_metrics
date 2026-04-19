@@ -8,6 +8,7 @@ export interface SessionListItem {
   durationMinutes: number;
   createdAt: string;
   throughAds: boolean;
+  inProgress: boolean;
 }
 
 export interface SessionSortState {

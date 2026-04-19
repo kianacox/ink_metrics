@@ -11,6 +11,7 @@ const SESSION_UPDATE_ALLOWED_KEYS = new Set([
   "priceMinor",
   "sessionDurationMinutes",
   "sessionAtIso",
+  "inProgress",
 ]);
 
 function parseIsoTimestamp(value: unknown): string | null {
@@ -95,6 +96,11 @@ export function parseSessionCreatePayload(input: unknown): {
     return { data: null, error: "Advertising selection is invalid." };
   }
 
+  const inProgress = candidate.inProgress;
+  if (inProgress !== null && inProgress !== undefined && typeof inProgress !== "boolean") {
+    return { data: null, error: "Follow-up status is invalid." };
+  }
+
   return {
     data: {
       selectedClientId,
@@ -105,6 +111,7 @@ export function parseSessionCreatePayload(input: unknown): {
       sessionDurationMinutes,
       sessionAtIso,
       throughAds: throughAds ?? null,
+      inProgress: inProgress === true,
     },
     error: null,
   };
@@ -126,7 +133,7 @@ export function parseSessionUpdatePayload(input: unknown): {
   if (hasUnexpectedKeys) {
     return {
       data: null,
-      error: "Only price, session duration, and session date/time can be updated.",
+      error: "Only price, session duration, session date/time, and follow-up status can be updated.",
     };
   }
 
@@ -152,11 +159,17 @@ export function parseSessionUpdatePayload(input: unknown): {
     return { data: null, error: "Session date and time cannot be in the future." };
   }
 
+  const inProgress = candidate.inProgress;
+  if (inProgress !== null && inProgress !== undefined && typeof inProgress !== "boolean") {
+    return { data: null, error: "Follow-up status is invalid." };
+  }
+
   return {
     data: {
       priceMinor,
       sessionDurationMinutes,
       sessionAtIso,
+      inProgress: inProgress === true,
     },
     error: null,
   };
