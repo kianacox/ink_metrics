@@ -3,15 +3,22 @@ import { render, screen } from "@testing-library/react";
 import { useReducedMotion } from "framer-motion";
 import { AnimatedCard } from "../animated-card";
 
-jest.mock("framer-motion", () => ({
-  motion: {
-    div: React.forwardRef(
-      ({ children, initial, animate, variants, whileHover, transition, ...props }: any, ref: any) =>
-        React.createElement("div", { ...props, "data-initial": String(initial), ref }, children)
-    ),
-  },
-  useReducedMotion: jest.fn(),
-}));
+jest.mock("framer-motion", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const R = require("react");
+  const div = R.forwardRef(
+    (
+      { children, initial, ...rest }: {
+        children?: React.ReactNode;
+        initial?: boolean | string;
+        [key: string]: unknown;
+      },
+      ref: React.Ref<HTMLDivElement>,
+    ) => R.createElement("div", { ...rest, "data-initial": String(initial), ref }, children),
+  );
+  div.displayName = "MockMotionDiv";
+  return { motion: { div }, useReducedMotion: jest.fn() };
+});
 
 const mockUseReducedMotion = useReducedMotion as jest.Mock;
 
