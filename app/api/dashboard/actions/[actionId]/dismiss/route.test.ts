@@ -4,12 +4,20 @@
 import { NextResponse } from "next/server";
 import { POST } from "./route";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
+import { dismissAction, fetchActionOwner } from "@/lib/actions/action-db";
 
 jest.mock("@/lib/supabase/require-authenticated-api-user", () => ({
   requireAuthenticatedApiUser: jest.fn(),
 }));
 
+jest.mock("@/lib/actions/action-db", () => ({
+  fetchActionOwner: jest.fn(),
+  dismissAction: jest.fn(),
+}));
+
 const mockedAuth = jest.mocked(requireAuthenticatedApiUser);
+const mockedFetchActionOwner = jest.mocked(fetchActionOwner);
+const mockedDismissAction = jest.mocked(dismissAction);
 
 function makeRequest(actionId: string) {
   return {
@@ -17,30 +25,6 @@ function makeRequest(actionId: string) {
       method: "POST",
     }),
     params: Promise.resolve({ actionId }),
-  };
-}
-
-function mockSupabase({
-  action,
-  fetchError = null,
-  updateError = null,
-}: {
-  action?: { action_id: string; user_id: string } | null;
-  fetchError?: { message: string } | null;
-  updateError?: { message: string } | null;
-}) {
-  const single = jest.fn().mockResolvedValue({ data: action ?? null, error: fetchError });
-  const selectEq = jest.fn().mockReturnValue({ single });
-  const select = jest.fn().mockReturnValue({ eq: selectEq });
-
-  const updateEq2 = jest.fn().mockResolvedValue({ error: updateError });
-  const updateEq = jest.fn().mockReturnValue({ eq: updateEq2 });
-  const update = jest.fn().mockReturnValue({ eq: updateEq });
-
-  return {
-    select,
-    update,
-    from: jest.fn().mockReturnValue({ select, update }),
   };
 }
 
@@ -65,15 +49,16 @@ describe("POST /api/dashboard/actions/[actionId]/dismiss", () => {
 
     expect(response.status).toBe(401);
     expect(payload.error).toBe("You must be signed in to dismiss actions.");
+    expect(mockedFetchActionOwner).not.toHaveBeenCalled();
   });
 
   it("returns 404 when action does not exist", async () => {
-    const supabase = mockSupabase({ action: null });
     mockedAuth.mockResolvedValue({
-      supabase: supabase as never,
+      supabase: {} as never,
       user: { id: "user-1" } as never,
       errorResponse: null,
     });
+    mockedFetchActionOwner.mockResolvedValue({ error: "Action not found." });
 
     const { request, params } = makeRequest("nonexistent");
     const response = await POST(request, { params });
@@ -84,14 +69,12 @@ describe("POST /api/dashboard/actions/[actionId]/dismiss", () => {
   });
 
   it("returns 403 when action belongs to a different user", async () => {
-    const supabase = mockSupabase({
-      action: { action_id: "action-1", user_id: "other-user" },
-    });
     mockedAuth.mockResolvedValue({
-      supabase: supabase as never,
+      supabase: {} as never,
       user: { id: "user-1" } as never,
       errorResponse: null,
     });
+    mockedFetchActionOwner.mockResolvedValue({ userId: "other-user" });
 
     const { request, params } = makeRequest("action-1");
     const response = await POST(request, { params });
@@ -99,17 +82,17 @@ describe("POST /api/dashboard/actions/[actionId]/dismiss", () => {
 
     expect(response.status).toBe(403);
     expect(payload.code).toBe("ACTION_FORBIDDEN");
+    expect(mockedDismissAction).not.toHaveBeenCalled();
   });
 
-  it("sets dismissed_at and returns 200 on success", async () => {
-    const supabase = mockSupabase({
-      action: { action_id: "action-1", user_id: "user-1" },
-    });
+  it("calls dismissAction and returns 200 on success", async () => {
     mockedAuth.mockResolvedValue({
-      supabase: supabase as never,
+      supabase: {} as never,
       user: { id: "user-1" } as never,
       errorResponse: null,
     });
+    mockedFetchActionOwner.mockResolvedValue({ userId: "user-1" });
+    mockedDismissAction.mockResolvedValue({ dismissed: true });
 
     const { request, params } = makeRequest("action-1");
     const response = await POST(request, { params });
@@ -117,22 +100,17 @@ describe("POST /api/dashboard/actions/[actionId]/dismiss", () => {
 
     expect(response.status).toBe(200);
     expect(payload.success).toBe(true);
-    expect(supabase.from).toHaveBeenCalledWith("client_actions");
-    expect(supabase.update).toHaveBeenCalledWith(
-      expect.objectContaining({ dismissed_at: expect.any(String) }),
-    );
+    expect(mockedDismissAction).toHaveBeenCalledWith({}, "action-1", "user-1");
   });
 
-  it("returns 500 with ACTION_DISMISS_FAILED when update fails", async () => {
-    const supabase = mockSupabase({
-      action: { action_id: "action-1", user_id: "user-1" },
-      updateError: { message: "db error" },
-    });
+  it("returns 500 with ACTION_DISMISS_FAILED when dismissAction fails", async () => {
     mockedAuth.mockResolvedValue({
-      supabase: supabase as never,
+      supabase: {} as never,
       user: { id: "user-1" } as never,
       errorResponse: null,
     });
+    mockedFetchActionOwner.mockResolvedValue({ userId: "user-1" });
+    mockedDismissAction.mockResolvedValue({ error: "Could not dismiss action." });
 
     const { request, params } = makeRequest("action-1");
     const response = await POST(request, { params });

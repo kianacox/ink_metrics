@@ -9,26 +9,16 @@ import {
   resolveUpsertOperation,
 } from "@/lib/actions/signal-queries";
 import { resolveMessageTemplate } from "@/lib/actions/template-resolver";
-import type { ActionType, ClientAction, SessionRow } from "@/lib/actions/models";
-
-export interface ActionResponse {
-  actionId: string;
-  clientId: string;
-  clientName: string;
-  actionType: ActionType;
-  weeksSince: number;
-  revenueAtRiskMinor: number;
-  messageTemplate: string;
-}
-
-interface UpsertRow {
-  user_id: string;
-  client_id: string;
-  action_type: ActionType;
-  session_id: string | null;
-  revenue_at_risk_minor: number;
-  dismissed_at: null;
-}
+import type {
+  ActionResponse,
+  ActionType,
+  ClientAction,
+  InProgressSignal,
+  LapsedRepeatSignal,
+  NewClientSignal,
+  SessionRow,
+  UpsertRow,
+} from "@/lib/actions/models";
 
 const DAYS_MS = 24 * 60 * 60 * 1000;
 
@@ -59,59 +49,61 @@ function toClientAction(a: Record<string, unknown>): ClientAction {
   };
 }
 
-export async function computeAndUpsertActions(
-  supabase: SupabaseClient,
-  userId: string,
-  now: Date = new Date(),
-): Promise<ActionResponse[]> {
-  // 1. Load all sessions for the authenticated user.
-  const { data: rawSessions, error: sessionsError } = await supabase
+async function loadUserSessions(supabase: SupabaseClient, userId: string): Promise<SessionRow[]> {
+  const { data, error } = await supabase
     .from("sessions")
     .select("session_id, client_id, price, session_at, in_progress")
     .eq("user_id", userId);
 
-  if (sessionsError) throw new Error("ACTIONS_UPSERT_FAILED");
+  if (error) throw new Error("ACTIONS_UPSERT_FAILED");
+  return toSessionRows(data ?? []);
+}
 
-  const sessions = toSessionRows(rawSessions ?? []);
-
-  // 2. Compute all three signal sets.
-  const lapsedSignals = computeLapsedRepeatSignals(sessions, now);
-  const newClientSignals = computeNewClientSignals(sessions, now);
-  const inProgressSignals = computeInProgressSignals(sessions, now);
-
-  // 3. Load existing client_actions for the user.
-  const { data: rawActions, error: actionsError } = await supabase
+async function loadExistingActions(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Map<string, ClientAction>> {
+  const { data, error } = await supabase
     .from("client_actions")
     .select("*")
     .eq("user_id", userId);
 
-  if (actionsError) throw new Error("ACTIONS_UPSERT_FAILED");
+  if (error) throw new Error("ACTIONS_UPSERT_FAILED");
 
-  const existingByKey = new Map<string, ClientAction>();
-  for (const a of rawActions ?? []) {
-    existingByKey.set(`${a.client_id}:${a.action_type}`, toClientAction(a));
+  const byKey = new Map<string, ClientAction>();
+  for (const a of data ?? []) {
+    byKey.set(`${a.client_id}:${a.action_type}`, toClientAction(a));
+  }
+  return byKey;
+}
+
+async function deleteStaleInProgressActions(
+  supabase: SupabaseClient,
+  userId: string,
+  activeClientIds: string[],
+): Promise<void> {
+  let query = supabase
+    .from("client_actions")
+    .delete()
+    .eq("user_id", userId)
+    .eq("action_type", "in_progress");
+
+  if (activeClientIds.length > 0) {
+    query = query.not("client_id", "in", `(${activeClientIds.join(",")})`);
   }
 
-  // 4. Delete stale in_progress actions (§6.2): clients not in current signal set.
-  const inProgressClientIds = inProgressSignals.map((s) => s.clientId);
-  if (inProgressClientIds.length > 0) {
-    const { error: deleteError } = await supabase
-      .from("client_actions")
-      .delete()
-      .eq("user_id", userId)
-      .eq("action_type", "in_progress")
-      .not("client_id", "in", `(${inProgressClientIds.join(",")})`);
-    if (deleteError) throw new Error("ACTIONS_UPSERT_FAILED");
-  } else {
-    const { error: deleteError } = await supabase
-      .from("client_actions")
-      .delete()
-      .eq("user_id", userId)
-      .eq("action_type", "in_progress");
-    if (deleteError) throw new Error("ACTIONS_UPSERT_FAILED");
-  }
+  const { error } = await query;
+  if (error) throw new Error("ACTIONS_UPSERT_FAILED");
+}
 
-  // 5. Collect upserts for signals that need inserting or reactivating.
+function collectUpserts(
+  userId: string,
+  lapsedSignals: LapsedRepeatSignal[],
+  newClientSignals: NewClientSignal[],
+  inProgressSignals: InProgressSignal[],
+  existingByKey: Map<string, ClientAction>,
+  now: Date,
+): UpsertRow[] {
   const upserts: UpsertRow[] = [];
 
   for (const signal of lapsedSignals) {
@@ -159,26 +151,41 @@ export async function computeAndUpsertActions(
     }
   }
 
-  if (upserts.length > 0) {
-    const { error: upsertError } = await supabase
-      .from("client_actions")
-      .upsert(upserts, { onConflict: "user_id,client_id,action_type" });
-    if (upsertError) throw new Error("ACTIONS_UPSERT_FAILED");
-  }
+  return upserts;
+}
 
-  // 6. Fetch all active actions with client names.
-  const { data: activeRaw, error: fetchError } = await supabase
+async function executeUpserts(supabase: SupabaseClient, upserts: UpsertRow[]): Promise<void> {
+  if (upserts.length === 0) return;
+
+  const { error } = await supabase
+    .from("client_actions")
+    .upsert(upserts, { onConflict: "user_id,client_id,action_type" });
+
+  if (error) throw new Error("ACTIONS_UPSERT_FAILED");
+}
+
+async function fetchActiveActionRows(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Array<Record<string, unknown>>> {
+  const { data, error } = await supabase
     .from("client_actions")
     .select("action_id, client_id, action_type, session_id, revenue_at_risk_minor, clients(name)")
     .eq("user_id", userId)
     .is("dismissed_at", null)
     .order("revenue_at_risk_minor", { ascending: false });
 
-  if (fetchError) throw new Error("ACTIONS_FETCH_FAILED");
+  if (error) throw new Error("ACTIONS_FETCH_FAILED");
+  return (data ?? []) as Array<Record<string, unknown>>;
+}
 
-  // Build session lookup maps for weeksSince computation.
+function buildSessionLookups(sessions: SessionRow[]): {
+  mostRecentByClient: Map<string, string>;
+  sessionAtById: Map<string, string>;
+} {
   const mostRecentByClient = new Map<string, string>();
   const sessionAtById = new Map<string, string>();
+
   for (const s of sessions) {
     sessionAtById.set(s.sessionId, s.sessionAt);
     const current = mostRecentByClient.get(s.clientId);
@@ -187,32 +194,73 @@ export async function computeAndUpsertActions(
     }
   }
 
-  return (activeRaw ?? []).map((row) => {
-    const actionType = row.action_type as ActionType;
-    const clientsJoin = row.clients as { name: string } | { name: string }[] | null;
-    const clientName =
-      (Array.isArray(clientsJoin) ? clientsJoin[0] : clientsJoin)?.name ?? "Client";
-    const revenueAtRiskMinor =
-      typeof row.revenue_at_risk_minor === "number" ? row.revenue_at_risk_minor : 0;
+  return { mostRecentByClient, sessionAtById };
+}
 
-    let sessionAt: string | null = null;
-    if (actionType === "in_progress" && row.session_id) {
-      sessionAt = sessionAtById.get(row.session_id as string) ?? null;
-    }
-    if (!sessionAt) {
-      sessionAt = mostRecentByClient.get(row.client_id as string) ?? null;
-    }
+function serializeActionRow(
+  row: Record<string, unknown>,
+  sessionAtById: Map<string, string>,
+  mostRecentByClient: Map<string, string>,
+  now: Date,
+): ActionResponse {
+  const actionType = row.action_type as ActionType;
+  const clientsJoin = row.clients as { name: string } | { name: string }[] | null;
+  const clientName = (Array.isArray(clientsJoin) ? clientsJoin[0] : clientsJoin)?.name ?? "Client";
+  const revenueAtRiskMinor =
+    typeof row.revenue_at_risk_minor === "number" ? row.revenue_at_risk_minor : 0;
 
-    const weeks = sessionAt ? Math.floor(daysSince(sessionAt, now) / 7) : 0;
+  let sessionAt: string | null = null;
+  if (actionType === "in_progress" && row.session_id) {
+    sessionAt = sessionAtById.get(row.session_id as string) ?? null;
+  }
+  if (!sessionAt) {
+    sessionAt = mostRecentByClient.get(row.client_id as string) ?? null;
+  }
 
-    return {
-      actionId: row.action_id as string,
-      clientId: row.client_id as string,
-      clientName,
-      actionType,
-      weeksSince: weeks,
-      revenueAtRiskMinor,
-      messageTemplate: resolveMessageTemplate(actionType, clientName),
-    };
-  });
+  const weeks = sessionAt ? Math.floor(daysSince(sessionAt, now) / 7) : 0;
+
+  return {
+    actionId: row.action_id as string,
+    clientId: row.client_id as string,
+    clientName,
+    actionType,
+    weeksSince: weeks,
+    revenueAtRiskMinor,
+    messageTemplate: resolveMessageTemplate(actionType, clientName),
+  };
+}
+
+export async function computeAndUpsertActions(
+  supabase: SupabaseClient,
+  userId: string,
+  now: Date = new Date(),
+): Promise<ActionResponse[]> {
+  const sessions = await loadUserSessions(supabase, userId);
+
+  const lapsedSignals = computeLapsedRepeatSignals(sessions, now);
+  const newClientSignals = computeNewClientSignals(sessions, now);
+  const inProgressSignals = computeInProgressSignals(sessions, now);
+
+  const existingByKey = await loadExistingActions(supabase, userId);
+
+  await deleteStaleInProgressActions(
+    supabase,
+    userId,
+    inProgressSignals.map((s) => s.clientId),
+  );
+
+  const upserts = collectUpserts(
+    userId,
+    lapsedSignals,
+    newClientSignals,
+    inProgressSignals,
+    existingByKey,
+    now,
+  );
+  await executeUpserts(supabase, upserts);
+
+  const activeRaw = await fetchActiveActionRows(supabase, userId);
+  const { mostRecentByClient, sessionAtById } = buildSessionLookups(sessions);
+
+  return activeRaw.map((row) => serializeActionRow(row, sessionAtById, mostRecentByClient, now));
 }

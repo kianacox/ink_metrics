@@ -34,3 +34,22 @@ export interface SessionRow {
   sessionAt: string;
   inProgress: boolean;
 }
+
+export interface ActionResponse {
+  actionId: string;
+  clientId: string;
+  clientName: string;
+  actionType: ActionType;
+  weeksSince: number;
+  revenueAtRiskMinor: number;
+  messageTemplate: string;
+}
+
+export interface UpsertRow {
+  user_id: string;
+  client_id: string;
+  action_type: ActionType;
+  session_id: string | null;
+  revenue_at_risk_minor: number;
+  dismissed_at: null;
+}
