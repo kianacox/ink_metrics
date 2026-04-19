@@ -20,7 +20,7 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
         transition: {
           duration: 0.3,
           ease: "easeOut",
-          delay: index * 0.06,
+          delay: Math.min(index, 8) * 0.06,
         },
       },
     };
@@ -35,7 +35,11 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
         whileHover={
           shouldReduceMotion
             ? undefined
-            : { boxShadow: "0 0 0 1px hsl(44 54% 54% / 0.3)" }
+            : {
+                // Hardcoded dark-mode gold — CSS vars can't be used in framer-motion style values.
+                // If --gold (dark) changes, update this literal too.
+                boxShadow: "0 0 0 1px hsl(44 54% 54% / 0.3)",
+              }
         }
         transition={{ duration: 0.15, ease: "easeOut" }}
         {...props}
