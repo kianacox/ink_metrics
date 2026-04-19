@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
+import { dismissAction, fetchActionOwner } from "@/lib/actions/action-db";
 
 export async function POST(
   _request: Request,
@@ -13,29 +14,19 @@ export async function POST(
   const { actionId } = await params;
   const userId = user!.id;
 
-  const { data: action, error: fetchError } = await supabase
-    .from("client_actions")
-    .select("action_id, user_id")
-    .eq("action_id", actionId)
-    .single();
-
-  if (fetchError || !action) {
-    return NextResponse.json({ error: "Action not found.", code: "ACTION_NOT_FOUND" }, { status: 404 });
+  const ownerResult = await fetchActionOwner(supabase, actionId);
+  if ("error" in ownerResult) {
+    return NextResponse.json({ error: ownerResult.error, code: "ACTION_NOT_FOUND" }, { status: 404 });
   }
 
-  if (action.user_id !== userId) {
+  if (ownerResult.userId !== userId) {
     return NextResponse.json({ error: "Forbidden.", code: "ACTION_FORBIDDEN" }, { status: 403 });
   }
 
-  const { error: updateError } = await supabase
-    .from("client_actions")
-    .update({ dismissed_at: new Date().toISOString() })
-    .eq("action_id", actionId)
-    .eq("user_id", userId);
-
-  if (updateError) {
+  const dismissResult = await dismissAction(supabase, actionId, userId);
+  if ("error" in dismissResult) {
     return NextResponse.json(
-      { error: "Could not dismiss action.", code: "ACTION_DISMISS_FAILED" },
+      { error: dismissResult.error, code: "ACTION_DISMISS_FAILED" },
       { status: 500 },
     );
   }
