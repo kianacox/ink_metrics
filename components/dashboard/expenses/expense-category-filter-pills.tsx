@@ -25,8 +25,8 @@ export function ExpenseCategoryFilterPills({
               onClick={() => onToggle(category)}
               className={
                 isActive
-                  ? "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors bg-primary text-primary-foreground"
-                  : "inline-flex items-center rounded-full border border-emerald-600/40 bg-transparent px-3 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:border-emerald-400/40 dark:text-emerald-300"
+                  ? "inline-flex items-center rounded-none px-3 py-1 text-sm font-medium transition-colors bg-primary text-primary-foreground"
+                  : "inline-flex items-center rounded-none border border-border bg-transparent px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               }
               aria-pressed={isActive}
             >

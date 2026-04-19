@@ -40,7 +40,7 @@ export function ClientsCards({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   {isReturning ? (
-                    <span className="mb-1.5 inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    <span className="mb-1.5 inline-flex items-center rounded-none bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
                       Returning client
                     </span>
                   ) : null}
@@ -57,7 +57,6 @@ export function ClientsCards({
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="border-emerald-500/70 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-400/70 dark:text-emerald-300 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200"
                       onClick={() => onEditClient(client)}
                       aria-label={`Edit client ${client.name}`}
                     >
