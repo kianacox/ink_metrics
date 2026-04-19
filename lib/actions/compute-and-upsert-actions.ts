@@ -189,7 +189,9 @@ export async function computeAndUpsertActions(
 
   return (activeRaw ?? []).map((row) => {
     const actionType = row.action_type as ActionType;
-    const clientName = (row.clients as { name: string } | null)?.name ?? "Client";
+    const clientsJoin = row.clients as { name: string } | { name: string }[] | null;
+    const clientName =
+      (Array.isArray(clientsJoin) ? clientsJoin[0] : clientsJoin)?.name ?? "Client";
     const revenueAtRiskMinor =
       typeof row.revenue_at_risk_minor === "number" ? row.revenue_at_risk_minor : 0;
 
