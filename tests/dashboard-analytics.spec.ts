@@ -40,6 +40,8 @@ test("renders take-home summary values and comparative bars for seeded data", as
       - analyticsPayload.takeHome.totalExpensesMinor,
   ).toBe(analyticsPayload.takeHome.netMinor);
 
+  await page.goto("/dashboard?tab=insights");
+
   const monthLabel = new Date().toLocaleString("en-GB", { month: "long" });
 
   await expect(page.getByRole("heading", { name: `${monthLabel} Performance` })).toBeVisible();
@@ -105,6 +107,8 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
     valueMinor: 0,
   });
 
+  await page.goto("/dashboard?tab=insights");
+
   const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
   await expect(retentionTitle).toBeVisible();
   const retentionCard = retentionTitle
@@ -163,7 +167,7 @@ test("average profit card shows correct computed value for known sessions", asyn
   expect(analyticsPayload.takeHome.netMinor).toBe(45000);
   expect(analyticsPayload.averageProfitPerSession.valueMinor).toBe(15000);
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?tab=insights");
   const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
   await expect(avgProfitTitle).toBeVisible();
   const avgProfitCard = avgProfitTitle
@@ -211,7 +215,7 @@ test("average profit card reflects truncated integer division for non-round valu
   // Truncated, not rounded: 100000 / 3 = 33333.33… → 33333
   expect(analyticsPayload.averageProfitPerSession.valueMinor).toBe(33333);
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?tab=insights");
   const avgProfitTitle = page.getByText("Average profit per session", { exact: true });
   const avgProfitCard = avgProfitTitle
     .locator("xpath=ancestor::div[contains(@class,'h-full')]")
@@ -243,6 +247,7 @@ test("expenses by category card shows correct API values for seeded demo user", 
 test("expenses by category card renders category amounts and total for seeded demo user", async ({ page }) => {
   await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
+  await page.goto("/dashboard?tab=insights");
 
   const cardTitle = page.getByText("Expenses by category", { exact: true });
   await expect(cardTitle).toBeVisible();
@@ -266,6 +271,7 @@ test("expenses by category card renders category amounts and total for seeded de
 test("expenses by category card renders all seven category rows for seeded demo user", async ({ page }) => {
   await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
   await expect(page).toHaveURL(/\/dashboard/);
+  await page.goto("/dashboard?tab=insights");
 
   const cardTitle = page.getByText("Expenses by category", { exact: true });
   const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
@@ -289,7 +295,7 @@ test("expenses by category card shows friendly empty state when sessions exist b
     price: "200.00",
   });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?tab=insights");
 
   const cardTitle = page.getByText("Expenses by category", { exact: true });
   await expect(cardTitle).toBeVisible();
@@ -309,7 +315,7 @@ test("expenses by category card shows correct values after adding expenses via U
   await createExpense(page, { item: "Black ink bottle", category: "Ink", amount: "25.00" });
   await createExpense(page, { item: "Needle pack", category: "Needles", amount: "15.00" });
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?tab=insights");
 
   const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
   expect(analyticsResponse.ok()).toBeTruthy();
