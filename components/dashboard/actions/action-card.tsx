@@ -39,9 +39,13 @@ export function ActionCard({ action, onDismiss, onDismissError }: ActionCardProp
   const [isDismissing, setIsDismissing] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(action.messageTemplate);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(action.messageTemplate);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // clipboard write failed (permission denied or API unavailable) — no-op
+    }
   }, [action.messageTemplate]);
 
   const handleDismiss = useCallback(async () => {
