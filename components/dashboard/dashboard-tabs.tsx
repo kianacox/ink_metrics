@@ -20,7 +20,8 @@ interface DashboardTabsProps {
 export function DashboardTabs({ displayName }: DashboardTabsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const activeTab = (searchParams.get("tab") as DashboardTab | null) ?? "actions";
+  const activeTab: DashboardTab =
+    searchParams.get("tab") === "insights" ? "insights" : "actions";
 
   const setTab = useCallback(
     (tab: DashboardTab) => {
