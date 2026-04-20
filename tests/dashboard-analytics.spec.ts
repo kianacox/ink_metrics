@@ -13,9 +13,9 @@ const EXPECTED_TAKE_HOME_MINOR = {
   netMinor: 142800,
 } as const;
 const EXPECTED_RETENTION = {
-  numerator: 7,
-  denominator: 7,
-  rate: 1,
+  numerator: 10,
+  denominator: 11,
+  rate: 10 / 11,
 } as const;
 const EXPECTED_AVG_PROFIT = {
   sessionCount: 10,
@@ -83,8 +83,8 @@ test("renders take-home summary values and comparative bars for seeded data", as
     .locator("xpath=ancestor::div[contains(@class,'h-full')]")
     .first();
 
-  await expect(retentionCard.getByText("100%", { exact: true })).toBeVisible();
-  await expect(retentionCard.getByText("7 of 7 clients have returned.", { exact: true })).toBeVisible();
+  await expect(retentionCard.getByText("91%", { exact: true })).toBeVisible();
+  await expect(retentionCard.getByText("10 of 11 clients have returned.", { exact: true })).toBeVisible();
 });
 
 test("renders safe zero retention state when no month sessions exist", async ({ page }) => {
