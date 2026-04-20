@@ -258,7 +258,15 @@ begin
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0004', demo_user_id, 'Priya Patel',    null, now()),
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0005', demo_user_id, 'Marcus Reid',    null, now()),
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', demo_user_id, 'Chloe Andrews',  null, now()),
-    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0007', demo_user_id, 'Theo Brooks',    null, now());
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0007', demo_user_id, 'Theo Brooks',    null, now()),
+    -- Action-signal clients (added to give the demo user visible actions on the Actions tab)
+    -- Ravi + Zoe: lapsed_repeat (2+ sessions, last session > 56 days ago)
+    -- Finn: new_client (exactly 1 session, > 42 days ago)
+    -- Dana: in_progress (2 sessions, most recent in_progress=true, > 28 days ago)
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0008', demo_user_id, 'Ravi Sharma',    null, now()),
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0009', demo_user_id, 'Zoe Campbell',   null, now()),
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0010', demo_user_id, 'Finn O''Connor', null, now()),
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0011', demo_user_id, 'Dana Cross',     null, now());
 
   -- -------------------------------------------------------------------------
   -- Demo sessions (~40, spread Jan-Apr 2026)
@@ -327,6 +335,41 @@ begin
     ('cccccccc-cccc-cccc-cccc-cccccccc0039', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0002', 22000, 180, '2026-04-11 12:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
     ('cccccccc-cccc-cccc-cccc-cccccccc0040', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0004', 16000, 120, '2026-04-12 10:30:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
     ('cccccccc-cccc-cccc-cccc-cccccccc0041', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', 20000, 150, '2026-04-14 09:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null);
+
+  -- -------------------------------------------------------------------------
+  -- Action-signal sessions (trigger lapsed_repeat, new_client, in_progress)
+  -- All in Jan-Mar 2026 so April analytics are unaffected.
+  -- Retention impact: 10 of 11 clients have 2+ sessions (91%).
+  -- -------------------------------------------------------------------------
+
+  insert into public.sessions (
+    session_id,
+    user_id,
+    client_id,
+    price,
+    session_duration,
+    session_at,
+    compensation_version_id,
+    through_ads,
+    in_progress
+  )
+  values
+    -- Ravi Sharma (lapsed_repeat): 2 sessions, last 2026-01-22 (~88 days before 2026-04-20, >= 56-day threshold)
+    ('cccccccc-cccc-cccc-cccc-cccccccc0042', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0008', 15000, 120, '2026-01-08 10:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0043', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0008', 15000, 120, '2026-01-22 10:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+
+    -- Zoe Campbell (lapsed_repeat): 3 sessions, last 2026-02-10 (~69 days, >= 56-day threshold)
+    ('cccccccc-cccc-cccc-cccc-cccccccc0044', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0009', 20000, 150, '2026-01-10 11:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0045', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0009', 20000, 150, '2026-01-25 11:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0046', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0009', 20000, 150, '2026-02-10 11:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+
+    -- Finn O'Connor (new_client): exactly 1 session, 2026-02-15 (~64 days, >= 42-day threshold)
+    ('cccccccc-cccc-cccc-cccc-cccccccc0047', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0010', 18000, 120, '2026-02-15 14:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+
+    -- Dana Cross (in_progress): 2 sessions, most recent in_progress=true, 2026-03-10 (~41 days, >= 28-day threshold)
+    -- 41 days < 42-day new_client threshold, so only in_progress fires (not new_client).
+    ('cccccccc-cccc-cccc-cccc-cccccccc0048', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0011', 30000, 240, '2026-01-15 09:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, false),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0049', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0011', 30000, 240, '2026-03-10 09:00:00+00', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, true);
 
   -- -------------------------------------------------------------------------
   -- Demo expenses (~15, spread Jan-Apr 2026)
