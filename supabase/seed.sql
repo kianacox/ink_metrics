@@ -185,12 +185,13 @@ begin
     reporting_timezone,
     week_starts_on,
     is_profile_complete,
-    profile_completed_at
+    profile_completed_at,
+    trial_started_at
   )
   values
-    (session_user_id, 'Seeded Session User', 'GBP', 'Europe/London', 1, true, now()),
-    (incomplete_user_id, null, 'GBP', 'Europe/London', 1, false, null),
-    (demo_user_id, 'Demo Artist', 'GBP', 'Europe/London', 1, true, now());
+    (session_user_id, 'Seeded Session User', 'GBP', 'Europe/London', 1, true, now(), now()),
+    (incomplete_user_id, null, 'GBP', 'Europe/London', 1, false, null, now()),
+    (demo_user_id, 'Demo Artist', 'GBP', 'Europe/London', 1, true, now(), now());
 
   -- -------------------------------------------------------------------------
   -- Compensation versions
