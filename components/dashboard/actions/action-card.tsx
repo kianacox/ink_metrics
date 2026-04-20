@@ -2,19 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui";
+import { Button, Card, CardContent, CardFooter } from "@/components/ui";
 import { formatMinorAsCurrency } from "@/lib/dashboard-analytics";
+import type { Action } from "./types";
 
-export interface Action {
-  actionId: string;
-  clientId: string;
-  clientName: string;
-  actionType: "lapsed_repeat" | "new_client" | "in_progress";
-  weeksSince: number;
-  revenueAtRiskMinor: number;
-  messageTemplate: string;
-}
+export type { Action };
 
 function getNudgeCopy(actionType: Action["actionType"], weeksSince: number): string {
   switch (actionType) {
