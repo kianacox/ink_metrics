@@ -70,7 +70,7 @@ export function SignUpForm({
       <Card>
         <CardHeader>
           <CardTitle className="text-xl sm:text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardDescription>60 days free · No card required</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
