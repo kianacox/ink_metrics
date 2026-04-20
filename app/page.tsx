@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { BarChart3, Calculator, CheckCircle2, Pencil } from "lucide-react";
+import { BarChart3, Calculator, CheckCircle2, Copy, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
+import { RevenueChart } from "@/components/marketing/revenue-chart";
 
 const HOW_IT_WORKS = [
   {
@@ -29,30 +30,131 @@ const HOW_IT_WORKS = [
   },
 ] as const;
 
-const METRICS = [
+type ActionPriority = "HIGH" | "MEDIUM";
+
+const SAMPLE_ACTIONS: {
+  priority: ActionPriority;
+  type: string;
+  client: string;
+  signal: string;
+  revenueAtRisk: string;
+  template: string;
+}[] = [
   {
-    label: "Take-home this month",
-    value: "£4,240",
-    sub: "after chair rent & supplies",
+    priority: "HIGH",
+    type: "Lapsed repeat client",
+    client: "Sarah M.",
+    signal: "No booking in 9 weeks",
+    revenueAtRisk: "£480",
+    template:
+      "Hey Sarah! It's been a while — I've got some availability coming up and thought of you. Fancy booking in for something new?",
   },
   {
-    label: "Avg profit per session",
-    value: "£185",
-    sub: "up from £162 last month",
+    priority: "MEDIUM",
+    type: "In-progress tattoo",
+    client: "Jake T.",
+    signal: "Large piece unfinished · 6 weeks since last session",
+    revenueAtRisk: "£340",
+    template:
+      "Hi Jake, just checking in on your sleeve — I've got some slots opening up to continue when you're ready.",
   },
   {
-    label: "Customer LTV",
-    value: "£680",
-    sub: "average across all clients",
+    priority: "MEDIUM",
+    type: "New client follow-up",
+    client: "Priya K.",
+    signal: "First visit 3 weeks ago · No rebooking",
+    revenueAtRisk: "£220",
+    template:
+      "Hi Priya! Hope you're loving the piece. I'd love to see you back — any ideas for what's next?",
   },
-  {
-    label: "Returning client rate",
-    value: "74%",
-    sub: "of clients booked again",
-  },
-  { label: "Top client value", value: "£520", sub: "lifetime value" },
-  { label: "Hours tattooing", value: "38h", sub: "this month" },
-] as const;
+];
+
+function ActionCard({
+  action,
+}: {
+  action: (typeof SAMPLE_ACTIONS)[number];
+}) {
+  const isHigh = action.priority === "HIGH";
+  return (
+    <div
+      className={`relative overflow-hidden rounded-lg border bg-card ${
+        isHigh ? "border-destructive/30" : "border-border"
+      }`}
+    >
+      <div
+        className={`absolute inset-y-0 left-0 w-0.5 ${
+          isHigh ? "bg-destructive" : "bg-amber-400 dark:bg-amber-500"
+        }`}
+      />
+      <div className="p-5 pl-4">
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {action.type}
+          </span>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              isHigh
+                ? "bg-destructive/10 text-destructive"
+                : "bg-amber-400/15 text-amber-700 dark:text-amber-400"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                isHigh ? "bg-destructive" : "bg-amber-500"
+              }`}
+            />
+            {action.priority}
+          </span>
+        </div>
+
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-foreground">{action.client}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {action.signal}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              at risk
+            </p>
+            <p className="text-base font-bold text-foreground">
+              {action.revenueAtRisk}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-md bg-muted/40 px-3 py-2.5">
+          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            &ldquo;{action.template}&rdquo;
+          </p>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            className="inline-flex cursor-default items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary opacity-60"
+            tabIndex={-1}
+            aria-hidden="true"
+          >
+            <Copy className="h-3 w-3" />
+            Copy message
+          </button>
+          <button
+            className="inline-flex cursor-default items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-60"
+            tabIndex={-1}
+            aria-hidden="true"
+          >
+            <X className="h-3 w-3" />
+            Dismiss
+          </button>
+          <span className="ml-auto text-[10px] italic text-muted-foreground/50">
+            preview
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -166,33 +268,34 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Metrics showcase */}
+        {/* Actions showcase */}
         <section>
-          <div className="mb-10 text-center">
+          <div className="mb-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
+              Actions
+            </p>
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Metrics that matter to your business
+              Know exactly who to contact — and what to say
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              Dashboard built around how tattoo artists actually earn.
+            <p className="mt-3 max-w-2xl text-muted-foreground">
+              inkMetrics generates client engagement signals from your session
+              data. See which clients to prioritise, what revenue is at risk,
+              and get a ready-to-send message — without leaving your workflow.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-5">
-            {METRICS.map(({ label, value, sub }) => (
-              <div
-                key={label}
-                className="rounded-lg border border-border bg-card p-4 sm:p-5"
-              >
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-                  {value}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
-              </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+            {SAMPLE_ACTIONS.map((action) => (
+              <ActionCard key={action.client} action={action} />
             ))}
           </div>
-          <p className="mt-4 text-center text-xs italic text-muted-foreground">
-            Sample data — your real numbers, live.
+          <p className="mt-4 text-xs italic text-muted-foreground/60">
+            Sample data — generated from your real sessions.
           </p>
+        </section>
+
+        {/* Revenue breakdown */}
+        <section>
+          <RevenueChart />
         </section>
 
         {/* Built for artists */}
