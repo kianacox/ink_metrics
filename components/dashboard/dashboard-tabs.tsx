@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DashboardAnalyticsView } from "@/components/dashboard/analytics/dashboard-analytics-view";
 import { ActionsView } from "@/components/dashboard/actions/actions-view";
@@ -19,17 +19,18 @@ interface DashboardTabsProps {
 
 export function DashboardTabs({ displayName }: DashboardTabsProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const activeTab: DashboardTab =
-    searchParams.get("tab") === "insights" ? "insights" : "actions";
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() =>
+    searchParams.get("tab") === "insights" ? "insights" : "actions",
+  );
 
   const setTab = useCallback(
     (tab: DashboardTab) => {
+      setActiveTab(tab);
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", tab);
-      router.replace(`?${params.toString()}`);
+      window.history.replaceState(null, "", `?${params.toString()}`);
     },
-    [router, searchParams],
+    [searchParams],
   );
 
   return (
