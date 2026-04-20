@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import { AddSessionModal } from "@/components/dashboard/session-form/add-session-modal";
-import { DashboardAnalyticsView } from "@/components/dashboard/analytics/dashboard-analytics-view";
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
 import { requireAuthenticatedUser } from "@/lib/supabase/require-authenticated-user";
@@ -25,6 +26,14 @@ export default async function DashboardPage() {
     redirect("/dashboard/profile-setup");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("user_id", user.id)
+    .single();
+
+  const displayName = profile?.display_name ?? null;
+
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
@@ -36,7 +45,9 @@ export default async function DashboardPage() {
         </p>
         <AddSessionModal />
       </section>
-      <DashboardAnalyticsView />
+      <Suspense>
+        <DashboardTabs displayName={displayName} />
+      </Suspense>
     </div>
   );
 }
