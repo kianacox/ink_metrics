@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AddSessionModal } from "@/components/dashboard/session-form/add-session-modal";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
+import { getProfileDisplayName } from "@/lib/profiles/get-profile-display-name";
 import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
 import { requireAuthenticatedUser } from "@/lib/supabase/require-authenticated-user";
 import { createClient } from "@/lib/supabase/server";
@@ -26,13 +27,7 @@ export default async function DashboardPage() {
     redirect("/dashboard/profile-setup");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("user_id", user.id)
-    .single();
-
-  const displayName = profile?.display_name ?? null;
+  const displayName = await getProfileDisplayName({ supabase, userId: user.id });
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
