@@ -42,8 +42,13 @@ export function ActionsView({ displayName }: ActionsViewProps) {
 
   const handleDismissError = useCallback(() => {
     setToast("Couldn't dismiss action. Please try again.");
-    setTimeout(() => setToast(null), 3000);
   }, []);
+
+  useEffect(() => {
+    if (toast === null) return;
+    const timeoutId = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
 
   const greeting = `Hey ${displayName ?? "there"}, here's who needs a message:`;
 
