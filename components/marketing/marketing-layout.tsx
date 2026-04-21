@@ -11,12 +11,22 @@ function MarketingHeader({
   return (
     <header className="flex w-full justify-center border-b border-border bg-background pt-[env(safe-area-inset-top)]">
       <div className="flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:h-16 sm:px-6">
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <Link
             href="/"
             className="inline-flex min-h-11 items-center py-1 font-semibold text-primary [-webkit-tap-highlight-color:transparent]"
           >
             inkMetrics
+          </Link>
+          <Link
+            href="/pricing"
+            className={`inline-flex min-h-11 items-center py-1 text-sm font-medium transition-colors sm:hidden ${
+              activePath === "pricing"
+                ? "text-foreground"
+                : "text-muted-foreground"
+            }`}
+          >
+            Pricing
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
             <Link
