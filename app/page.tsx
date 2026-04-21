@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { BarChart3, Calculator, CheckCircle2, Copy, Pencil, X } from "lucide-react";
+import { BarChart3, BellRing, Calculator, CheckCircle2, Copy, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import { RevenueChart } from "@/components/marketing/revenue-chart";
@@ -24,9 +24,16 @@ const HOW_IT_WORKS = [
   {
     Icon: BarChart3,
     step: "3",
-    title: "See your business health",
+    title: "See your revenue picture",
     description:
       "Real-time dashboard surfaces profit, client lifetime value, and retention signals — so you know which relationships drive your income.",
+  },
+  {
+    Icon: BellRing,
+    step: "4",
+    title: "Get told what to do next",
+    description:
+      "inkMetrics surfaces which clients to contact, what revenue is at risk, and gives you a ready-to-send message. No guesswork.",
   },
 ] as const;
 
@@ -170,16 +177,17 @@ export default async function HomePage() {
         {/* Hero */}
         <section className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-            Financial health for tattoo artists
+            Revenue intelligence for tattoo artists
           </p>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            See your real profit.
+            Know your numbers.
+            <br className="hidden sm:block" /> Know your clients.
             <br className="hidden sm:block" /> Keep your workflow.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg">
-            Log sessions in 30 seconds. Automatic deductions for chair rent,
-            commissions, and supplies. Clear business metrics — no bank
-            connection, no booking migration required.
+            Log sessions in 30 seconds. See your real profit after every
+            deduction. Then get action signals that tell you exactly which
+            clients to contact next — and what to say.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
@@ -200,42 +208,42 @@ export default async function HomePage() {
         </section>
 
         {/* Problem */}
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-5 sm:p-6">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-destructive">
-              The problem
+        <section className="rounded-xl border border-border bg-card p-6 sm:p-8 lg:p-10">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            The problem
+          </p>
+          <div className="max-w-2xl space-y-4 text-base leading-relaxed text-muted-foreground">
+            <p>
+              Booking platforms like Vagaro and Square will give you financial
+              reports — but only if you migrate your{" "}
+              <strong className="text-foreground">
+                entire booking workflow
+              </strong>{" "}
+              to their system. Most solo artists book through Instagram DMs and
+              personal calendars. That&apos;s not changing.
             </p>
-            <h3 className="mb-2 font-semibold text-foreground">
-              All-in-one platforms
-            </h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Vagaro, Square, DaySmart — force a full booking migration just to
-              access basic financial reports. Bloated, expensive, built for
-              studios not solo artists.
+            <p>
+              The alternative is a spreadsheet. But after a long session,
+              entries get forgotten, clients slip through the cracks, and{" "}
+              <strong className="text-foreground">
+                you have no idea which relationships are actually worth
+                protecting
+              </strong>
+              .
+            </p>
+            <p>
+              Neither tool tells you that a high-value client hasn&apos;t booked
+              in two months, or what that silence is costing you.
             </p>
           </div>
-          <div className="rounded-lg border border-border bg-card p-5 sm:p-6">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-destructive">
-              The problem
+          <div className="mt-6 border-t border-primary/20 pt-6">
+            <p className="text-sm font-semibold text-primary">
+              inkMetrics is the third option.
             </p>
-            <h3 className="mb-2 font-semibold text-foreground">
-              Manual spreadsheets
-            </h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              After a long day entries get forgotten. No LTV, no retention
-              signals, no compliance story. Fine for a side project — not for a
-              professional business.
-            </p>
-          </div>
-          <div className="rounded-lg border border-primary/25 bg-muted/50 p-5 sm:p-6">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
-              The solution
-            </p>
-            <h3 className="mb-2 font-semibold text-foreground">inkMetrics</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Back-of-house business intelligence. Keep Instagram DMs, Google
-              Calendar, or whatever you use. Log what matters and get the
-              metrics that drive your income.
+            <p className="mt-1 text-sm text-muted-foreground">
+              Back-of-house revenue intelligence that fits around how you
+              already work — tracking your money, your clients, and telling you
+              exactly what to do next.
             </p>
           </div>
         </section>
@@ -245,7 +253,7 @@ export default async function HomePage() {
           <h2 className="mb-10 text-center text-2xl font-bold text-foreground sm:text-3xl">
             How it works
           </h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {HOW_IT_WORKS.map(({ Icon, step, title, description }) => (
               <div
                 key={step}
@@ -298,21 +306,27 @@ export default async function HomePage() {
           <RevenueChart />
         </section>
 
-        {/* Built for artists */}
+        {/* Built for you */}
         <section className="rounded-xl border border-border bg-card p-6 sm:p-10">
           <div className="max-w-2xl">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-              Built for you
+              Why this exists
             </p>
             <h2 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
-              Designed by someone who lives the artist&apos;s workflow
+              Built from inside the problem
             </h2>
+            <p className="mb-4 leading-relaxed text-muted-foreground">
+              I&apos;m Kiana. I live with a professional tattoo artist with over
+              13 years of experience — and I&apos;m one of his clients. I
+              watched him track income in a notebook, lose sight of which
+              clients were quietly drifting away, and face each tax season with
+              no clear picture of what he&apos;d actually earned.
+            </p>
             <p className="mb-6 leading-relaxed text-muted-foreground">
-              inkMetrics was developed alongside a professional tattoo artist
-              with over 13 years of experience — and road-tested by their
-              clients. Every feature decision came from watching real workflows:
-              the Instagram DM bookings, the chair rent negotiations, the
-              tax-season spreadsheet scramble.
+              I built inkMetrics because I understood the problem from the
+              inside. Not just the missing tools, but the exact moments they
+              were needed most — and why every existing option either asked too
+              much or gave too little.
             </p>
             <ul className="space-y-3">
               {[
