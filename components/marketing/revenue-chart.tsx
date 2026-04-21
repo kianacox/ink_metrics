@@ -59,26 +59,6 @@ export function RevenueChart() {
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 sm:p-8 lg:p-10">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Sample month
-          </p>
-          <h3 className="text-xl font-bold text-foreground sm:text-2xl">
-            See exactly where your money goes
-          </h3>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Chair rent, commissions, and expenses deducted automatically. Your
-            real take-home, always up to date.
-          </p>
-        </div>
-        <div className="shrink-0 rounded-lg border border-primary/20 bg-primary/5 px-5 py-3 text-center sm:text-right">
-          <p className="text-xs text-muted-foreground">Take-home</p>
-          <p className="text-3xl font-bold text-primary">£4,240</p>
-          <p className="text-xs text-muted-foreground">this month</p>
-        </div>
-      </div>
-
       <div className="space-y-5">
         {ROWS.map((row, i) => (
           <div key={row.label}>

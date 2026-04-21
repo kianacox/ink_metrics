@@ -12,28 +12,28 @@ const HOW_IT_WORKS = [
     step: "1",
     title: "Log a session",
     description:
-      "Capture client, duration, and revenue in under 30 seconds. Works alongside Instagram DMs, calendars, or however you book.",
+      "Add a client, duration, and what you charged in under 30 seconds. Works alongside DMs, calendars, or however you already book.",
   },
   {
     Icon: Calculator,
     step: "2",
-    title: "Costs deducted automatically",
+    title: "Costs come off automatically",
     description:
-      "Chair rent, commission splits, and expenses calculated without you doing the maths. You see what you actually take home.",
+      "Chair rent, splits, and expenses are subtracted without you doing the maths. You see what you actually walked away with.",
   },
   {
     Icon: BarChart3,
     step: "3",
-    title: "See your revenue picture",
+    title: "See your real numbers",
     description:
-      "Real-time dashboard surfaces profit, client lifetime value, and retention signals — so you know which relationships drive your income.",
+      "Your dashboard shows profit, repeat client rate, and who's at risk of drifting — no spreadsheet required.",
   },
   {
     Icon: BellRing,
     step: "4",
-    title: "Get told what to do next",
+    title: "Get told who to message",
     description:
-      "inkMetrics surfaces which clients to contact, what revenue is at risk, and gives you a ready-to-send message. No guesswork.",
+      "inkMetrics flags who's overdue a follow-up, what it's costing you to wait, and hands you a message ready to send.",
   },
 ] as const;
 
@@ -43,7 +43,7 @@ const SAMPLE_ACTIONS: {
   priority: ActionPriority;
   type: string;
   client: string;
-  signal: string;
+  nudge: string;
   revenueAtRisk: string;
   template: string;
 }[] = [
@@ -51,16 +51,16 @@ const SAMPLE_ACTIONS: {
     priority: "HIGH",
     type: "Lapsed repeat client",
     client: "Sarah M.",
-    signal: "No booking in 9 weeks",
+    nudge: "It's been 9 weeks since their last session — worth a check-in.",
     revenueAtRisk: "£480",
     template:
       "Hey Sarah! It's been a while — I've got some availability coming up and thought of you. Fancy booking in for something new?",
   },
   {
     priority: "MEDIUM",
-    type: "In-progress tattoo",
+    type: "In-progress piece",
     client: "Jake T.",
-    signal: "Large piece unfinished · 6 weeks since last session",
+    nudge: "Their piece is still in progress and it's been 6 weeks — time to follow up.",
     revenueAtRisk: "£340",
     template:
       "Hi Jake, just checking in on your sleeve — I've got some slots opening up to continue when you're ready.",
@@ -69,7 +69,7 @@ const SAMPLE_ACTIONS: {
     priority: "MEDIUM",
     type: "New client follow-up",
     client: "Priya K.",
-    signal: "First visit 3 weeks ago · No rebooking",
+    nudge: "3 weeks since their first visit — a quick message could bring them back.",
     revenueAtRisk: "£220",
     template:
       "Hi Priya! Hope you're loving the piece. I'd love to see you back — any ideas for what's next?",
@@ -117,8 +117,8 @@ function ActionCard({
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-semibold text-foreground">{action.client}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {action.signal}
+            <p className="mt-0.5 text-sm text-foreground">
+              {action.nudge}
             </p>
           </div>
           <div className="shrink-0 text-right">
@@ -177,7 +177,7 @@ export default async function HomePage() {
         {/* Hero */}
         <section className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-            Revenue intelligence for tattoo artists
+            Built for tattoo artists
           </p>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Know your numbers.
@@ -185,9 +185,9 @@ export default async function HomePage() {
             <br className="hidden sm:block" /> Keep your workflow.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg">
-            Log sessions in 30 seconds. See your real profit after every
-            deduction. Then get action signals that tell you exactly which
-            clients to contact next — and what to say.
+            Log a session in 30 seconds. See what you actually take home after
+            chair rent and expenses. Then find out exactly which clients to
+            message — and get the words written for you.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
@@ -208,32 +208,35 @@ export default async function HomePage() {
         </section>
 
         {/* Problem */}
-        <section className="rounded-xl border border-border bg-card p-6 sm:p-8 lg:p-10">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <section>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
             The problem
           </p>
-          <div className="max-w-2xl space-y-4 text-base leading-relaxed text-muted-foreground">
+          <h2 className="mb-6 text-2xl font-bold text-foreground sm:text-3xl">
+            Most artists are flying blind on their own money
+          </h2>
+          <div className="space-y-4 text-base leading-relaxed text-muted-foreground">
             <p>
-              Booking platforms like Vagaro and Square will give you financial
-              reports — but only if you migrate your{" "}
+              Platforms like Vagaro and Square will give you financial reports —
+              but only if you move your{" "}
               <strong className="text-foreground">
                 entire booking workflow
               </strong>{" "}
-              to their system. Most solo artists book through Instagram DMs and
-              personal calendars. That&apos;s not changing.
+              into their system. Most artists book through Instagram DMs and
+              personal calendars. That&apos;s not going to change.
             </p>
             <p>
-              The alternative is a spreadsheet. But after a long session,
-              entries get forgotten, clients slip through the cracks, and{" "}
+              So the alternative is a spreadsheet. But after a long day, entries
+              get skipped, clients drift away quietly, and{" "}
               <strong className="text-foreground">
-                you have no idea which relationships are actually worth
-                protecting
+                you have no idea who&apos;s worth chasing or what it&apos;s
+                costing you not to
               </strong>
               .
             </p>
             <p>
-              Neither tool tells you that a high-value client hasn&apos;t booked
-              in two months, or what that silence is costing you.
+              Neither option tells you that a regular hasn&apos;t booked in two
+              months, or what you&apos;re losing by not following up.
             </p>
           </div>
           <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-4 sm:p-5">
@@ -241,9 +244,8 @@ export default async function HomePage() {
               inkMetrics is the third option.
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">
-              Back-of-house revenue intelligence that fits around how you
-              already work — tracking your money, your clients, and telling you
-              exactly what to do next.
+              It fits around how you already work — tracking your money and your
+              clients, and telling you exactly who to reach out to next.
             </p>
           </div>
         </section>
@@ -283,12 +285,12 @@ export default async function HomePage() {
               Actions
             </p>
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Know exactly who to contact — and what to say
+              Know exactly who to message — and what to say
             </h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              inkMetrics generates client engagement signals from your session
-              data. See which clients to prioritise, what revenue is at risk,
-              and get a ready-to-send message — without leaving your workflow.
+              Based on your sessions, inkMetrics works out who&apos;s overdue a
+              follow-up, what you stand to lose by waiting, and writes you
+              something to send straight away.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
@@ -303,47 +305,56 @@ export default async function HomePage() {
 
         {/* Revenue breakdown */}
         <section>
+          <div className="mb-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
+              Sample month
+            </p>
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+              See exactly where your money goes
+            </h2>
+            <p className="mt-3 max-w-2xl text-muted-foreground">
+              Chair rent, commissions, and expenses come off automatically. What
+              you&apos;re left with is what you actually earned.
+            </p>
+          </div>
           <RevenueChart />
         </section>
 
         {/* Built for you */}
-        <section className="rounded-xl border border-border bg-card p-6 sm:p-10">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
-              Why this exists
-            </p>
-            <h2 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
-              Built from inside the problem
-            </h2>
-            <p className="mb-4 leading-relaxed text-muted-foreground">
-              I&apos;m Kiana. I live with a professional tattoo artist with over
-              13 years of experience — and I&apos;m one of his clients. I
-              watched him track income in a notebook, lose sight of which
-              clients were quietly drifting away, and face each tax season with
-              no clear picture of what he&apos;d actually earned.
-            </p>
-            <p className="mb-6 leading-relaxed text-muted-foreground">
-              I built inkMetrics because I understood the problem from the
-              inside. Not just the missing tools, but the exact moments they
-              were needed most — and why every existing option either asked too
-              much or gave too little.
-            </p>
-            <ul className="space-y-3">
-              {[
-                "No forced booking migration — keep DMs, calendars, whatever works",
-                "No bank connection required — full control over your data",
-                "Designed for solo artists, not multi-chair studios",
-              ].map((point) => (
-                <li
-                  key={point}
-                  className="flex items-start gap-2 text-sm text-muted-foreground"
-                >
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
+        <section>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
+            Why this exists
+          </p>
+          <h2 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
+            Built from inside the problem
+          </h2>
+          <p className="mb-4 leading-relaxed text-muted-foreground">
+            I&apos;m Kiana. I live with a tattoo artist who&apos;s been doing
+            this for 13 years — and I&apos;m one of his clients. I watched him
+            track income in a notebook, slowly lose touch with clients who used
+            to come back regularly, and hit every January with no clear picture
+            of what he&apos;d actually made.
+          </p>
+          <p className="mb-6 leading-relaxed text-muted-foreground">
+            I built inkMetrics because I watched the problem up close. Every
+            existing tool either wanted him to change how he works, or just
+            didn&apos;t go far enough to be worth the effort.
+          </p>
+          <ul className="space-y-3">
+            {[
+              "No forced booking migration — keep DMs, calendars, whatever works",
+              "No bank connection required — full control over your data",
+              "Designed for solo artists, not multi-chair studios",
+            ].map((point) => (
+              <li
+                key={point}
+                className="flex items-start gap-2 text-sm text-muted-foreground"
+              >
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                {point}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Tax season */}
@@ -356,11 +367,11 @@ export default async function HomePage() {
               No more spreadsheet archaeology in January
             </h2>
             <p className="leading-relaxed text-muted-foreground">
-              Every session and expense logged throughout the year means clean,
-              organised records when you need them. Send your accountant a clear
-              export — not a pile of bank statements and receipts. Digital
-              record-keeping requirements are increasing; inkMetrics gets you
-              there without extra admin.
+              Every session and expense you log builds a clean record you can
+              actually hand to an accountant. No bank statement archaeology, no
+              receipts in a drawer. HMRC&apos;s record-keeping rules are only
+              getting stricter — inkMetrics keeps you covered without adding to
+              your workload.
             </p>
           </div>
         </section>
@@ -371,8 +382,8 @@ export default async function HomePage() {
             Start your 60-day free trial
           </h2>
           <p className="mb-8 text-muted-foreground">
-            No card required. No booking migration. Keep your workflow exactly
-            as it is — and finally see your real numbers.
+            No card, no booking migration. Keep working exactly how you work —
+            just finally know your numbers.
           </p>
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/auth/sign-up">Get started free</Link>
