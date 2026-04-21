@@ -8,7 +8,7 @@ test.describe("Landing page", () => {
 
   test("renders hero headline", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: /See your real profit/i }),
+      page.getByRole("heading", { name: /Know your numbers/i }),
     ).toBeVisible();
   });
 
