@@ -236,11 +236,11 @@ export default async function HomePage() {
               in two months, or what that silence is costing you.
             </p>
           </div>
-          <div className="mt-6 border-t border-primary/20 pt-6">
-            <p className="text-sm font-semibold text-primary">
+          <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-4 sm:p-5">
+            <p className="text-sm font-bold text-primary">
               inkMetrics is the third option.
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">
               Back-of-house revenue intelligence that fits around how you
               already work — tracking your money, your clients, and telling you
               exactly what to do next.

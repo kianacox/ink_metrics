@@ -72,7 +72,7 @@ export function RevenueChart() {
             real take-home, always up to date.
           </p>
         </div>
-        <div className="shrink-0 rounded-lg border border-primary/20 bg-primary/5 px-5 py-3 text-right sm:text-right">
+        <div className="shrink-0 rounded-lg border border-primary/20 bg-primary/5 px-5 py-3 text-center sm:text-right">
           <p className="text-xs text-muted-foreground">Take-home</p>
           <p className="text-3xl font-bold text-primary">£4,240</p>
           <p className="text-xs text-muted-foreground">this month</p>
