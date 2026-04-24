@@ -7,31 +7,30 @@ import type {
 
 export type { SessionCreatePayload, SessionUpdatePayload };
 
-const SESSION_UPDATE_ALLOWED_KEYS = new Set([
-  "priceMinor",
-  "sessionDurationMinutes",
-  "sessionAtIso",
-  "inProgress",
-]);
+const SESSION_UPDATE_ALLOWED_KEYS = new Set(["priceMinor", "sessionDate", "inProgress"]);
 
-function parseIsoTimestamp(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const timestamp = Date.parse(trimmed);
-  if (!Number.isFinite(timestamp)) {
-    return null;
-  }
-  return new Date(timestamp).toISOString();
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_SESSION_BACKDATE_MONTHS = 6;
+
+function parseSessionDate(value: unknown): string | null {
+  if (typeof value !== "string" || !DATE_PATTERN.test(value)) return null;
+  const timestamp = Date.parse(value + "T00:00:00Z");
+  if (!Number.isFinite(timestamp)) return null;
+  return value;
 }
 
-function isFutureTimestamp(isoTimestamp: string): boolean {
-  const timestamp = Date.parse(isoTimestamp);
-  return Number.isFinite(timestamp) && timestamp > Date.now();
+function isFutureDate(dateString: string): boolean {
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  const sessionTimestamp = Date.parse(dateString + "T00:00:00Z");
+  return sessionTimestamp > todayUtc.getTime();
+}
+
+function isTooFarInPast(dateString: string): boolean {
+  const limit = new Date();
+  limit.setUTCHours(0, 0, 0, 0);
+  limit.setUTCMonth(limit.getUTCMonth() - MAX_SESSION_BACKDATE_MONTHS);
+  return Date.parse(dateString + "T00:00:00Z") < limit.getTime();
 }
 
 export function parseSessionCreatePayload(input: unknown): {
@@ -57,17 +56,10 @@ export function parseSessionCreatePayload(input: unknown): {
     typeof candidate.clientContact === "string" ? candidate.clientContact.trim() : "";
 
   if (!selectedClientId && !createNewClient) {
-    return {
-      data: null,
-      error: "Select an existing client or create a new one before saving.",
-    };
+    return { data: null, error: "Select an existing client or create a new one before saving." };
   }
-
   if (createNewClient && clientName.length < 1) {
-    return {
-      data: null,
-      error: "Client name is required for a new client.",
-    };
+    return { data: null, error: "Client name is required for a new client." };
   }
 
   const priceMinor = candidate.priceMinor;
@@ -75,27 +67,21 @@ export function parseSessionCreatePayload(input: unknown): {
     return { data: null, error: "Price is invalid." };
   }
 
-  const sessionDurationMinutes = candidate.sessionDurationMinutes;
-  if (
-    typeof sessionDurationMinutes !== "number" ||
-    !Number.isInteger(sessionDurationMinutes) ||
-    sessionDurationMinutes <= 0
-  ) {
-    return { data: null, error: "Session duration is invalid." };
+  const sessionDate = parseSessionDate(candidate.sessionDate);
+  if (!sessionDate) {
+    return { data: null, error: "Session date is invalid." };
+  }
+  if (isFutureDate(sessionDate)) {
+    return { data: null, error: "Session date cannot be in the future." };
+  }
+  if (isTooFarInPast(sessionDate)) {
+    return { data: null, error: "Session date cannot be more than 6 months in the past." };
   }
 
-  const sessionAtIso = parseIsoTimestamp(candidate.sessionAtIso);
-  if (!sessionAtIso) {
-    return { data: null, error: "Session date and time is invalid." };
-  }
-  if (isFutureTimestamp(sessionAtIso)) {
-    return { data: null, error: "Session date and time cannot be in the future." };
-  }
   const throughAds = candidate.throughAds;
   if (throughAds !== null && throughAds !== undefined && typeof throughAds !== "boolean") {
     return { data: null, error: "Advertising selection is invalid." };
   }
-
   const inProgress = candidate.inProgress;
   if (inProgress !== null && inProgress !== undefined && typeof inProgress !== "boolean") {
     return { data: null, error: "Follow-up status is invalid." };
@@ -108,8 +94,7 @@ export function parseSessionCreatePayload(input: unknown): {
       clientName,
       clientContact,
       priceMinor,
-      sessionDurationMinutes,
-      sessionAtIso,
+      sessionDate,
       throughAds: throughAds ?? null,
       inProgress: inProgress === true,
     },
@@ -126,15 +111,11 @@ export function parseSessionUpdatePayload(input: unknown): {
   }
 
   const candidate = input as SessionUpdatePayloadCandidate;
-  const candidateKeys = Object.keys(candidate);
-  const hasUnexpectedKeys = candidateKeys.some(
+  const hasUnexpectedKeys = Object.keys(candidate).some(
     (key) => !SESSION_UPDATE_ALLOWED_KEYS.has(key),
   );
   if (hasUnexpectedKeys) {
-    return {
-      data: null,
-      error: "Only price, session duration, session date/time, and follow-up status can be updated.",
-    };
+    return { data: null, error: "Only price, session date, and follow-up status can be updated." };
   }
 
   const priceMinor = candidate.priceMinor;
@@ -142,21 +123,15 @@ export function parseSessionUpdatePayload(input: unknown): {
     return { data: null, error: "Price is invalid." };
   }
 
-  const sessionDurationMinutes = candidate.sessionDurationMinutes;
-  if (
-    typeof sessionDurationMinutes !== "number" ||
-    !Number.isInteger(sessionDurationMinutes) ||
-    sessionDurationMinutes <= 0
-  ) {
-    return { data: null, error: "Session duration is invalid." };
+  const sessionDate = parseSessionDate(candidate.sessionDate);
+  if (!sessionDate) {
+    return { data: null, error: "Session date is invalid." };
   }
-
-  const sessionAtIso = parseIsoTimestamp(candidate.sessionAtIso);
-  if (!sessionAtIso) {
-    return { data: null, error: "Session date and time is invalid." };
+  if (isFutureDate(sessionDate)) {
+    return { data: null, error: "Session date cannot be in the future." };
   }
-  if (isFutureTimestamp(sessionAtIso)) {
-    return { data: null, error: "Session date and time cannot be in the future." };
+  if (isTooFarInPast(sessionDate)) {
+    return { data: null, error: "Session date cannot be more than 6 months in the past." };
   }
 
   const inProgress = candidate.inProgress;
@@ -165,12 +140,7 @@ export function parseSessionUpdatePayload(input: unknown): {
   }
 
   return {
-    data: {
-      priceMinor,
-      sessionDurationMinutes,
-      sessionAtIso,
-      inProgress: inProgress === true,
-    },
+    data: { priceMinor, sessionDate, inProgress: inProgress === true },
     error: null,
   };
 }
