@@ -1,13 +1,13 @@
 import { fetchSessionsPage } from "./fetch-sessions-page";
-import { getDateRangeStartUtcIso } from "@/lib/timezones";
+import { getDateRangeStartDate } from "@/lib/timezones";
 import { decodeCompositeCursor } from "@/lib/pagination/cursor";
 
 jest.mock("@/lib/timezones", () => ({
   ...jest.requireActual("@/lib/timezones"),
-  getDateRangeStartUtcIso: jest.fn(),
+  getDateRangeStartDate: jest.fn(),
 }));
 
-const mockedGetDateRangeStartUtcIso = jest.mocked(getDateRangeStartUtcIso);
+const mockedGetDateRangeStartDate = jest.mocked(getDateRangeStartDate);
 
 interface MockRowsQuery {
   eq: jest.Mock;
@@ -50,11 +50,12 @@ interface MockAnnotateQuery {
   select: jest.Mock;
 }
 
-function createAnnotateQuery(rows: { client_id: string; session_at: string }[]): MockAnnotateQuery {
+function createAnnotateQuery(rows: { client_id: string; session_at: string; created_at: string }[]): MockAnnotateQuery {
   const query: Partial<MockAnnotateQuery> = {};
   query.eq = jest.fn(() => query);
   query.in = jest.fn(() => query);
   query.order = jest.fn()
+    .mockReturnValueOnce(query)
     .mockReturnValueOnce(query)
     .mockResolvedValueOnce({ data: rows, error: null });
   query.select = jest.fn(() => query);
@@ -86,7 +87,7 @@ function createVersionQuery(
 describe("fetchSessionsPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedGetDateRangeStartUtcIso.mockReturnValue("2026-03-01T00:00:00.000Z");
+    mockedGetDateRangeStartDate.mockReturnValue("2026-03-01");
   });
 
   it("applies date range boundaries to rows query", async () => {
@@ -94,8 +95,7 @@ describe("fetchSessionsPage", () => {
       {
         session_id: "s-1",
         price: 5000,
-        session_duration: 60,
-        session_at: "2026-03-12T10:00:00.000Z",
+        session_at: "2026-03-12",
         through_ads: true,
         created_at: "2026-03-12T10:00:00.000Z",
         clients: { name: "Alice" },
@@ -118,17 +118,17 @@ describe("fetchSessionsPage", () => {
       dateRange: "last30Days",
     });
 
-    expect(mockedGetDateRangeStartUtcIso).toHaveBeenCalledWith({
+    expect(mockedGetDateRangeStartDate).toHaveBeenCalledWith({
       preset: "last30Days",
       timezone: "Europe/London",
     });
     expect(rowsSelect).toHaveBeenCalledWith(expect.stringContaining("through_ads"));
-    expect(rowsQuery.gte).toHaveBeenCalledWith("session_at", "2026-03-01T00:00:00.000Z");
+    expect(rowsQuery.gte).toHaveBeenCalledWith("session_at", "2026-03-01");
     expect(result.data).toHaveLength(1);
   });
 
   it("does not apply gte filter for all-time preset", async () => {
-    mockedGetDateRangeStartUtcIso.mockReturnValue(null);
+    mockedGetDateRangeStartDate.mockReturnValue(null);
     const rowsQuery = createRowsQuery([]);
     const from = jest.fn().mockReturnValueOnce({ select: jest.fn(() => rowsQuery) });
     const supabase = { from } as never;
@@ -148,7 +148,7 @@ describe("fetchSessionsPage", () => {
   });
 
   it("throws when non-allTime boundary cannot be computed", async () => {
-    mockedGetDateRangeStartUtcIso.mockReturnValue(null);
+    mockedGetDateRangeStartDate.mockReturnValue(null);
     const from = jest.fn();
     const supabase = { from } as never;
 
@@ -177,13 +177,13 @@ describe("fetchSessionsPage", () => {
       reportingTimezone: "UTC",
       searchQuery: "",
       sortField: "date",
-      cursor: { sortValue: "2026-03-12T10:00:00.000Z", id: "s-1" },
+      cursor: { sortValue: "2026-03-12", id: "s-1" },
       limit: 25,
       dateRange: "allTime",
     });
 
     expect(rowsQuery.or).toHaveBeenCalledWith(
-      'session_at.lt."2026-03-12T10:00:00.000Z",and(session_at.eq."2026-03-12T10:00:00.000Z",session_id.lt."s-1")',
+      'session_at.lt."2026-03-12",and(session_at.eq."2026-03-12",session_id.lt."s-1")',
     );
   });
 
@@ -192,8 +192,7 @@ describe("fetchSessionsPage", () => {
       {
         session_id: "s-1",
         price: 5000,
-        session_duration: 60,
-        session_at: "2026-03-12T10:00:00.000Z",
+        session_at: "2026-03-12",
         created_at: "2026-03-12T10:00:00.000Z",
         compensation_version_id: null,
         artist_compensation_versions: null,
@@ -230,7 +229,7 @@ describe("fetchSessionsPage", () => {
     });
 
     expect(versionQuery.eq).toHaveBeenCalledWith("user_id", "user-1");
-    expect(versionQuery.lte).toHaveBeenCalledWith("effective_from", "2026-03-12T10:00:00.000Z");
+    expect(versionQuery.lte).toHaveBeenCalledWith("effective_from", "2026-03-12");
     expect(result.data[0]?.compensation_version_id).toBe("cv-1");
     expect(result.hasNextPage).toBe(false);
     expect(result.nextCursor).toBeNull();
@@ -241,8 +240,7 @@ describe("fetchSessionsPage", () => {
       {
         session_id: "s-2",
         price: 5000,
-        session_duration: 60,
-        session_at: "2026-03-12T10:00:00.000Z",
+        session_at: "2026-03-12",
         through_ads: true,
         created_at: "2026-03-12T10:00:00.000Z",
         clients: { name: "Alice" },
@@ -250,8 +248,7 @@ describe("fetchSessionsPage", () => {
       {
         session_id: "s-1",
         price: 4500,
-        session_duration: 45,
-        session_at: "2026-03-11T10:00:00.000Z",
+        session_at: "2026-03-11",
         through_ads: false,
         created_at: "2026-03-11T10:00:00.000Z",
         clients: { name: "Bob" },
@@ -275,7 +272,7 @@ describe("fetchSessionsPage", () => {
     expect(result.data).toHaveLength(1);
     expect(result.nextCursor).not.toBeNull();
     expect(decodeCompositeCursor(result.nextCursor)).toEqual({
-      sortValue: "2026-03-12T10:00:00.000Z",
+      sortValue: "2026-03-12",
       id: "s-2",
     });
   });
@@ -286,22 +283,22 @@ describe("fetchSessionsPage", () => {
         session_id: "s-2",
         client_id: "c-1",
         price: 5000,
-        session_duration: 60,
-        session_at: "2026-03-12T10:00:00.000Z",
+        session_at: "2026-03-12",
+        created_at: "2026-03-12T10:00:00.000Z",
         clients: { name: "Alice" },
       },
       {
         session_id: "s-1",
         client_id: "c-1",
         price: 4500,
-        session_duration: 45,
-        session_at: "2026-03-11T10:00:00.000Z",
+        session_at: "2026-03-11",
+        created_at: "2026-03-11T10:00:00.000Z",
         clients: { name: "Alice" },
       },
     ]);
     const annotateQuery = createAnnotateQuery([
-      { client_id: "c-1", session_at: "2026-03-12T10:00:00.000Z" },
-      { client_id: "c-1", session_at: "2026-03-11T10:00:00.000Z" },
+      { client_id: "c-1", session_at: "2026-03-12", created_at: "2026-03-12T10:00:00.000Z" },
+      { client_id: "c-1", session_at: "2026-03-11", created_at: "2026-03-11T10:00:00.000Z" },
     ]);
 
     const from = jest
@@ -331,13 +328,13 @@ describe("fetchSessionsPage", () => {
         session_id: "s-1",
         client_id: "c-1",
         price: 5000,
-        session_duration: 60,
-        session_at: "2026-03-12T10:00:00.000Z",
+        session_at: "2026-03-12",
+        created_at: "2026-03-12T10:00:00.000Z",
         clients: { name: "Alice" },
       },
     ]);
     const annotateQuery = createAnnotateQuery([
-      { client_id: "c-1", session_at: "2026-03-12T10:00:00.000Z" },
+      { client_id: "c-1", session_at: "2026-03-12", created_at: "2026-03-12T10:00:00.000Z" },
     ]);
 
     const from = jest

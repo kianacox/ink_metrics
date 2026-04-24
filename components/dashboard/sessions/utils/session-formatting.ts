@@ -1,5 +1,4 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
-import { getEffectiveReportingTimezone } from "@/lib/timezones";
 import type { SessionListItem } from "./session-listing";
 
 const UNKNOWN_CLIENT_NAME = "Unknown client";
@@ -8,8 +7,7 @@ export interface SessionRow {
   session_id: string;
   client_id?: string | null;
   price: number | null;
-  session_duration: number | null;
-  session_at: string | null;
+  session_at: string | null;    // now a "YYYY-MM-DD" date string
   through_ads?: boolean | null;
   in_progress?: boolean | null;
   is_latest_for_client?: boolean | null;
@@ -40,12 +38,8 @@ export interface SessionRow {
       }>
     | null;
   clients?:
-    | {
-        name?: string | null;
-      }
-    | Array<{
-        name?: string | null;
-      }>
+    | { name?: string | null }
+    | Array<{ name?: string | null }>
     | null;
 }
 
@@ -54,7 +48,6 @@ function getClientName(clients: SessionRow["clients"]): string {
     const firstClientName = clients[0]?.name?.trim();
     return firstClientName || UNKNOWN_CLIENT_NAME;
   }
-
   const clientName = clients?.name?.trim();
   return clientName || UNKNOWN_CLIENT_NAME;
 }
@@ -64,28 +57,27 @@ export function mapSessionRowsToListItems(rows: SessionRow[]): SessionListItem[]
     id: row.session_id,
     clientName: getClientName(row.clients),
     priceMinor: row.price ?? 0,
-    durationMinutes: row.session_duration ?? 0,
-    createdAt: row.session_at ?? row.created_at ?? new Date(0).toISOString(),
+    sessionDate: row.session_at ?? "",
+    createdAt: row.created_at ?? new Date(0).toISOString(),
     throughAds: row.through_ads === true,
     inProgress: row.in_progress === true,
     isLatestForClient: row.is_latest_for_client !== false,
   }));
 }
 
-export function formatSessionDuration(totalMinutes: number): string {
-  const safeMinutes = Math.max(0, Math.floor(totalMinutes));
-  const hours = Math.floor(safeMinutes / 60);
-  const minutes = safeMinutes % 60;
-
-  if (hours === 0) {
-    return `${minutes}m`;
+export function formatSessionDate(sessionDate: string): string {
+  const parts = sessionDate.split("-").map(Number);
+  const year = parts[0];
+  const month = parts[1];
+  const day = parts[2];
+  if (!year || !month || !day) return "Unknown date";
+  try {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+      new Date(year, month - 1, day),
+    );
+  } catch {
+    return sessionDate;
   }
-
-  if (minutes === 0) {
-    return `${hours}h`;
-  }
-
-  return `${hours}h ${minutes}m`;
 }
 
 export function formatSessionProfit(
@@ -93,38 +85,9 @@ export function formatSessionProfit(
   currencyCode: string = DEFAULT_CURRENCY,
 ): string {
   const amount = Number.isFinite(priceMinor) ? priceMinor / 100 : 0;
-
   try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode,
-    }).format(amount);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode }).format(amount);
   } catch {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: DEFAULT_CURRENCY,
-    }).format(amount);
-  }
-}
-
-export function formatSessionDate(createdAtIso: string, reportingTimezone?: string): string {
-  const timestamp = Date.parse(createdAtIso);
-
-  if (!Number.isFinite(timestamp)) {
-    return "Unknown date";
-  }
-
-  try {
-    const effectiveTimezone = getEffectiveReportingTimezone(reportingTimezone);
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: effectiveTimezone,
-    }).format(new Date(timestamp));
-  } catch {
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(timestamp));
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: DEFAULT_CURRENCY }).format(amount);
   }
 }

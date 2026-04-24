@@ -27,7 +27,6 @@ import { SessionEditModal } from "./session-edit-modal";
 
 const SORT_FIELDS: Array<{ label: string; value: SessionSortField }> = [
   { label: "Date", value: "date" },
-  { label: "Duration", value: "duration" },
   { label: "Profit", value: "profit" },
 ];
 
@@ -116,7 +115,7 @@ export function SessionsView() {
           All sessions
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search by client and sort by date, session length, or session profit (descending).
+          Search by client and sort by date or session profit (descending).
         </p>
         <p className="mt-3 text-sm text-foreground">
           {selectedTotalLabel}:{" "}
@@ -174,14 +173,12 @@ export function SessionsView() {
           <SessionsCards
             sessions={sessions}
             currencyCode={defaultCurrency}
-            reportingTimezone={reportingTimezone}
             onEditSession={setEditingSession}
             onDeleteSession={setDeletingSession}
           />
           <SessionsTable
             sessions={sessions}
             currencyCode={defaultCurrency}
-            reportingTimezone={reportingTimezone}
             onEditSession={setEditingSession}
             onDeleteSession={setDeletingSession}
           />

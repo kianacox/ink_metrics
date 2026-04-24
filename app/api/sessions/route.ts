@@ -6,7 +6,7 @@ import type { SessionSortField } from "@/components/dashboard/sessions/utils/ses
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
 
-const VALID_SORT_FIELDS = new Set<SessionSortField>(["date", "duration", "profit"]);
+const VALID_SORT_FIELDS = new Set<SessionSortField>(["date", "profit"]);
 const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
   "last30Days",
   "last90Days",

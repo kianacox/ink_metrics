@@ -95,8 +95,7 @@ describe("useSessionsPagination", () => {
             {
               session_id: "session-2",
               price: 2000,
-              session_duration: 30,
-              session_at: "2026-04-09T10:00:00.000Z",
+              session_at: "2026-04-09",
               clients: { name: "Bob" },
             },
           ],
@@ -118,8 +117,7 @@ describe("useSessionsPagination", () => {
             {
               session_id: "session-1",
               price: 1000,
-              session_duration: 20,
-              session_at: "2026-04-08T10:00:00.000Z",
+              session_at: "2026-04-08",
               clients: { name: "Alice" },
             },
           ],

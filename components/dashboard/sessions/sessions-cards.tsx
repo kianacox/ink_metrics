@@ -8,7 +8,6 @@ import {
 import { AnimatedCard } from "@/components/ui/animated-card";
 import {
   formatSessionDate,
-  formatSessionDuration,
   formatSessionProfit,
 } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
@@ -16,7 +15,6 @@ import type { SessionListItem } from "@/components/dashboard/sessions/utils/sess
 interface SessionsCardsProps {
   sessions: SessionListItem[];
   currencyCode: string;
-  reportingTimezone: string;
   onEditSession: (session: SessionListItem) => void;
   onDeleteSession: (session: SessionListItem) => void;
 }
@@ -24,7 +22,6 @@ interface SessionsCardsProps {
 export function SessionsCards({
   sessions,
   currencyCode,
-  reportingTimezone,
   onEditSession,
   onDeleteSession,
 }: SessionsCardsProps) {
@@ -37,7 +34,7 @@ export function SessionsCards({
               <div>
                 <CardTitle className="text-base">{session.clientName}</CardTitle>
                 <CardDescription>
-                  {formatSessionDate(session.createdAt, reportingTimezone)}
+                  {formatSessionDate(session.sessionDate)}
                 </CardDescription>
               </div>
               <div className="flex gap-1">
@@ -73,12 +70,6 @@ export function SessionsCards({
                 Follow-up session needed
               </p>
             ) : null}
-            <div>
-              <p className="text-xs text-muted-foreground">Length</p>
-              <p className="text-sm font-medium text-foreground">
-                {formatSessionDuration(session.durationMinutes)}
-              </p>
-            </div>
             <div>
               <p className="text-xs text-muted-foreground">Profit</p>
               <p className="text-sm font-medium text-foreground">
