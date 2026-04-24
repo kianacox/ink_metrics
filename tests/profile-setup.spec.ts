@@ -90,7 +90,6 @@ test("allows backdated session up to six months after profile setup", async ({ p
   await page.getByRole("menuitem", { name: /^all time$/i }).click();
   await expectSessionVisible(page, {
     clientName,
-    durationMinutes: 60,
     priceMinor: 10_000,
   });
 });

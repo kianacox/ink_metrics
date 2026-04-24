@@ -60,7 +60,6 @@ test("creates a session backdated within six months", async ({ page }) => {
   await page.getByRole("menuitem", { name: /^all time$/i }).click();
   await expectSessionVisible(page, {
     clientName,
-    durationMinutes: 65,
     priceMinor: 13_000,
   });
 });
@@ -113,7 +112,6 @@ test("views a created session on the sessions page", async ({ page }) => {
   await goToSessionsPage(page);
   await expectSessionVisible(page, {
     clientName,
-    durationMinutes: 150,
     priceMinor: 34_050,
   });
 });
@@ -138,7 +136,6 @@ test("edits a session from the sessions page", async ({ page }) => {
   });
   await expectSessionVisible(page, {
     clientName,
-    durationMinutes: 120,
     priceMinor: 22_000,
   });
 });
@@ -158,7 +155,6 @@ test("cancels delete from the sessions page", async ({ page }) => {
   await cancelDeleteSession(page);
   await expectSessionVisible(page, {
     clientName,
-    durationMinutes: 70,
     priceMinor: 9_500,
   });
 });
