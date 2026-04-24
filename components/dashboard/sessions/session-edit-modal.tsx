@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
-import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
 import { validateEditableSessionFields } from "@/components/dashboard/session-form/utils/session-form-validation";
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
@@ -16,13 +15,6 @@ interface SessionEditModalProps {
   currencyCode: string;
   onClose: () => void;
   onUpdated: () => Promise<void>;
-}
-
-function toHoursAndMinutes(totalMinutes: number): { hours: string; minutes: string } {
-  const normalizedMinutes = Math.max(0, Math.floor(totalMinutes));
-  const hours = Math.floor(normalizedMinutes / 60);
-  const minutes = normalizedMinutes % 60;
-  return { hours: String(hours), minutes: String(minutes) };
 }
 
 function toProfitValue(priceMinor: number): string {
@@ -50,16 +42,13 @@ export function SessionEditModal({
     if (!open || !session) {
       return;
     }
-    const duration = toHoursAndMinutes(session.durationMinutes);
-    setHours(duration.hours);
-    setMinutes(duration.minutes);
+    setHours("");
+    setMinutes("");
     setProfit(toProfitValue(session.priceMinor));
-    setSessionDateTime(
-      formatDateTimeLocalForTimezone(new Date(session.createdAt), reportingTimezone),
-    );
+    setSessionDateTime(session.sessionDate);
     setInProgress(session.inProgress);
     setError(null);
-  }, [open, reportingTimezone, session]);
+  }, [open, session]);
 
   if (!open || !session) {
     return null;

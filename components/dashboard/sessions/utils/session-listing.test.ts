@@ -11,7 +11,7 @@ const sessions: SessionListItem[] = [
     id: "s1",
     clientName: "Bob Stone",
     priceMinor: 8000,
-    durationMinutes: 45,
+    sessionDate: "2026-03-30",
     createdAt: "2026-03-30T10:00:00.000Z",
     throughAds: false,
     inProgress: false,
@@ -21,7 +21,7 @@ const sessions: SessionListItem[] = [
     id: "s2",
     clientName: "Alice Doe",
     priceMinor: 12000,
-    durationMinutes: 90,
+    sessionDate: "2026-03-31",
     createdAt: "2026-03-31T10:00:00.000Z",
     throughAds: false,
     inProgress: false,
@@ -31,7 +31,7 @@ const sessions: SessionListItem[] = [
     id: "s3",
     clientName: "bob junior",
     priceMinor: 12000,
-    durationMinutes: 30,
+    sessionDate: "2026-03-29",
     createdAt: "2026-03-29T10:00:00.000Z",
     throughAds: true,
     inProgress: false,
@@ -62,9 +62,9 @@ describe("session-listing utils", () => {
     ]);
   });
 
-  it("sorts by duration ascending", () => {
+  it("sorts by date ascending", () => {
     expect(
-      sortSessions(sessions, { field: "duration", direction: "asc" }).map(
+      sortSessions(sessions, { field: "date", direction: "asc" }).map(
         (session) => session.id,
       ),
     ).toEqual(["s3", "s1", "s2"]);
@@ -87,10 +87,37 @@ describe("session-listing utils", () => {
     ).toEqual(["s2", "s1", "s3"]);
   });
 
+  it("breaks ties by createdAt descending", () => {
+    const tied: SessionListItem[] = [
+      {
+        id: "a",
+        clientName: "Alice",
+        priceMinor: 5000,
+        sessionDate: "2026-04-01",
+        createdAt: "2026-04-01T08:00:00.000Z",
+        throughAds: false,
+        inProgress: false,
+        isLatestForClient: true,
+      },
+      {
+        id: "b",
+        clientName: "Bob",
+        priceMinor: 5000,
+        sessionDate: "2026-04-01",
+        createdAt: "2026-04-01T10:00:00.000Z",
+        throughAds: false,
+        inProgress: false,
+        isLatestForClient: true,
+      },
+    ];
+    // Both on same date — most recently logged (b, 10:00) should come first
+    expect(sortSessions(tied, { field: "date", direction: "desc" }).map((s) => s.id)).toEqual(["b", "a"]);
+  });
+
   it("combines filtering and sorting in getVisibleSessions", () => {
     expect(
       getVisibleSessions(sessions, "bob", {
-        field: "duration",
+        field: "date",
         direction: "desc",
       }).map((session) => session.id),
     ).toEqual(["s1", "s3"]);
