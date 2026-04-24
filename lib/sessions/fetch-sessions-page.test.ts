@@ -356,4 +356,51 @@ describe("fetchSessionsPage", () => {
 
     expect(result.data[0]?.is_latest_for_client).toBe(true);
   });
+
+  it("marks session as latest for client when two sessions share the same date but differ by created_at", async () => {
+    const rowsQuery = createRowsQuery([
+      {
+        session_id: "s-2",
+        client_id: "c-1",
+        price: 5000,
+        session_at: "2026-03-12",
+        created_at: "2026-03-12T15:00:00.000Z",  // logged later
+        clients: { name: "Alice" },
+      },
+      {
+        session_id: "s-1",
+        client_id: "c-1",
+        price: 4500,
+        session_at: "2026-03-12",  // same date
+        created_at: "2026-03-12T10:00:00.000Z",  // logged earlier
+        clients: { name: "Alice" },
+      },
+    ]);
+    const annotateQuery = createAnnotateQuery([
+      { client_id: "c-1", session_at: "2026-03-12", created_at: "2026-03-12T15:00:00.000Z" },
+      { client_id: "c-1", session_at: "2026-03-12", created_at: "2026-03-12T10:00:00.000Z" },
+    ]);
+
+    const from = jest
+      .fn()
+      .mockReturnValueOnce({ select: jest.fn(() => rowsQuery) })
+      .mockReturnValueOnce({ select: jest.fn(() => annotateQuery) });
+    const supabase = { from } as never;
+
+    const result = await fetchSessionsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "date",
+      cursor: null,
+      limit: 25,
+      dateRange: "allTime",
+    });
+
+    // s-2 logged later on the same date — should be "latest"
+    expect(result.data[0]?.is_latest_for_client).toBe(true);
+    // s-1 logged earlier on the same date — should NOT be "latest"
+    expect(result.data[1]?.is_latest_for_client).toBe(false);
+  });
 });

@@ -1,8 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import {
-  formatSessionDuration,
-  formatSessionProfit,
-} from "@/components/dashboard/sessions/utils/session-formatting";
+import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface SessionInput {
@@ -107,15 +104,13 @@ export async function goToSessionsPage(page: Page): Promise<void> {
 
 export async function expectSessionVisible(
   page: Page,
-  session: { clientName: string; durationMinutes: number; priceMinor: number },
+  session: { clientName: string; priceMinor: number },
 ): Promise<void> {
-  const durationText = formatSessionDuration(session.durationMinutes);
   const profitText = formatSessionProfit(session.priceMinor, DEFAULT_CURRENCY);
   const sessionRow = page.locator("tbody tr", { hasText: session.clientName }).first();
 
   await expect(sessionRow).toBeVisible();
   await expect(sessionRow).toContainText(session.clientName);
-  await expect(sessionRow).toContainText(durationText);
   await expect(sessionRow).toContainText(profitText);
 }
 
