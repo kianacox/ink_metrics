@@ -16,8 +16,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "Alice",
       clientContact: "alice@example.com",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
       throughAds: true,
     });
 
@@ -28,8 +27,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "Alice",
       clientContact: "alice@example.com",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
       throughAds: true,
       inProgress: false,
     });
@@ -42,8 +40,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "Alice",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
       throughAds: null,
       inProgress: true,
     });
@@ -59,8 +56,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
     });
 
     expect(result.data?.inProgress).toBe(false);
@@ -73,8 +69,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
       inProgress: "yes",
     });
 
@@ -89,44 +84,100 @@ describe("parseSessionCreatePayload", () => {
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
     });
 
     expect(result.error).toBe("Select an existing client or create a new one before saving.");
     expect(result.data).toBeNull();
   });
 
-  it("requires a valid session_at ISO value", () => {
+  it("requires a valid sessionDate value", () => {
     const result = parseSessionCreatePayload({
       selectedClientId: "client-1",
       createNewClient: false,
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "not-a-date",
+      sessionDate: "not-a-date",
       throughAds: null,
     });
 
-    expect(result.error).toBe("Session date and time is invalid.");
+    expect(result.error).toBe("Session date is invalid.");
     expect(result.data).toBeNull();
   });
 
-  it("rejects future session date and time values", () => {
+  it("rejects missing sessionDate", () => {
     const result = parseSessionCreatePayload({
       selectedClientId: "client-1",
       createNewClient: false,
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T11:30:00.000Z",
+      throughAds: null,
+    });
+
+    expect(result.error).toBe("Session date is invalid.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects malformed date string (ISO timestamp instead of date)", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDate: "2026-04-09T10:30:00.000Z",
+      throughAds: null,
+    });
+
+    expect(result.error).toBe("Session date is invalid.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects future session date", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDate: "2026-04-10",
       throughAds: false,
     });
 
-    expect(result.error).toBe("Session date and time cannot be in the future.");
+    expect(result.error).toBe("Session date cannot be in the future.");
     expect(result.data).toBeNull();
+  });
+
+  it("rejects date more than 6 months in the past", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDate: "2025-10-08",
+      throughAds: false,
+    });
+
+    expect(result.error).toBe("Session date cannot be more than 6 months in the past.");
+    expect(result.data).toBeNull();
+  });
+
+  it("accepts today's date", () => {
+    const result = parseSessionCreatePayload({
+      selectedClientId: "client-1",
+      createNewClient: false,
+      clientName: "",
+      clientContact: "",
+      priceMinor: 5000,
+      sessionDate: "2026-04-09",
+      throughAds: null,
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data?.sessionDate).toBe("2026-04-09");
   });
 
   it("rejects throughAds when it is not a boolean or null", () => {
@@ -136,8 +187,7 @@ describe("parseSessionCreatePayload", () => {
       clientName: "",
       clientContact: "",
       priceMinor: 5000,
-      sessionDurationMinutes: 90,
-      sessionAtIso: "2026-04-09T10:30:00.000Z",
+      sessionDate: "2026-04-09",
       throughAds: "yes",
     });
 
@@ -158,16 +208,14 @@ describe("parseSessionUpdatePayload", () => {
   it("accepts a valid update payload", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
       inProgress: false,
     });
 
     expect(result.error).toBeNull();
     expect(result.data).toEqual({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
       inProgress: false,
     });
   });
@@ -175,8 +223,7 @@ describe("parseSessionUpdatePayload", () => {
   it("accepts inProgress true in update payload", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
       inProgress: true,
     });
 
@@ -187,8 +234,7 @@ describe("parseSessionUpdatePayload", () => {
   it("defaults inProgress to false when omitted from update payload", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
     });
 
     expect(result.error).toBeNull();
@@ -198,8 +244,7 @@ describe("parseSessionUpdatePayload", () => {
   it("rejects inProgress when it is not a boolean in update payload", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
       inProgress: "yes",
     });
 
@@ -210,34 +255,55 @@ describe("parseSessionUpdatePayload", () => {
   it("rejects payloads that include non-editable fields", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
       clientId: "client-1",
     });
 
-    expect(result.error).toBe("Only price, session duration, session date/time, and follow-up status can be updated.");
+    expect(result.error).toBe(
+      "Only price, session date, and follow-up status can be updated.",
+    );
     expect(result.data).toBeNull();
   });
 
-  it("rejects invalid duration", () => {
+  it("rejects payloads with sessionDurationMinutes (removed field)", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 0,
-      sessionAtIso: "2026-04-09T10:00:00.000Z",
+      sessionDate: "2026-04-09",
+      sessionDurationMinutes: 90,
     });
 
-    expect(result.error).toBe("Session duration is invalid.");
+    expect(result.error).toBe(
+      "Only price, session date, and follow-up status can be updated.",
+    );
     expect(result.data).toBeNull();
   });
 
-  it("rejects future session date and time", () => {
+  it("rejects missing sessionDate", () => {
     const result = parseSessionUpdatePayload({
       priceMinor: 12_500,
-      sessionDurationMinutes: 120,
-      sessionAtIso: "2026-04-09T11:00:00.000Z",
     });
 
-    expect(result.error).toBe("Session date and time cannot be in the future.");
+    expect(result.error).toBe("Session date is invalid.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects future session date", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDate: "2026-04-10",
+    });
+
+    expect(result.error).toBe("Session date cannot be in the future.");
+    expect(result.data).toBeNull();
+  });
+
+  it("rejects date more than 6 months in the past", () => {
+    const result = parseSessionUpdatePayload({
+      priceMinor: 12_500,
+      sessionDate: "2025-10-08",
+    });
+
+    expect(result.error).toBe("Session date cannot be more than 6 months in the past.");
     expect(result.data).toBeNull();
   });
 });

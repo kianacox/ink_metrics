@@ -63,8 +63,7 @@ export async function PATCH(
   const { error: rpcError } = await supabase.rpc("update_owned_session", {
     p_session_id: sessionId,
     p_price_minor: payload.priceMinor,
-    p_session_duration_minutes: payload.sessionDurationMinutes,
-    p_session_at: payload.sessionAtIso,
+    p_session_at: payload.sessionDate,
     p_in_progress: payload.inProgress,
   });
   if (rpcError) {

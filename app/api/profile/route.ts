@@ -117,24 +117,27 @@ export async function PUT(request: Request) {
     );
   }
 
-  const { error: rolloverError } = await supabase.rpc("rollover_profile_compensation_version", {
-    p_display_name: parsedPayload.displayName,
-    p_reporting_timezone: parsedPayload.reportingTimezone,
-    p_pay_chair_rent: parsedPayload.payChairRent,
-    p_rent_type: parsedPayload.rentType,
-    p_fixed_frequency: parsedPayload.fixedFrequency,
-    p_fixed_amount_minor: parsedPayload.fixedAmountMinor,
-    p_commission_rate_bps: parsedPayload.commissionRateBps,
-    p_commission_capped: parsedPayload.commissionCapped,
-    p_commission_cap_frequency: parsedPayload.commissionCapFrequency,
-    p_commission_cap_amount_minor: parsedPayload.commissionCapAmountMinor,
-  });
+  const { data: newEffectiveFrom, error: rolloverError } = await supabase.rpc(
+    "rollover_profile_compensation_version",
+    {
+      p_display_name: parsedPayload.displayName,
+      p_reporting_timezone: parsedPayload.reportingTimezone,
+      p_pay_chair_rent: parsedPayload.payChairRent,
+      p_rent_type: parsedPayload.rentType,
+      p_fixed_frequency: parsedPayload.fixedFrequency,
+      p_fixed_amount_minor: parsedPayload.fixedAmountMinor,
+      p_commission_rate_bps: parsedPayload.commissionRateBps,
+      p_commission_capped: parsedPayload.commissionCapped,
+      p_commission_cap_frequency: parsedPayload.commissionCapFrequency,
+      p_commission_cap_amount_minor: parsedPayload.commissionCapAmountMinor,
+    },
+  );
 
   if (rolloverError) {
     return errorJson(400, "PROFILE_UPDATE_FAILED", "Could not update profile.");
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, effectiveFrom: newEffectiveFrom as string });
 }
 
 export async function PATCH(request: Request) {
