@@ -372,9 +372,11 @@ export function ProfileEditForm({
               ) : null}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Compensation changes take effect from tomorrow and do not affect past sessions.
-            </p>
+            {payChairRent ? (
+              <p className="text-xs text-muted-foreground">
+                Compensation changes take effect from tomorrow and do not affect past sessions.
+              </p>
+            ) : null}
 
             <div className="flex justify-end">
               <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
