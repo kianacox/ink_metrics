@@ -30,10 +30,8 @@ export function SessionEditModal({
   onUpdated,
 }: SessionEditModalProps) {
   const titleId = useId();
-  const [hours, setHours] = useState("");
-  const [minutes, setMinutes] = useState("");
   const [profit, setProfit] = useState("");
-  const [sessionDateTime, setSessionDateTime] = useState("");
+  const [sessionDate, setSessionDate] = useState("");
   const [inProgress, setInProgress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +40,8 @@ export function SessionEditModal({
     if (!open || !session) {
       return;
     }
-    setHours("");
-    setMinutes("");
     setProfit(toProfitValue(session.priceMinor));
-    setSessionDateTime(session.sessionDate);
+    setSessionDate(session.sessionDate);
     setInProgress(session.inProgress);
     setError(null);
   }, [open, session]);
@@ -59,10 +55,8 @@ export function SessionEditModal({
     setError(null);
 
     const validationResult = validateEditableSessionFields({
-      hours,
-      minutes,
       profit,
-      sessionAtLocal: sessionDateTime,
+      sessionDate,
       reportingTimezone,
     });
     if (!validationResult.valid) {
@@ -79,8 +73,7 @@ export function SessionEditModal({
         },
         body: JSON.stringify({
           priceMinor: validationResult.priceMinor,
-          sessionDurationMinutes: validationResult.sessionDurationMinutes,
-          sessionAtIso: validationResult.sessionAtIso,
+          sessionDate: validationResult.sessionDate,
           inProgress,
         }),
       });
@@ -115,15 +108,11 @@ export function SessionEditModal({
         </div>
         <SessionEditableFields
           fieldIdPrefix="edit"
-          hours={hours}
-          minutes={minutes}
-          sessionDateTime={sessionDateTime}
+          sessionDate={sessionDate}
           profit={profit}
           currencyCode={currencyCode}
           inProgress={inProgress}
-          onHoursChange={setHours}
-          onMinutesChange={setMinutes}
-          onSessionDateTimeChange={setSessionDateTime}
+          onSessionDateChange={setSessionDate}
           onProfitChange={setProfit}
           onInProgressChange={setInProgress}
         />

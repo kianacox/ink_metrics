@@ -4,8 +4,7 @@ export interface SaveSessionParams {
   clientName: string;
   clientContact: string;
   priceMinor: number;
-  sessionDurationMinutes: number;
-  sessionAtIso: string;
+  sessionDate: string;      // "YYYY-MM-DD"
   throughAds: boolean | null;
   inProgress: boolean;
 }

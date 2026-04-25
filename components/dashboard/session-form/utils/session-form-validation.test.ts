@@ -1,4 +1,4 @@
-import { validateSessionForm } from "./session-form-validation";
+import { validateEditableSessionFields, validateSessionForm } from "./session-form-validation";
 import type { ClientOption } from "../models";
 
 const clients: ClientOption[] = [
@@ -6,28 +6,81 @@ const clients: ClientOption[] = [
   { client_id: "client-2", name: "Bob Stone" },
 ];
 
-describe("validateSessionForm", () => {
+describe("validateEditableSessionFields", () => {
   beforeEach(() => {
-    jest.useFakeTimers({ now: Date.parse("2026-04-08T10:30:00.000Z") });
+    jest.useFakeTimers({ now: Date.parse("2026-04-09T10:30:00.000Z") });
+  });
+  afterEach(() => { jest.useRealTimers(); });
+
+  it("accepts valid date and price", () => {
+    const result = validateEditableSessionFields({
+      profit: "100.00",
+      sessionDate: "2026-04-09",
+      reportingTimezone: "Europe/London",
+    });
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.sessionDate).toBe("2026-04-09");
+      expect(result.priceMinor).toBe(10000);
+    }
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  it("rejects future date", () => {
+    const result = validateEditableSessionFields({
+      profit: "100.00",
+      sessionDate: "2026-04-10",
+      reportingTimezone: "Europe/London",
+    });
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.errorMessage).toMatch(/future/i);
   });
+
+  it("rejects date more than 6 months in the past", () => {
+    const result = validateEditableSessionFields({
+      profit: "100.00",
+      sessionDate: "2025-10-08",
+      reportingTimezone: "Europe/London",
+    });
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.errorMessage).toMatch(/6 months/i);
+  });
+
+  it("rejects empty date", () => {
+    const result = validateEditableSessionFields({
+      profit: "100.00",
+      sessionDate: "",
+      reportingTimezone: "Europe/London",
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects invalid price", () => {
+    const result = validateEditableSessionFields({
+      profit: "abc",
+      sessionDate: "2026-04-09",
+      reportingTimezone: "Europe/London",
+    });
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.errorMessage).toMatch(/price/i);
+  });
+});
+
+describe("validateSessionForm", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ now: Date.parse("2026-04-09T10:30:00.000Z") });
+  });
+  afterEach(() => { jest.useRealTimers(); });
 
   it("fails when neither existing nor new client path is selected", () => {
     const result = validateSessionForm({
       selectedClientId: null,
       createNewClient: false,
       clientName: "Alice Doe",
-      hours: "1",
-      minutes: "0",
       profit: "100",
-      sessionAtLocal: "2026-04-08T10:30",
+      sessionDate: "2026-04-09",
       reportingTimezone: "UTC",
       clients,
     });
-
     expect(result).toEqual({
       valid: false,
       errorMessage: "Select an existing client or create a new one before saving.",
@@ -39,14 +92,11 @@ describe("validateSessionForm", () => {
       selectedClientId: null,
       createNewClient: true,
       clientName: "   ",
-      hours: "1",
-      minutes: "0",
       profit: "100",
-      sessionAtLocal: "2026-04-08T10:30",
+      sessionDate: "2026-04-09",
       reportingTimezone: "UTC",
       clients,
     });
-
     expect(result).toEqual({
       valid: false,
       errorMessage: "Client name is required for a new client.",
@@ -58,37 +108,14 @@ describe("validateSessionForm", () => {
       selectedClientId: null,
       createNewClient: true,
       clientName: " alice doe ",
-      hours: "1",
-      minutes: "0",
       profit: "100",
-      sessionAtLocal: "2026-04-08T10:30",
+      sessionDate: "2026-04-09",
       reportingTimezone: "UTC",
       clients,
     });
-
     expect(result).toEqual({
       valid: false,
-      errorMessage:
-        "A client with this name already exists. Choose it from Existing client.",
-    });
-  });
-
-  it("fails with invalid duration", () => {
-    const result = validateSessionForm({
-      selectedClientId: "client-1",
-      createNewClient: false,
-      clientName: "Alice Doe",
-      hours: "-1",
-      minutes: "0",
-      profit: "100",
-      sessionAtLocal: "2026-04-08T10:30",
-      reportingTimezone: "UTC",
-      clients,
-    });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Hours must be a whole number of zero or greater.",
+      errorMessage: "A client with this name already exists. Choose it from Existing client.",
     });
   });
 
@@ -97,14 +124,11 @@ describe("validateSessionForm", () => {
       selectedClientId: "client-1",
       createNewClient: false,
       clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
       profit: "abc",
-      sessionAtLocal: "2026-04-08T10:30",
+      sessionDate: "2026-04-09",
       reportingTimezone: "UTC",
       clients,
     });
-
     expect(result).toEqual({
       valid: false,
       errorMessage: "Price must be a valid number.",
@@ -116,115 +140,29 @@ describe("validateSessionForm", () => {
       selectedClientId: "client-1",
       createNewClient: false,
       clientName: " Alice Doe ",
-      hours: "1",
-      minutes: "30",
       profit: "12.34",
-      sessionAtLocal: "2026-04-08T10:30",
+      sessionDate: "2026-04-09",
       reportingTimezone: "UTC",
       clients,
     });
-
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.normalizedClientName).toBe("Alice Doe");
-      expect(result.sessionDurationMinutes).toBe(90);
+      expect(result.sessionDate).toBe("2026-04-09");
       expect(result.priceMinor).toBe(1234);
-      expect(result.sessionAtIso).toBe("2026-04-08T10:30:00.000Z");
     }
   });
 
-  it("fails when session date and time is missing", () => {
+  it("fails when session date is missing", () => {
     const result = validateSessionForm({
       selectedClientId: "client-1",
       createNewClient: false,
       clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
       profit: "12.34",
-      sessionAtLocal: " ",
+      sessionDate: "",
       reportingTimezone: "UTC",
       clients,
     });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Session date and time are required.",
-    });
-  });
-
-  it("fails when reporting timezone is invalid", () => {
-    const result = validateSessionForm({
-      selectedClientId: "client-1",
-      createNewClient: false,
-      clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
-      profit: "12.34",
-      sessionAtLocal: "2026-04-08T10:30",
-      reportingTimezone: "Mars/Phobos",
-      clients,
-    });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Reporting timezone is invalid.",
-    });
-  });
-
-  it("fails for nonexistent local wall-time during DST transition", () => {
-    const result = validateSessionForm({
-      selectedClientId: "client-1",
-      createNewClient: false,
-      clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
-      profit: "12.34",
-      sessionAtLocal: "2026-03-29T01:30",
-      reportingTimezone: "Europe/London",
-      clients,
-    });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Session date and time is invalid.",
-    });
-  });
-
-  it("fails when session date and time is in the future", () => {
-    const result = validateSessionForm({
-      selectedClientId: "client-1",
-      createNewClient: false,
-      clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
-      profit: "12.34",
-      sessionAtLocal: "2026-04-08T11:30",
-      reportingTimezone: "UTC",
-      clients,
-    });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Session date and time cannot be in the future.",
-    });
-  });
-
-  it("fails when session date and time is more than six months in the past", () => {
-    const result = validateSessionForm({
-      selectedClientId: "client-1",
-      createNewClient: false,
-      clientName: "Alice Doe",
-      hours: "1",
-      minutes: "30",
-      profit: "12.34",
-      sessionAtLocal: "2025-10-08T10:29",
-      reportingTimezone: "UTC",
-      clients,
-    });
-
-    expect(result).toEqual({
-      valid: false,
-      errorMessage: "Session date and time cannot be more than 6 months in the past.",
-    });
+    expect(result.valid).toBe(false);
   });
 });

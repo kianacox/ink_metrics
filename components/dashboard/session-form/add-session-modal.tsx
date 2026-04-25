@@ -5,7 +5,6 @@ import {
   Label,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { formatDateTimeLocalForTimezone, getDefaultReportingTimezone } from "@/lib/timezones";
 import {
   getFilteredClients,
   isDuplicateClientName,
@@ -16,15 +15,10 @@ import { validateSessionForm } from "@/components/dashboard/session-form/utils/s
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { DateTime } from "luxon";
 
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
-
-function createDefaultSessionDateTimeValue(reportingTimezone: string): string {
-  const now = new Date();
-  return formatDateTimeLocalForTimezone(now, reportingTimezone);
-}
 
 interface AddSessionModalProps {
   /** When provided, the component operates in controlled mode and hides its internal trigger button. */
@@ -54,8 +48,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [newClientContact, setNewClientContact] = useState("");
   const [createNewClient, setCreateNewClient] = useState(false);
-  const [hours, setHours] = useState("");
-  const [minutes, setMinutes] = useState("");
+  const [sessionDate, setSessionDate] = useState("");
   const [profit, setProfit] = useState("");
   const [throughAds, setThroughAds] = useState(false);
   const [inProgress, setInProgress] = useState(false);
@@ -68,9 +61,6 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     loadError,
     saveSession,
   } = useSessionFormData(open);
-  const [sessionDateTime, setSessionDateTime] = useState(() =>
-    createDefaultSessionDateTimeValue(getDefaultReportingTimezone()),
-  );
   const [status, setStatus] = useState<SubmitStatus>(null);
   const [toast, setToast] = useState<ToastStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,12 +70,10 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     setSelectedClientId(null);
     setNewClientContact("");
     setCreateNewClient(false);
-    setHours("");
-    setMinutes("");
+    setSessionDate(DateTime.now().setZone(reportingTimezone).toFormat("yyyy-LL-dd"));
     setProfit("");
     setThroughAds(false);
     setInProgress(false);
-    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
     if (!preserveStatus) {
       setStatus(null);
     }
@@ -116,7 +104,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     if (!open) {
       return;
     }
-    setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
+    setSessionDate(DateTime.now().setZone(reportingTimezone).toFormat("yyyy-LL-dd"));
   }, [open, reportingTimezone]);
 
   useEffect(() => {
@@ -146,10 +134,8 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
       selectedClientId: clientId,
       createNewClient,
       clientName: normalizedClientName,
-      hours,
-      minutes,
       profit,
-      sessionAtLocal: sessionDateTime,
+      sessionDate,
       reportingTimezone,
       clients,
     });
@@ -166,8 +152,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
         clientName: validationResult.normalizedClientName,
         clientContact: normalizedNewClientContact,
         priceMinor: validationResult.priceMinor,
-        sessionDurationMinutes: validationResult.sessionDurationMinutes,
-        sessionAtIso: validationResult.sessionAtIso,
+        sessionDate: validationResult.sessionDate,
         throughAds: displayAdvertCheckbox && createNewClient ? throughAds : null,
         inProgress,
       });
@@ -209,7 +194,7 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
           onClick={() => {
             setOpen(true);
             setStatus(null);
-            setSessionDateTime(createDefaultSessionDateTimeValue(reportingTimezone));
+            setSessionDate(DateTime.now().setZone(reportingTimezone).toFormat("yyyy-LL-dd"));
           }}
         >
           Add session
@@ -225,10 +210,6 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-4">
-                <p className="flex items-center gap-2 rounded-md border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-xs text-sky-800 dark:border-sky-300/60 dark:bg-sky-400/20 dark:text-sky-100">
-                  <Info aria-hidden="true" className="size-4 shrink-0" />
-                  <span>You can backdate sessions by up to 6 months.</span>
-                </p>
                 <div className="grid min-w-0 gap-2 pb-1">
                   <Label htmlFor="client-combobox">
                     Client{" "}
@@ -337,15 +318,11 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
 
                 <SessionEditableFields
                   fieldIdPrefix="create"
-                  hours={hours}
-                  minutes={minutes}
-                  sessionDateTime={sessionDateTime}
+                  sessionDate={sessionDate}
                   profit={profit}
                   currencyCode={defaultCurrency}
                   inProgress={inProgress}
-                  onHoursChange={setHours}
-                  onMinutesChange={setMinutes}
-                  onSessionDateTimeChange={setSessionDateTime}
+                  onSessionDateChange={setSessionDate}
                   onProfitChange={setProfit}
                   onInProgressChange={setInProgress}
                 />
