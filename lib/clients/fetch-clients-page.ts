@@ -1,4 +1,4 @@
-import { getDateRangeStartUtcIso } from "@/lib/timezones";
+import { getDateRangeStartDate } from "@/lib/timezones";
 import type {
   ClientSortField,
   ClientListItem,
@@ -50,7 +50,7 @@ export async function fetchClientsPage({
   limit,
   dateRange,
 }: FetchClientsPageParams): Promise<FetchClientsPageResult> {
-  const dateRangeStart = getDateRangeStartUtcIso({
+  const dateRangeStart = getDateRangeStartDate({
     preset: dateRange,
     timezone: reportingTimezone,
   });
