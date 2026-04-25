@@ -481,8 +481,7 @@ BEGIN
   UPDATE public.profiles
   SET
     display_name = p_display_name,
-    reporting_timezone = p_reporting_timezone,
-    updated_at = now_ts
+    reporting_timezone = p_reporting_timezone
   WHERE user_id = current_user_id;
 
   IF NOT FOUND THEN

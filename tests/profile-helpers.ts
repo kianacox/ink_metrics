@@ -34,7 +34,7 @@ export async function expectProfileStatus(
 }
 
 export async function expectProfileSuccess(page: Page): Promise<void> {
-  await expectProfileStatus(page, "Profile updated successfully.");
+  await expectProfileStatus(page, /settings saved\.|profile updated successfully\./i);
 }
 
 // Scope a button click to the grid container that wraps a given label.
