@@ -3,6 +3,7 @@ export const DEFAULT_PLAYWRIGHT_BASE_URL = "http://127.0.0.1:3001";
 export const DEFAULT_MAILBOX_DOMAIN = "example.com";
 export const DEFAULT_SEEDED_SESSION_USER_EMAIL = "seeded-session-user@example.com";
 export const DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL = "seeded-incomplete-user@example.com";
+export const DEFAULT_SEEDED_TZ_USER_EMAIL = "seeded-tz-user@example.com";
 
 function requireEnv(name: string): string {
   const value = process.env[name];

@@ -3,6 +3,7 @@ import {
   DEFAULT_INBUCKET_BASE_URL,
   DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL,
   DEFAULT_SEEDED_SESSION_USER_EMAIL,
+  DEFAULT_SEEDED_TZ_USER_EMAIL,
   DEFAULT_PLAYWRIGHT_BASE_URL,
   getSeededUserPassword,
 } from "./constants";
@@ -15,6 +16,8 @@ const seededSessionUserEmail =
   process.env.E2E_SEEDED_SESSION_USER_EMAIL ?? DEFAULT_SEEDED_SESSION_USER_EMAIL;
 const seededIncompleteUserEmail =
   process.env.E2E_SEEDED_INCOMPLETE_USER_EMAIL ?? DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL;
+const seededTzUserEmail =
+  process.env.E2E_SEEDED_TZ_USER_EMAIL ?? DEFAULT_SEEDED_TZ_USER_EMAIL;
 const seededUserPassword = getSeededUserPassword();
 
 function collectStrings(value: unknown): string[] {
@@ -267,10 +270,12 @@ export async function loginAsUser(
 
 export async function loginAsSeededUser(
   page: Page,
-  userType: "sessionComplete" | "incomplete" = "sessionComplete",
+  userType: "sessionComplete" | "incomplete" | "timezone" = "sessionComplete",
 ) {
   const email =
-    userType === "sessionComplete" ? seededSessionUserEmail : seededIncompleteUserEmail;
+    userType === "sessionComplete" ? seededSessionUserEmail
+    : userType === "timezone" ? seededTzUserEmail
+    : seededIncompleteUserEmail;
   await loginAsUser(page, email, seededUserPassword, { waitForDashboard: true });
   return email;
 }

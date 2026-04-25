@@ -9,9 +9,11 @@ declare
   session_user_id uuid := '11111111-1111-1111-1111-111111111111';
   incomplete_user_id uuid := '22222222-2222-2222-2222-222222222222';
   demo_user_id uuid := '33333333-3333-3333-3333-333333333333';
+  tz_user_id uuid := '44444444-4444-4444-4444-444444444444';
   session_user_email text := 'seeded-session-user@example.com';
   incomplete_user_email text := 'seeded-incomplete-user@example.com';
   demo_user_email text := 'test@test.com';
+  tz_user_email text := 'seeded-tz-user@example.com';
 begin
   -- -------------------------------------------------------------------------
   -- Cleanup (order matters: child tables first)
@@ -21,22 +23,22 @@ begin
   where user_id in (demo_user_id);
 
   delete from public.sessions
-  where user_id in (demo_user_id);
+  where user_id in (demo_user_id, tz_user_id);
 
   delete from public.clients
-  where user_id in (demo_user_id);
+  where user_id in (demo_user_id, tz_user_id);
 
   delete from public.artist_compensation_versions
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
 
   delete from public.profiles
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
 
   delete from auth.identities
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
 
   delete from auth.users
-  where id in (session_user_id, incomplete_user_id, demo_user_id);
+  where id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
 
   -- -------------------------------------------------------------------------
   -- Auth users
@@ -126,6 +128,27 @@ begin
       '{}',
       now(),
       now()
+    ),
+    (
+      '00000000-0000-0000-0000-000000000000',
+      tz_user_id,
+      'authenticated',
+      'authenticated',
+      tz_user_email,
+      crypt('Password123!', gen_salt('bf')),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{}',
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -172,6 +195,16 @@ begin
       now(),
       now(),
       now()
+    ),
+    (
+      gen_random_uuid(),
+      tz_user_id,
+      jsonb_build_object('sub', tz_user_id::text, 'email', tz_user_email),
+      'email',
+      tz_user_email,
+      now(),
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -191,7 +224,9 @@ begin
   values
     (session_user_id, 'Seeded Session User', 'GBP', 'Europe/London', 1, true, now(), now()),
     (incomplete_user_id, null, 'GBP', 'Europe/London', 1, false, null, now()),
-    (demo_user_id, 'Demo Artist', 'GBP', 'Europe/London', 1, true, now(), now());
+    (demo_user_id, 'Demo Artist', 'GBP', 'Europe/London', 1, true, now(), now()),
+    -- Asia/Tokyo (UTC+9): used for timezone edge-case QA
+    (tz_user_id, 'Tokyo TZ User', 'USD', 'Asia/Tokyo', 1, true, now(), now());
 
   -- -------------------------------------------------------------------------
   -- Compensation versions
@@ -243,6 +278,22 @@ begin
       true,
       'weekly',
       25000,
+      now(),
+      now()
+    ),
+    (
+      'bbbbbbbb-0000-0000-0000-000000000001',
+      tz_user_id,
+      now() - interval '6 months',
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
       now(),
       now()
     );
@@ -404,5 +455,26 @@ begin
     ('dddddddd-dddd-dddd-dddd-dddddddd0013', demo_user_id, 'Rotary machine upgrade',    'machines',       22000, 'GBP', '2026-03-24', null, null, null, now(), now()),
     ('dddddddd-dddd-dddd-dddd-dddddddd0014', demo_user_id, 'Miscellaneous studio supplies', 'miscellaneous', 3400, 'GBP', '2026-04-02', null, null, null, now(), now()),
     ('dddddddd-dddd-dddd-dddd-dddddddd0015', demo_user_id, 'Black cartridge pack x50', 'cartridges',       2800, 'GBP', '2026-04-09', null, null, null, now(), now());
+
+  -- -------------------------------------------------------------------------
+  -- Timezone test user (Asia/Tokyo, UTC+9) — used for date boundary QA
+  -- -------------------------------------------------------------------------
+
+  insert into public.clients (client_id, user_id, name, contact_info, created_at)
+  values
+    ('eeeeeeee-eeee-eeee-eeee-eeeeeeee0001', tz_user_id, 'Hana Sato',   null, now()),
+    ('eeeeeeee-eeee-eeee-eeee-eeeeeeee0002', tz_user_id, 'Kenji Tanaka', null, now());
+
+  insert into public.sessions (
+    session_id,
+    user_id,
+    client_id,
+    price,
+    session_at,
+    compensation_version_id
+  )
+  values
+    ('ffffffff-ffff-ffff-ffff-ffffffffffff', tz_user_id, 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0001', 20000, '2026-04-10', 'bbbbbbbb-0000-0000-0000-000000000001'),
+    ('ffffffff-ffff-ffff-ffff-fffffffffffe', tz_user_id, 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0002', 15000, '2026-03-28', 'bbbbbbbb-0000-0000-0000-000000000001');
 
 end $$;
