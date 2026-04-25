@@ -145,9 +145,18 @@ export function ProfileEditForm({
       return;
     }
 
+    const effectiveFrom = result.effectiveFrom;
+    const effectiveFromFormatted = effectiveFrom
+      ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+          new Date(effectiveFrom + "T00:00:00"),
+        )
+      : null;
+
     setStatus({
       type: "success",
-      message: "Profile updated successfully.",
+      message: effectiveFromFormatted
+        ? `Settings saved. Compensation changes apply from ${effectiveFromFormatted}.`
+        : "Profile updated successfully.",
     });
   }
 
@@ -362,6 +371,10 @@ export function ProfileEditForm({
                 </p>
               ) : null}
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              Compensation changes take effect from tomorrow and do not affect past sessions.
+            </p>
 
             <div className="flex justify-end">
               <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>

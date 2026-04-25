@@ -14,8 +14,10 @@ export interface SaveProfilePayload {
 export interface SaveProfileResult {
   success: boolean;
   error?: string;
+  effectiveFrom?: string;  // "YYYY-MM-DD" — when compensation changes take effect
 }
 
 export interface SaveProfileApiResponse {
   error?: string;
+  effectiveFrom?: string;  // "YYYY-MM-DD"
 }
