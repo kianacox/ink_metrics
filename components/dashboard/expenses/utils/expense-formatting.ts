@@ -10,11 +10,13 @@ export function formatExpenseAmount(
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: currencyCode,
+      currencyDisplay: "narrowSymbol",
     }).format(amount);
   } catch {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: DEFAULT_CURRENCY,
+      currencyDisplay: "narrowSymbol",
     }).format(amount);
   }
 }

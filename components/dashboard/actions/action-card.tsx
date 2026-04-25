@@ -21,11 +21,12 @@ function getNudgeCopy(actionType: Action["actionType"], weeksSince: number): str
 
 interface ActionCardProps {
   action: Action;
+  currencyCode: string;
   onDismiss: (actionId: string) => void;
   onDismissError: () => void;
 }
 
-export function ActionCard({ action, onDismiss, onDismissError }: ActionCardProps) {
+export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: ActionCardProps) {
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isDismissing, setIsDismissing] = useState(false);
@@ -62,7 +63,7 @@ export function ActionCard({ action, onDismiss, onDismissError }: ActionCardProp
           {getNudgeCopy(action.actionType, action.weeksSince)}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {formatMinorAsCurrency(action.revenueAtRiskMinor)} at risk
+          {formatMinorAsCurrency(action.revenueAtRiskMinor, currencyCode)} at risk
         </p>
 
         <AnimatePresence initial={false}>

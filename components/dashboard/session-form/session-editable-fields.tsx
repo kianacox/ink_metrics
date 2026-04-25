@@ -18,20 +18,6 @@ interface SessionEditableFieldsProps {
   onInProgressChange: (value: boolean) => void;
 }
 
-function getCurrencySymbol(currencyCode: string): string {
-  try {
-    const currencyPart = new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode,
-    })
-      .formatToParts(0)
-      .find((part) => part.type === "currency");
-    return currencyPart?.value ?? currencyCode;
-  } catch {
-    return currencyCode;
-  }
-}
-
 function parseDateString(dateString: string): Date | undefined {
   if (!dateString) return undefined;
   const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -77,7 +63,6 @@ export function SessionEditableFields({
 
   const priceId = `${fieldIdPrefix}-session-price`;
   const inProgressId = `${fieldIdPrefix}-in-progress`;
-  const currencySymbol = getCurrencySymbol(currencyCode);
 
   const selectedDate = parseDateString(sessionDate);
   const disabledDays = getDisabledDays();
@@ -121,26 +106,15 @@ export function SessionEditableFields({
         </Popover>
       </div>
       <div className="grid min-w-0 gap-2">
-        <Label htmlFor={priceId}>Price</Label>
-        <div className="relative">
-          <span
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
-            aria-hidden
-          >
-            {currencySymbol}
-          </span>
-          <Input
-            id={priceId}
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={profit}
-            onChange={(event) => onProfitChange(event.target.value)}
-            className="pl-8"
-            required
-          />
-        </div>
+        <Label htmlFor={priceId}>Price ({currencyCode})</Label>
+        <Input
+          id={priceId}
+          inputMode="decimal"
+          placeholder="e.g. 12.50"
+          value={profit}
+          onChange={(event) => onProfitChange(event.target.value)}
+          required
+        />
       </div>
       <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2">
         <input

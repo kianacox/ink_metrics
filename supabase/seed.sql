@@ -10,35 +10,37 @@ declare
   incomplete_user_id uuid := '22222222-2222-2222-2222-222222222222';
   demo_user_id uuid := '33333333-3333-3333-3333-333333333333';
   tz_user_id uuid := '44444444-4444-4444-4444-444444444444';
+  la_user_id uuid := '55555555-5555-5555-5555-555555555555';
   session_user_email text := 'seeded-session-user@example.com';
   incomplete_user_email text := 'seeded-incomplete-user@example.com';
   demo_user_email text := 'test@test.com';
   tz_user_email text := 'seeded-tz-user@example.com';
+  la_user_email text := 'seeded-la-user@example.com';
 begin
   -- -------------------------------------------------------------------------
   -- Cleanup (order matters: child tables first)
   -- -------------------------------------------------------------------------
 
   delete from public.expenses
-  where user_id in (demo_user_id);
+  where user_id in (demo_user_id, la_user_id);
 
   delete from public.sessions
-  where user_id in (demo_user_id, tz_user_id);
+  where user_id in (demo_user_id, tz_user_id, la_user_id);
 
   delete from public.clients
-  where user_id in (demo_user_id, tz_user_id);
+  where user_id in (demo_user_id, tz_user_id, la_user_id);
 
   delete from public.artist_compensation_versions
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
 
   delete from public.profiles
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
 
   delete from auth.identities
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
 
   delete from auth.users
-  where id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id);
+  where id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
 
   -- -------------------------------------------------------------------------
   -- Auth users
@@ -149,6 +151,27 @@ begin
       '{}',
       now(),
       now()
+    ),
+    (
+      '00000000-0000-0000-0000-000000000000',
+      la_user_id,
+      'authenticated',
+      'authenticated',
+      la_user_email,
+      crypt('Password123!', gen_salt('bf')),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{}',
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -205,6 +228,16 @@ begin
       now(),
       now(),
       now()
+    ),
+    (
+      gen_random_uuid(),
+      la_user_id,
+      jsonb_build_object('sub', la_user_id::text, 'email', la_user_email),
+      'email',
+      la_user_email,
+      now(),
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -226,7 +259,9 @@ begin
     (incomplete_user_id, null, 'GBP', 'Europe/London', 1, false, null, now()),
     (demo_user_id, 'Demo Artist', 'GBP', 'Europe/London', 1, true, now(), now()),
     -- Asia/Tokyo (UTC+9): used for timezone edge-case QA
-    (tz_user_id, 'Tokyo TZ User', 'USD', 'Asia/Tokyo', 1, true, now(), now());
+    (tz_user_id, 'Tokyo TZ User', 'USD', 'Asia/Tokyo', 1, true, now(), now()),
+    -- America/Los_Angeles (UTC-8): used for behind-UTC timezone QA
+    (la_user_id, 'LA TZ User', 'USD', 'America/Los_Angeles', 1, true, now(), now());
 
   -- -------------------------------------------------------------------------
   -- Compensation versions
@@ -284,6 +319,22 @@ begin
     (
       'bbbbbbbb-0000-0000-0000-000000000001',
       tz_user_id,
+      now() - interval '6 months',
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      now(),
+      now()
+    ),
+    (
+      '55555555-5555-5555-5555-000000000001',
+      la_user_id,
       now() - interval '6 months',
       null,
       false,
@@ -476,5 +527,72 @@ begin
   values
     ('ffffffff-ffff-ffff-ffff-ffffffffffff', tz_user_id, 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0001', 20000, '2026-04-10', 'bbbbbbbb-0000-0000-0000-000000000001'),
     ('ffffffff-ffff-ffff-ffff-fffffffffffe', tz_user_id, 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0002', 15000, '2026-03-28', 'bbbbbbbb-0000-0000-0000-000000000001');
+
+  -- -------------------------------------------------------------------------
+  -- LA timezone user (America/Los_Angeles, UTC-8) — behind-UTC timezone QA
+  -- -------------------------------------------------------------------------
+
+  insert into public.clients (client_id, user_id, name, contact_info, created_at)
+  values
+    ('55550000-0000-0000-0000-000000000001', la_user_id, 'Kai Nguyen',     null, now()),
+    ('55550000-0000-0000-0000-000000000002', la_user_id, 'Maya Rodriguez', null, now()),
+    ('55550000-0000-0000-0000-000000000003', la_user_id, 'Jake Torres',    null, now()),
+    ('55550000-0000-0000-0000-000000000004', la_user_id, 'Lily Park',      null, now()),
+    ('55550000-0000-0000-0000-000000000005', la_user_id, 'Dex Williams',   null, now());
+
+  insert into public.sessions (
+    session_id,
+    user_id,
+    client_id,
+    price,
+    session_at,
+    compensation_version_id,
+    through_ads
+  )
+  values
+    -- January 2026 (4 sessions)
+    ('55550001-0000-0000-0000-000000000001', la_user_id, '55550000-0000-0000-0000-000000000001', 18000, '2026-01-08', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000002', la_user_id, '55550000-0000-0000-0000-000000000002', 25000, '2026-01-14', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000003', la_user_id, '55550000-0000-0000-0000-000000000003', 15000, '2026-01-20', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000004', la_user_id, '55550000-0000-0000-0000-000000000004', 20000, '2026-01-27', '55555555-5555-5555-5555-000000000001', null),
+    -- February 2026 (4 sessions)
+    ('55550001-0000-0000-0000-000000000005', la_user_id, '55550000-0000-0000-0000-000000000005', 12000, '2026-02-04', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000006', la_user_id, '55550000-0000-0000-0000-000000000001', 20000, '2026-02-11', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000007', la_user_id, '55550000-0000-0000-0000-000000000002', 30000, '2026-02-18', '55555555-5555-5555-5555-000000000001', true),
+    ('55550001-0000-0000-0000-000000000008', la_user_id, '55550000-0000-0000-0000-000000000003', 17500, '2026-02-25', '55555555-5555-5555-5555-000000000001', null),
+    -- March 2026 (4 sessions)
+    ('55550001-0000-0000-0000-000000000009', la_user_id, '55550000-0000-0000-0000-000000000004', 22000, '2026-03-04', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000010', la_user_id, '55550000-0000-0000-0000-000000000005', 14000, '2026-03-11', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000011', la_user_id, '55550000-0000-0000-0000-000000000001', 18000, '2026-03-18', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000012', la_user_id, '55550000-0000-0000-0000-000000000002', 26000, '2026-03-25', '55555555-5555-5555-5555-000000000001', null),
+    -- April 2026 (4 sessions)
+    ('55550001-0000-0000-0000-000000000013', la_user_id, '55550000-0000-0000-0000-000000000003', 16000, '2026-04-03', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000014', la_user_id, '55550000-0000-0000-0000-000000000004', 24000, '2026-04-09', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000015', la_user_id, '55550000-0000-0000-0000-000000000005', 13000, '2026-04-16', '55555555-5555-5555-5555-000000000001', null),
+    ('55550001-0000-0000-0000-000000000016', la_user_id, '55550000-0000-0000-0000-000000000001', 19000, '2026-04-23', '55555555-5555-5555-5555-000000000001', null);
+
+  insert into public.expenses (
+    expense_id,
+    user_id,
+    item,
+    category,
+    amount_minor,
+    currency_code,
+    date_purchased,
+    receipt_path,
+    receipt_mime_type,
+    receipt_size_bytes,
+    created_at,
+    updated_at
+  )
+  values
+    ('55550002-0000-0000-0000-000000000001', la_user_id, 'Black ink refill',          'ink',             2800, 'USD', '2026-01-09', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000002', la_user_id, 'Needle pack (mixed gauge)', 'needles',         1500, 'USD', '2026-01-22', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000003', la_user_id, 'Convention travel',         'travel',          9500, 'USD', '2026-02-06', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000004', la_user_id, 'Rotary machine service',    'machines',        6500, 'USD', '2026-02-20', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000005', la_user_id, 'Colour ink set',            'ink',             4800, 'USD', '2026-03-05', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000006', la_user_id, 'Cartridge refill pack',     'cartridges',      2200, 'USD', '2026-03-19', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000007', la_user_id, 'Stencil paper (50 sheets)', 'other_equipment', 1200, 'USD', '2026-04-05', null, null, null, now(), now()),
+    ('55550002-0000-0000-0000-000000000008', la_user_id, 'Studio supplies misc',      'miscellaneous',   3100, 'USD', '2026-04-18', null, null, null, now(), now());
 
 end $$;

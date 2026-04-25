@@ -10,6 +10,7 @@ describe("dashboard analytics formatting", () => {
     const expected = new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: "GBP",
+      currencyDisplay: "narrowSymbol",
       maximumFractionDigits: 2,
       minimumFractionDigits: 2,
     }).format(123.45);

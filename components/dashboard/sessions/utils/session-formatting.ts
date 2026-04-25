@@ -86,8 +86,8 @@ export function formatSessionProfit(
 ): string {
   const amount = Number.isFinite(priceMinor) ? priceMinor / 100 : 0;
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode }).format(amount);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: currencyCode, currencyDisplay: "narrowSymbol" }).format(amount);
   } catch {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: DEFAULT_CURRENCY }).format(amount);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: DEFAULT_CURRENCY, currencyDisplay: "narrowSymbol" }).format(amount);
   }
 }
