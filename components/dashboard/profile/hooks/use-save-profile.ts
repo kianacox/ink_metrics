@@ -29,7 +29,7 @@ export function useSaveProfile() {
         };
       }
 
-      return { success: true };
+      return { success: true, effectiveFrom: responseBody.effectiveFrom };
     } catch {
       return {
         success: false,
