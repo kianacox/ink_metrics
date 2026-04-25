@@ -87,7 +87,7 @@ export async function GET(request: Request) {
 function getRpcErrorStatus(message: string): number {
   if (
     message === "A client with this name already exists. Choose it from Existing client." ||
-    message === "No compensation settings are active for this session date/time."
+    message === "No compensation settings are active for this session date."
   ) {
     return 409;
   }
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     const status = getRpcErrorStatus(rpcError.message);
     const knownUserSafeMessage =
       rpcError.message === "A client with this name already exists. Choose it from Existing client." ||
-      rpcError.message === "No compensation settings are active for this session date/time." ||
+      rpcError.message === "No compensation settings are active for this session date." ||
       rpcError.message === "You must be signed in to log a session." ||
       rpcError.message === "Select an existing client before saving." ||
       rpcError.message === "Selected client was not found." ||
