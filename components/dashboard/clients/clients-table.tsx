@@ -11,11 +11,14 @@ interface ClientsTableProps {
   onDeleteClient: (client: ClientListItem) => void;
 }
 
-function formatLastSessionDate(isoDate: string | null): string | null {
-  if (!isoDate) {
-    return null;
-  }
-  return new Date(isoDate).toLocaleDateString(undefined, {
+function formatLastSessionDate(dateString: string | null): string | null {
+  if (!dateString) return null;
+  const parts = dateString.split("-").map(Number);
+  const year = parts[0];
+  const month = parts[1];
+  const day = parts[2];
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
