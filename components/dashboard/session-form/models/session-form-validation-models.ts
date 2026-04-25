@@ -4,18 +4,14 @@ export interface SessionFormValidationInput {
   selectedClientId: string | null;
   createNewClient: boolean;
   clientName: string;
-  hours: string;
-  minutes: string;
   profit: string;
-  sessionAtLocal: string;
+  sessionDate: string;       // "YYYY-MM-DD"
   reportingTimezone: string;
   clients: ClientOption[];
 }
 
 export interface EditableSessionFieldsInput {
-  hours: string;
-  minutes: string;
   profit: string;
-  sessionAtLocal: string;
+  sessionDate: string;       // "YYYY-MM-DD"
   reportingTimezone: string;
 }
