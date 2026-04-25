@@ -1,7 +1,4 @@
-export type {
-  ClientOption,
-  DurationValidationResult,
-} from "./client-selection-models";
+export type { ClientOption } from "./client-selection-models";
 export type {
   SaveSessionApiResponse,
   SaveSessionParams,
