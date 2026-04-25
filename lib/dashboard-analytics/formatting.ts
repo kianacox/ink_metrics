@@ -23,6 +23,7 @@ export function formatMinorAsCurrency(minor: number, currencyCode = DEFAULT_CURR
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency: currencyCode,
+    currencyDisplay: "narrowSymbol",
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(amount);

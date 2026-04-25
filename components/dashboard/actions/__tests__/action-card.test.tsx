@@ -45,6 +45,7 @@ function renderCard(
   render(
     <ActionCard
       action={{ ...baseAction, ...overrides }}
+      currencyCode="GBP"
       onDismiss={onDismiss}
       onDismissError={onDismissError}
     />,

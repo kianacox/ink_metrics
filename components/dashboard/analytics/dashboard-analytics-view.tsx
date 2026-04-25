@@ -5,12 +5,11 @@ import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
 import { ExpensesByCategoryCardContent } from "@/components/dashboard/analytics/expenses-by-category-card";
 import { Button, ErrorState } from "@/components/ui";
 import {
-  formatHours,
   formatMinorAsCurrency,
   formatPercentage,
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
-import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { useSessionPreferences } from "@/components/dashboard/sessions/hooks/use-session-preferences";
 import { Info, X } from "lucide-react";
 
 const TAKE_HOME_COMPARISON_ITEMS = [
@@ -109,17 +108,17 @@ function hasAnyMetricData(analytics: DashboardAnalyticsResponse): boolean {
   return analytics.expensesByCategory.items.some((item) => item.totalMinor !== 0);
 }
 
-export function DashboardAnalyticsView({
-  currencyCode,
-}: {
-  currencyCode?: string;
-}) {
+export function DashboardAnalyticsView() {
   const retentionInfoTitleId = useId();
-  const effectiveCurrencyCode = currencyCode ?? DEFAULT_CURRENCY;
+  const { defaultCurrency: effectiveCurrencyCode, ensureLoaded } = useSessionPreferences();
   const [analytics, setAnalytics] = useState<DashboardAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
+
+  useEffect(() => {
+    void ensureLoaded();
+  }, [ensureLoaded]);
 
   const loadAnalytics = useCallback(async () => {
     setIsLoading(true);
@@ -287,22 +286,6 @@ export function DashboardAnalyticsView({
 
           <AnalyticsCard
             index={3}
-            title="Hours spent tattooing"
-            description="Total session time across the month."
-            state={cardState}
-          >
-            <div className="space-y-2 text-sm">
-              <p className="text-2xl font-semibold text-foreground">
-                {formatHours(analytics?.hoursTattooing.totalHours ?? 0)}
-              </p>
-              <p className="text-muted-foreground">
-                Total minutes: {analytics?.hoursTattooing.totalMinutes ?? 0}
-              </p>
-            </div>
-          </AnalyticsCard>
-
-          <AnalyticsCard
-            index={4}
             title="Expenses by category"
             description="Monthly spend rollup by expense category."
             state={cardState}
