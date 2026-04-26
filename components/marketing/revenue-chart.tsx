@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 const ROWS = [
   {
-    label: "Gross income",
+    label: "Gross Income",
     display: "£5,800",
     pct: 100,
     barClass: "bg-foreground/10",
@@ -12,10 +12,9 @@ const ROWS = [
     valueClass: "text-foreground font-medium",
     dividerBefore: false,
     emphasize: false,
-    note: null as string | null,
   },
   {
-    label: "Chair rent",
+    label: "Paid to studio",
     display: "−£960",
     pct: 16.6,
     barClass: "bg-amber-400/60 dark:bg-amber-500/50",
@@ -23,10 +22,9 @@ const ROWS = [
     valueClass: "text-amber-700 dark:text-amber-400 font-medium",
     dividerBefore: false,
     emphasize: false,
-    note: null as string | null,
   },
   {
-    label: "Supplies & expenses",
+    label: "Expenses",
     display: "−£600",
     pct: 10.3,
     barClass: "bg-secondary/50",
@@ -34,10 +32,9 @@ const ROWS = [
     valueClass: "text-muted-foreground font-medium",
     dividerBefore: false,
     emphasize: false,
-    note: null as string | null,
   },
   {
-    label: "Take-home",
+    label: "Total Take-Home",
     display: "£4,240",
     pct: 73.1,
     barClass: "bg-primary",
@@ -45,7 +42,6 @@ const ROWS = [
     valueClass: "text-primary font-bold",
     dividerBefore: true,
     emphasize: true,
-    note: "73% of gross",
   },
 ] as const;
 
@@ -58,7 +54,7 @@ export function RevenueChart() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 sm:p-8 lg:p-10">
+    <div className="rounded-none border border-border bg-card p-6 sm:p-8 lg:p-10">
       <div className="space-y-5">
         {ROWS.map((row, i) => (
           <div key={row.label}>
@@ -67,16 +63,9 @@ export function RevenueChart() {
             )}
             <div className="mb-2 flex items-center justify-between gap-4">
               <span className={`text-sm ${row.labelClass}`}>{row.label}</span>
-              <div className="flex items-center gap-3">
-                {row.note && (
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {row.note}
-                  </span>
-                )}
-                <span className={`text-sm tabular-nums ${row.valueClass}`}>
-                  {row.display}
-                </span>
-              </div>
+              <span className={`text-sm tabular-nums ${row.valueClass}`}>
+                {row.display}
+              </span>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/40">
               <div
@@ -88,6 +77,9 @@ export function RevenueChart() {
                 }}
               />
             </div>
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+              {Math.round(row.pct)}%
+            </p>
           </div>
         ))}
       </div>

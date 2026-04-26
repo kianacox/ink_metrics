@@ -15,7 +15,7 @@ import { Info, X } from "lucide-react";
 const TAKE_HOME_COMPARISON_ITEMS = [
   {
     key: "gross" as const,
-    label: "Gross",
+    label: "Gross Income",
     colorClassName: "bg-chart-2",
   },
   {
@@ -208,14 +208,9 @@ export function DashboardAnalyticsView() {
                 return (
                   <div key={item.key} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <p className={isNet ? "font-bold text-foreground text-base" : "text-muted-foreground"}>
-                          {item.label}
-                        </p>
-                        <span className={isNet ? "text-xs font-semibold text-foreground" : "text-xs text-muted-foreground"}>
-                          {item.pctOfGross}%
-                        </span>
-                      </div>
+                      <p className={isNet ? "font-bold text-foreground text-base" : "text-muted-foreground"}>
+                        {item.label}
+                      </p>
                       <p className="font-semibold">
                         {formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
                       </p>
@@ -230,6 +225,9 @@ export function DashboardAnalyticsView() {
                         style={{ width: `${item.widthPct}%` }}
                       />
                     </div>
+                    <p className="text-xs tabular-nums text-muted-foreground">
+                      {item.pctOfGross}%
+                    </p>
                   </div>
                 );
               })}
