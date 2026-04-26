@@ -20,7 +20,7 @@ export function ActionsView({ displayName }: ActionsViewProps) {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    void ensureLoaded();
+    void ensureLoaded().catch(() => {});
   }, [ensureLoaded]);
 
   const fetchActions = useCallback(async () => {

@@ -117,7 +117,7 @@ export function DashboardAnalyticsView() {
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
 
   useEffect(() => {
-    void ensureLoaded();
+    void ensureLoaded().catch(() => {});
   }, [ensureLoaded]);
 
   const loadAnalytics = useCallback(async () => {
