@@ -1,13 +1,11 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface SessionInput {
   clientName: string;
-  hours: string;
-  minutes: string;
   price: string;
-  sessionDateTime?: string;
+  sessionDate?: string; // "YYYY-MM-DD" — omit to keep auto-set today date
   inProgress?: boolean;
 }
 
@@ -17,6 +15,58 @@ const DELETED_TOAST_TEXT = "Session deleted successfully.";
 
 function getSessionDialog(page: Page) {
   return page.getByRole("dialog", { name: /log a session/i });
+}
+
+export function dateStringDaysAgo(days: number): string {
+  const date = new Date(Date.now() - days * 24 * 60 * 60_000);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+export async function pickSessionDate(
+  page: Page,
+  container: Locator,
+  dateStr: string, // "YYYY-MM-DD"
+): Promise<void> {
+  const [targetYear, targetMonth, targetDay] = dateStr.split("-").map(Number);
+
+  // Click the trigger button inside the "Session date" section
+  const trigger = container
+    .locator("div")
+    .filter({ has: container.locator("label", { hasText: "Session date" }) })
+    .locator('button[type="button"]')
+    .first();
+  await trigger.click();
+
+  // Calendar renders in a Radix portal outside the dialog
+  const calendar = page.locator('[data-slot="calendar"]');
+  await expect(calendar).toBeVisible({ timeout: 5000 });
+
+  // Navigate to the target month
+  for (let i = 0; i < 18; i++) {
+    const captionText = (await calendar.locator(".rdp-caption_label").textContent()) ?? "";
+    const match = captionText.trim().match(/(\w+)\s+(\d{4})/);
+    if (!match) break;
+    const currentMonth = new Date(`${match[1]} 1, 2000`).getMonth() + 1;
+    const currentYear = parseInt(match[2], 10);
+    if (currentYear === targetYear && currentMonth === targetMonth) break;
+    const isAfter =
+      currentYear > targetYear || (currentYear === targetYear && currentMonth > targetMonth);
+    await (isAfter
+      ? calendar.locator(".rdp-button_previous")
+      : calendar.locator(".rdp-button_next")
+    ).click();
+  }
+
+  // Click the target day (first enabled button matching the day number)
+  await calendar
+    .locator("button[data-day]:not([disabled])")
+    .filter({ hasText: new RegExp(`^${targetDay}$`) })
+    .first()
+    .click();
 }
 
 export async function openAddSessionModal(page: Page): Promise<void> {
@@ -30,17 +80,16 @@ export async function openAddSessionModal(page: Page): Promise<void> {
 
 export async function fillSessionFields(
   page: Page,
-  { clientName, hours, minutes, price, sessionDateTime, inProgress }: SessionInput,
+  { clientName, price, sessionDate, inProgress }: SessionInput,
 ): Promise<void> {
-  await page.getByLabel("Client (type to search existing or create new)").fill(clientName);
-  await page.getByLabel("Hours").fill(hours);
-  await page.getByLabel("Minutes").fill(minutes);
-  if (sessionDateTime) {
-    await page.getByLabel("Session date and time").fill(sessionDateTime);
+  const dialog = getSessionDialog(page);
+  await dialog.getByLabel("Client (type to search existing or create new)").fill(clientName);
+  if (sessionDate) {
+    await pickSessionDate(page, dialog, sessionDate);
   }
-  await page.getByLabel("Price").fill(price);
+  await dialog.getByPlaceholder("e.g. 12.50").fill(price);
   if (inProgress !== undefined) {
-    const checkbox = page.getByLabel("Follow-up session needed");
+    const checkbox = dialog.getByLabel("Follow-up session needed");
     const isChecked = await checkbox.isChecked();
     if (inProgress !== isChecked) {
       await checkbox.click();
@@ -126,10 +175,8 @@ export async function editSessionFromSessionsPage(
   page: Page,
   input: {
     clientName: string;
-    hours: string;
-    minutes: string;
     price: string;
-    sessionDateTime: string;
+    sessionDate?: string;
   },
 ): Promise<void> {
   const row = page.locator("tbody tr", { hasText: input.clientName }).first();
@@ -141,10 +188,10 @@ export async function editSessionFromSessionsPage(
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel("Client")).toBeDisabled();
 
-  await dialog.getByLabel("Hours").fill(input.hours);
-  await dialog.getByLabel("Minutes").fill(input.minutes);
-  await dialog.getByLabel("Session date and time").fill(input.sessionDateTime);
-  await dialog.getByLabel("Price").fill(input.price);
+  if (input.sessionDate) {
+    await pickSessionDate(page, dialog, input.sessionDate);
+  }
+  await dialog.getByPlaceholder("e.g. 12.50").fill(input.price);
   await dialog.getByRole("button", { name: /^confirm$/i }).click();
 
   await expect(page.getByRole("status")).toContainText(UPDATED_TOAST_TEXT);

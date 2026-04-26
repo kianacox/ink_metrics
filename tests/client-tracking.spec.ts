@@ -140,8 +140,6 @@ test("delete button is disabled for clients linked to sessions", async ({ page }
   // Create a session (with a new client) from the dashboard
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100",
   });
 
@@ -177,8 +175,6 @@ test("top client banner shows the current calendar month, not a rolling 30-day l
   const clientName = uniqueClientName("top-client-month");
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "150",
   });
 
