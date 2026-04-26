@@ -138,20 +138,14 @@ test("average profit card shows correct computed value for known sessions", asyn
   // Average = trunc(45000 / 3) = 15000 minor = £150.00
   await createSessionWithNewClient(page, {
     clientName: "Avg Client A",
-    hours: "1",
-    minutes: "30",
     price: "150.00",
   });
   await createSessionWithExistingClient(page, {
     clientName: "Avg Client A",
-    hours: "2",
-    minutes: "0",
     price: "200.00",
   });
   await createSessionWithNewClient(page, {
     clientName: "Avg Client B",
-    hours: "1",
-    minutes: "0",
     price: "100.00",
   });
 
@@ -189,20 +183,14 @@ test("average profit card reflects truncated integer division for non-round valu
   // £300 + £400 + £300 = £1000 gross; trunc(100000 / 3) = 33333 minor = £333.33
   await createSessionWithNewClient(page, {
     clientName: "Trunc Client A",
-    hours: "3",
-    minutes: "0",
     price: "300.00",
   });
   await createSessionWithExistingClient(page, {
     clientName: "Trunc Client A",
-    hours: "4",
-    minutes: "0",
     price: "400.00",
   });
   await createSessionWithNewClient(page, {
     clientName: "Trunc Client B",
-    hours: "3",
-    minutes: "0",
     price: "300.00",
   });
 
@@ -290,8 +278,6 @@ test("expenses by category card shows friendly empty state when sessions exist b
 
   await createSessionWithNewClient(page, {
     clientName: "Solo Client",
-    hours: "1",
-    minutes: "30",
     price: "200.00",
   });
 

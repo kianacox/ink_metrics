@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import {
   DEFAULT_MAILBOX_DOMAIN,
   getSignUpPassword,
@@ -7,6 +6,7 @@ import {
 import { signUpAndConfirmUserOnly, completeProfileSetupMinimal } from "./auth-helpers";
 import {
   createSessionWithNewClient,
+  dateStringDaysAgo,
   goToSessionsPage,
   expectSessionVisible,
 } from "./session-helpers";
@@ -71,18 +71,12 @@ test("allows backdated session up to six months after profile setup", async ({ p
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
 
-  const sessionDateTime = formatDateTimeLocalForTimezone(
-    new Date(Date.now() - 120 * 24 * 60 * 60_000),
-    "Europe/London",
-  );
   const clientName = `backdate-client-${Date.now()}`;
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
-    sessionDateTime,
+    sessionDate: dateStringDaysAgo(120),
   });
 
   await goToSessionsPage(page);

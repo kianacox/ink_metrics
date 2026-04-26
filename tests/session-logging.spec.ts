@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { formatDateTimeLocalForTimezone } from "@/lib/timezones";
 import { loginAsSeededUser } from "./auth-helpers";
 import {
   cancelDeleteSession,
   confirmDeleteSession,
   createSessionWithExistingClient,
   createSessionWithNewClient,
+  dateStringDaysAgo,
   editSessionFromSessionsPage,
   expectSessionNotVisible,
   expectSessionVisible,
@@ -18,16 +18,6 @@ function uniqueClientName(prefix: string): string {
   return `${prefix}-${Date.now()}`;
 }
 
-function sessionDateTimeMinutesAgo(minutes: number): string {
-  const timestamp = Date.now() - minutes * 60_000;
-  return formatDateTimeLocalForTimezone(new Date(timestamp), "Europe/London");
-}
-
-function sessionDateTimeDaysAgo(days: number): string {
-  const timestamp = Date.now() - days * 24 * 60 * 60_000;
-  return formatDateTimeLocalForTimezone(new Date(timestamp), "Europe/London");
-}
-
 test.beforeEach(async ({ page }) => {
   await loginAsSeededUser(page, "sessionComplete");
   await expect(page).toHaveURL(/\/dashboard/);
@@ -38,8 +28,6 @@ test("creates a session from dashboard", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "30",
     price: "125.50",
   });
 });
@@ -49,10 +37,8 @@ test("creates a session backdated within six months", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "5",
     price: "130.00",
-    sessionDateTime: sessionDateTimeDaysAgo(120),
+    sessionDate: dateStringDaysAgo(120),
   });
 
   await goToSessionsPage(page);
@@ -69,8 +55,6 @@ test("creates a new client while creating a session", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "0",
-    minutes: "45",
     price: "80.00",
   });
 
@@ -86,15 +70,11 @@ test("selects an existing client when creating a session", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
   });
 
   await createSessionWithExistingClient(page, {
     clientName,
-    hours: "2",
-    minutes: "15",
     price: "220.00",
   });
 });
@@ -104,8 +84,6 @@ test("views a created session on the sessions page", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "2",
-    minutes: "30",
     price: "340.50",
   });
 
@@ -121,18 +99,13 @@ test("edits a session from the sessions page", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "30",
     price: "150.00",
   });
 
   await goToSessionsPage(page);
   await editSessionFromSessionsPage(page, {
     clientName,
-    hours: "2",
-    minutes: "0",
     price: "220.00",
-    sessionDateTime: sessionDateTimeMinutesAgo(5),
   });
   await expectSessionVisible(page, {
     clientName,
@@ -145,8 +118,6 @@ test("cancels delete from the sessions page", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "10",
     price: "95.00",
   });
 
@@ -164,8 +135,6 @@ test("deletes a session from the sessions page", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "0",
-    minutes: "55",
     price: "110.00",
   });
 
@@ -181,8 +150,6 @@ test("shows mobile session card actions for edit and delete", async ({ page }) =
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "20",
     price: "140.00",
   });
 
@@ -207,8 +174,6 @@ test("saves session with follow-up session checkbox checked", async ({ page }) =
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
     inProgress: true,
   });
@@ -219,8 +184,6 @@ test("follow-up checkbox resets to unchecked after saving a session", async ({ p
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
     inProgress: true,
   });
@@ -235,8 +198,6 @@ test("edit modal shows follow-up checkbox pre-populated from saved value", async
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
     inProgress: true,
   });
@@ -255,8 +216,6 @@ test("edit modal can uncheck follow-up and save", async ({ page }) => {
 
   await createSessionWithNewClient(page, {
     clientName,
-    hours: "1",
-    minutes: "0",
     price: "100.00",
     inProgress: true,
   });
@@ -276,7 +235,7 @@ test("keeps create session modal within mobile viewport bounds", async ({ page }
   await page.setViewportSize({ width: 390, height: 844 });
   await openAddSessionModal(page);
   await expect(page.getByText("You can backdate sessions by up to 6 months.")).toBeVisible();
-  await expect(page.getByLabel("Session date and time")).toBeVisible();
+  await expect(page.getByText("Session date")).toBeVisible();
 
   const viewportMetrics = await page.evaluate(() => {
     return {
