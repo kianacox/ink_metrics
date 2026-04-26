@@ -33,13 +33,7 @@ export async function pickSessionDate(
 ): Promise<void> {
   const [targetYear, targetMonth, targetDay] = dateStr.split("-").map(Number);
 
-  // Click the trigger button inside the "Session date" section
-  const trigger = container
-    .locator("div")
-    .filter({ has: container.locator("label", { hasText: "Session date" }) })
-    .locator('button[type="button"]')
-    .first();
-  await trigger.click();
+  await container.getByTestId("session-date-picker").click();
 
   // Calendar renders in a Radix portal outside the dialog
   const calendar = page.locator('[data-slot="calendar"]');
