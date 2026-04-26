@@ -22,11 +22,13 @@ const TAKE_HOME_COMPARISON_ITEMS = [
     key: "paidToStudio" as const,
     label: "Paid to studio",
     colorClassName: "bg-chart-4",
+    isDeduction: true,
   },
   {
     key: "totalExpenses" as const,
     label: "Expenses",
     colorClassName: "bg-chart-5",
+    isDeduction: true,
   },
   {
     key: "net" as const,
@@ -42,6 +44,7 @@ interface TakeHomeComparisonItem {
   colorClassName: string;
   widthPct: number;
   pctOfGross: number;
+  isDeduction?: boolean;
 }
 
 function buildTakeHomeComparisonItems(
@@ -212,7 +215,7 @@ export function DashboardAnalyticsView() {
                         {item.label}
                       </p>
                       <p className="font-semibold">
-                        {formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
+                        {item.isDeduction ? "−" : ""}{formatMinorAsCurrency(item.value, effectiveCurrencyCode)}
                       </p>
                     </div>
                     <div
