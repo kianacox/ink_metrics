@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { AnimatedCard } from "@/components/ui/animated-card";
-import { CardContent, CardDescription, CardHeader, CardTitle, LoadingState } from "@/components/ui";
+import { CardContent, CardDescription, CardHeader, CardTitle, Skeleton } from "@/components/ui";
 
 type AnalyticsCardState = "loading" | "empty" | "ready";
 
@@ -34,7 +34,11 @@ export function AnalyticsCard({
       </CardHeader>
       <CardContent>
         {state === "loading" ? (
-          <LoadingState message="Loading metric…" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         ) : null}
         {state === "empty" ? (
           <p className="text-sm text-muted-foreground">No data yet for this month.</p>
