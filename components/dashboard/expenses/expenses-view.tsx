@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, ErrorState, Skeleton } from "@/components/ui";
+import { Button, ErrorState } from "@/components/ui";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
 import type { ExpenseListItem } from "@/lib/expenses/models";
@@ -95,7 +95,7 @@ export function ExpensesView() {
         <p className="text-sm text-muted-foreground">
           {rangeTotalLabel}:{" "}
           <span className="font-semibold text-foreground">
-            {isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : formatExpenseAmount(rangeTotalMinor, defaultCurrency)}
+            {isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : formatExpenseAmount(rangeTotalMinor, defaultCurrency)}
           </span>
         </p>
       </div>
@@ -113,7 +113,7 @@ export function ExpensesView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {rangeTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : expenses.length}</span>
+          <span className="font-semibold">{isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : expenses.length}</span>
         </p>
         <div className="mt-4">
           <DateRangeDropdown value={dateRange} onChange={setDateRange} />
