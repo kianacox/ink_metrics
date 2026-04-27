@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
 import { ExpensesByCategoryCardContent } from "@/components/dashboard/analytics/expenses-by-category-card";
-import { Button, ErrorState } from "@/components/ui";
+import { Button, ErrorState, Skeleton } from "@/components/ui";
 import {
   formatMinorAsCurrency,
   formatPercentage,
@@ -183,7 +183,7 @@ export function DashboardAnalyticsView() {
     <section className="flex flex-col gap-4">
       <div>
         {isLoading ? (
-          <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+          <Skeleton className="h-8 w-48" />
         ) : (
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {(analytics?.monthLabel ?? "This month")} Performance
