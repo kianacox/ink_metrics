@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   ErrorState,
   Input,
-  LoadingState,
+  Skeleton,
 } from "@/components/ui";
 import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
@@ -18,6 +18,7 @@ import type { SessionDateRangePreset } from "@/lib/timezones";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { DateRangeDropdown, DATE_RANGE_OPTIONS } from "@/components/dashboard/shared/date-range-dropdown";
 import { ClientsCards } from "./clients-cards";
+import { ClientsSkeleton } from "./clients-skeleton";
 import { ClientsTable } from "./clients-table";
 import { ClientCreateModal } from "./client-create-modal";
 import { ClientEditModal } from "./client-edit-modal";
@@ -140,7 +141,7 @@ export function ClientsView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? "..." : clients.length}</span>
+          <span className="font-semibold">{isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : clients.length}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">
@@ -174,7 +175,7 @@ export function ClientsView() {
         </div>
       </div>
 
-      {isLoading ? <LoadingState message="Loading clients…" /> : null}
+      {isLoading ? <ClientsSkeleton /> : null}
 
       {!isLoading && hasFatalError ? (
         <ErrorState
