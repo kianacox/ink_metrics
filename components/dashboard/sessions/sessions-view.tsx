@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
   ErrorState,
   Input,
-  Skeleton,
 } from "@/components/ui";
 import { SessionsSkeleton } from "@/components/dashboard/sessions/sessions-skeleton";
 import { useSessions } from "@/components/dashboard/sessions/hooks/use-sessions";
@@ -120,7 +119,7 @@ export function SessionsView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : totalCount}</span>
+          <span className="font-semibold">{isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : totalCount}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">

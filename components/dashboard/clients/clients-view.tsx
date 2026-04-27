@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
   ErrorState,
   Input,
-  Skeleton,
 } from "@/components/ui";
 import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
@@ -141,7 +140,7 @@ export function ClientsView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : clients.length}</span>
+          <span className="font-semibold">{isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : clients.length}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">
