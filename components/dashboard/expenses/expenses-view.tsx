@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, ErrorState, LoadingState } from "@/components/ui";
+import { Button, ErrorState, Skeleton } from "@/components/ui";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useExpenses } from "@/components/dashboard/expenses/hooks/use-expenses";
 import type { ExpenseListItem } from "@/lib/expenses/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { DateRangeDropdown, DATE_RANGE_OPTIONS } from "@/components/dashboard/shared/date-range-dropdown";
+import { ExpensesSkeleton } from "./expenses-skeleton";
 import { ExpensesCards } from "./expenses-cards";
 import { ExpensesTable } from "./expenses-table";
 import { ExpenseCategoryFilterPills } from "./expense-category-filter-pills";
@@ -94,7 +95,7 @@ export function ExpensesView() {
         <p className="text-sm text-muted-foreground">
           {rangeTotalLabel}:{" "}
           <span className="font-semibold text-foreground">
-            {isLoading ? "…" : formatExpenseAmount(rangeTotalMinor, defaultCurrency)}
+            {isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : formatExpenseAmount(rangeTotalMinor, defaultCurrency)}
           </span>
         </p>
       </div>
@@ -112,14 +113,14 @@ export function ExpensesView() {
         </p>
         <p className="mt-3 text-sm text-foreground">
           {rangeTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? "..." : expenses.length}</span>
+          <span className="font-semibold">{isLoading ? <Skeleton className="inline-block h-4 w-16 align-middle" /> : expenses.length}</span>
         </p>
         <div className="mt-4">
           <DateRangeDropdown value={dateRange} onChange={setDateRange} />
         </div>
       </div>
 
-      {isLoading ? <LoadingState message="Loading expenses…" /> : null}
+      {isLoading ? <ExpensesSkeleton /> : null}
 
       {!isLoading && hasFatalError ? (
         <ErrorState
