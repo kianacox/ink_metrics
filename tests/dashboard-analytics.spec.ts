@@ -49,7 +49,7 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeTitle).toBeVisible();
   const takeHomeCard = takeHomeTitle.locator("xpath=ancestor::div[contains(@class,'h-full')]").first();
 
-  await expect(takeHomeCard.getByText("Gross", { exact: true })).toBeVisible();
+  await expect(takeHomeCard.getByText("Gross Income", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("Paid to studio", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("Expenses", { exact: true })).toBeVisible();
   await expect(takeHomeCard.getByText("Total Take-Home", { exact: true })).toBeVisible();
@@ -59,7 +59,7 @@ test("renders take-home summary values and comparative bars for seeded data", as
   await expect(takeHomeCard.getByText("£62.00")).toBeVisible();
   await expect(takeHomeCard.getByText("£1,428.00")).toBeVisible();
 
-  await expect(takeHomeCard.getByLabel("Gross comparison bar")).toBeVisible();
+  await expect(takeHomeCard.getByLabel("Gross Income comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Paid to studio comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Expenses comparison bar")).toBeVisible();
   await expect(takeHomeCard.getByLabel("Total Take-Home comparison bar")).toBeVisible();
