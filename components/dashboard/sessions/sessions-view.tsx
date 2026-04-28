@@ -34,14 +34,6 @@ const DEFAULT_SORT_FIELD: SessionSortField = "date";
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
 const SEARCH_DEBOUNCE_DELAY_MS = 300;
 
-const TOTAL_LABEL_BY_DATE_RANGE: Record<SessionDateRangePreset, string> = {
-  thisMonth: "Sessions this month",
-  last30Days: "Sessions in the last 30 days",
-  last90Days: "Sessions in the last 90 days",
-  yearToDate: "Sessions year to date",
-  allTime: "Sessions all time",
-};
-
 export function SessionsView() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +45,6 @@ export function SessionsView() {
   const [createOpen, setCreateOpen] = useState(false);
   const {
     sessions,
-    totalCount,
     defaultCurrency,
     reportingTimezone,
     isLoading,
@@ -95,7 +86,6 @@ export function SessionsView() {
   const selectedDateRangeLabel =
     DATE_RANGE_OPTIONS.find((option) => option.value === dateRange)?.label ?? "Last 90 days";
   const selectedDateRangeLabelLower = selectedDateRangeLabel.toLowerCase();
-  const selectedTotalLabel = TOTAL_LABEL_BY_DATE_RANGE[dateRange] ?? "Sessions in this range";
   const hasSessions = sessions.length > 0;
   const hasFatalError = Boolean(error) && !hasSessions;
 
@@ -116,10 +106,6 @@ export function SessionsView() {
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Search by client and sort by date or session profit (descending).
-        </p>
-        <p className="mt-3 text-sm text-foreground">
-          {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : totalCount}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">
