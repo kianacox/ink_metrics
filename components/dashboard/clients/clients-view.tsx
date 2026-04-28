@@ -11,7 +11,6 @@ import {
   Input,
 } from "@/components/ui";
 import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
-import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
@@ -31,14 +30,6 @@ const SORT_FIELDS: Array<{ label: string; value: ClientSortField }> = [
 const DEFAULT_SORT_FIELD: ClientSortField = "session_count";
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
 const SEARCH_DEBOUNCE_DELAY_MS = 300;
-
-const TOTAL_LABEL_BY_DATE_RANGE: Record<SessionDateRangePreset, string> = {
-  thisMonth: "Clients this month",
-  last30Days: "Clients in the last 30 days",
-  last90Days: "Clients in the last 90 days",
-  yearToDate: "Clients year to date",
-  allTime: "Clients all time",
-};
 
 const DATE_RANGE_SHORT_LABEL: Record<SessionDateRangePreset, string> = {
   thisMonth: "this month",
@@ -61,8 +52,6 @@ export function ClientsView() {
   const {
     clients,
     defaultCurrency,
-    reportingTimezone,
-    topClientThisMonth,
     isLoading,
     isLoadingMore,
     hasNextPage,
@@ -70,12 +59,6 @@ export function ClientsView() {
     reload,
     loadMore,
   } = useClients({ searchQuery, sortField, dateRange });
-
-  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-    timeZone: reportingTimezone,
-  });
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -97,7 +80,6 @@ export function ClientsView() {
   const selectedDateRangeLabel =
     DATE_RANGE_OPTIONS.find((o) => o.value === dateRange)?.label ?? "Last 90 days";
   const dateRangeShortLabel = DATE_RANGE_SHORT_LABEL[dateRange] ?? "range";
-  const selectedTotalLabel = TOTAL_LABEL_BY_DATE_RANGE[dateRange] ?? "Clients in this range";
   const hasClients = clients.length > 0;
   const hasFatalError = Boolean(error) && !hasClients;
 
@@ -113,34 +95,12 @@ export function ClientsView() {
         </div>
       ) : null}
 
-      {topClientThisMonth ? (
-        <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
-          <p className="text-sm text-muted-foreground">
-            Top client {currentMonthLabel}:{" "}
-            <span className="font-semibold text-foreground">{topClientThisMonth.name}</span>
-            {topClientThisMonth.rangeTotalValueMinor > 0 ? (
-              <>
-                {" "}
-                &mdash;{" "}
-                <span className="font-semibold text-foreground">
-                  {formatSessionProfit(topClientThisMonth.rangeTotalValueMinor, defaultCurrency)}
-                </span>
-              </>
-            ) : null}
-          </p>
-        </div>
-      ) : null}
-
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-foreground sm:text-lg">
           All clients
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Search by name and sort by sessions or total value (descending).
-        </p>
-        <p className="mt-3 text-sm text-foreground">
-          {selectedTotalLabel}:{" "}
-          <span className="font-semibold">{isLoading ? <span className="inline-block h-4 w-16 animate-pulse rounded-md bg-muted align-middle" /> : clients.length}</span>
         </p>
 
         <div className="mt-4 grid gap-3 sm:mt-5">

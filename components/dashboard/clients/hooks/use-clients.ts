@@ -17,7 +17,6 @@ interface UseClientsResult {
   clients: ClientListItem[];
   defaultCurrency: string;
   reportingTimezone: string;
-  topClientThisMonth: ClientListItem | null;
   isLoading: boolean;
   isLoadingMore: boolean;
   hasNextPage: boolean;
@@ -48,7 +47,6 @@ export function useClients({
   const [clients, setClients] = useState<ClientListItem[]>([]);
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [reportingTimezone, setReportingTimezone] = useState(getDefaultReportingTimezone());
-  const [topClientThisMonth, setTopClientThisMonth] = useState<ClientListItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -128,35 +126,16 @@ export function useClients({
     [dateRange, pageSize, searchQuery, sortField],
   );
 
-  const loadTopClientThisMonth = useCallback(async (tz: string) => {
-    const params = new URLSearchParams({
-      dateRange: "thisMonth",
-      sort: "total_value",
-      limit: "1",
-      search: "",
-      tz,
-    });
-    const res = await fetch(`/api/clients?${params.toString()}`);
-    if (!res.ok) {
-      return;
-    }
-    const data = (await res.json()) as ClientsApiResponse;
-    setTopClientThisMonth(data.data[0] ?? null);
-  }, []);
-
   const reload = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const prefs = await loadPreferences();
-      await Promise.all([
-        loadPage({
-          cursor: null,
-          append: false,
-          reportingTimezoneOverride: prefs.reportingTimezone,
-        }),
-        loadTopClientThisMonth(prefs.reportingTimezone),
-      ]);
+      await loadPage({
+        cursor: null,
+        append: false,
+        reportingTimezoneOverride: prefs.reportingTimezone,
+      });
     } catch (loadError) {
       setError(
         loadError instanceof Error &&
@@ -170,7 +149,7 @@ export function useClients({
     } finally {
       setIsLoading(false);
     }
-  }, [loadPage, loadPreferences, loadTopClientThisMonth]);
+  }, [loadPage, loadPreferences]);
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || isLoading || !hasNextPage) {
@@ -195,7 +174,6 @@ export function useClients({
     clients,
     defaultCurrency,
     reportingTimezone,
-    topClientThisMonth,
     isLoading,
     isLoadingMore,
     hasNextPage,
