@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import type { ClientListItem } from "@/lib/clients/models";
@@ -9,7 +10,7 @@ interface ClientEditModalProps {
   open: boolean;
   client: ClientListItem | null;
   onClose: () => void;
-  onUpdated: () => Promise<void>;
+  onUpdated: () => void;
 }
 
 export function ClientEditModal({
@@ -19,6 +20,7 @@ export function ClientEditModal({
   onUpdated,
 }: ClientEditModalProps) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +63,8 @@ export function ClientEditModal({
         return;
       }
 
-      await onUpdated();
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      onUpdated();
       onClose();
     } catch {
       setError("Could not update client.");

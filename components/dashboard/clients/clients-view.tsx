@@ -56,7 +56,7 @@ export function ClientsView() {
     isLoadingMore,
     hasNextPage,
     error,
-    reload,
+    refetch,
     loadMore,
   } = useClients({ searchQuery, sortField, dateRange });
 
@@ -139,7 +139,7 @@ export function ClientsView() {
       {!isLoading && hasFatalError ? (
         <ErrorState
           message={error ?? "Could not load clients."}
-          onRetry={() => void reload()}
+          onRetry={() => refetch()}
         />
       ) : null}
 
@@ -196,8 +196,7 @@ export function ClientsView() {
       <ClientCreateModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreated={async () => {
-          await reload();
+        onCreated={() => {
           setToastMessage("Client created successfully.");
         }}
       />
@@ -205,8 +204,7 @@ export function ClientsView() {
         open={editingClient !== null}
         client={editingClient}
         onClose={() => setEditingClient(null)}
-        onUpdated={async () => {
-          await reload();
+        onUpdated={() => {
           setToastMessage("Client updated successfully.");
         }}
       />
@@ -214,8 +212,7 @@ export function ClientsView() {
         open={deletingClient !== null}
         client={deletingClient}
         onClose={() => setDeletingClient(null)}
-        onDeleted={async () => {
-          await reload();
+        onDeleted={() => {
           setToastMessage("Client deleted successfully.");
         }}
       />

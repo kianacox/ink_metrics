@@ -1,17 +1,19 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 
 interface ClientCreateModalProps {
   open: boolean;
   onClose: () => void;
-  onCreated: () => Promise<void>;
+  onCreated: () => void;
 }
 
 export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModalProps) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +55,8 @@ export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModa
       }
 
       reset();
-      await onCreated();
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      onCreated();
       onClose();
     } catch {
       setError("Could not create client.");
