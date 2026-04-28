@@ -29,6 +29,7 @@ interface TakeHomeSummaryRpcRow {
 interface RetentionRpcRow {
   unique_clients_total: number | string | null;
   clients_with_2plus_sessions_total: number | string | null;
+  total_sessions: number | string | null;
 }
 
 interface ExpensesByCategoryRpcRow {
@@ -191,6 +192,7 @@ export async function fetchDashboardAnalytics({
         numerator: retentionNumerator,
         denominator: retentionDenominator,
       }),
+      totalSessions: toSafeInt(retention?.total_sessions),
     },
     averageProfitPerSession: {
       sessionCount,

@@ -28,6 +28,7 @@ describe("buildEmptyAnalyticsResponse", () => {
       numerator: 0,
       denominator: 0,
       rate: 0,
+      totalSessions: 0,
     });
     expect(result.averageProfitPerSession).toEqual({
       valueMinor: 0,

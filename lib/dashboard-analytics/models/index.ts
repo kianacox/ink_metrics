@@ -15,6 +15,7 @@ export interface RetentionStat {
   numerator: number;
   denominator: number;
   rate: number;
+  totalSessions: number;
 }
 
 export interface AverageProfitPerSessionStat {
