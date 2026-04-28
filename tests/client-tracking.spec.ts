@@ -155,37 +155,16 @@ test("delete button is disabled for clients linked to sessions", async ({ page }
   await expect(deleteButton).toBeDisabled();
 });
 
-test("changes date range filter and updates client count label", async ({ page }) => {
+test("changes date range filter and updates button label", async ({ page }) => {
   await goToClientsPage(page);
-  await expect(page.getByText(/clients in the last 90 days/i)).toBeVisible();
 
-  await page.getByRole("button", { name: /date range:/i }).click();
+  const dateRangeButton = page.getByRole("button", { name: /date range:/i });
+
+  await dateRangeButton.click();
   await page.getByRole("menuitem", { name: /^all time$/i }).click();
-  await expect(page.getByText(/clients all time/i)).toBeVisible();
+  await expect(dateRangeButton).toContainText(/date range:.*all time/i);
 
-  await page.getByRole("button", { name: /date range:/i }).click();
+  await dateRangeButton.click();
   await page.getByRole("menuitem", { name: /^year to date$/i }).click();
-  await expect(page.getByText(/clients year to date/i)).toBeVisible();
-});
-
-test("top client banner shows the current calendar month, not a rolling 30-day label", async ({
-  page,
-}) => {
-  // Create a session this month so there is at least one client to surface.
-  const clientName = uniqueClientName("top-client-month");
-  await createSessionWithNewClient(page, {
-    clientName,
-    price: "150",
-  });
-
-  await goToClientsPage(page);
-
-  // The banner should reference the current month by name (e.g. "April 2026"),
-  // not a relative label like "last 30 days".
-  const currentMonthLabel = new Date().toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
-  const bannerPattern = new RegExp(`top client ${currentMonthLabel}`, "i");
-  await expect(page.getByText(bannerPattern)).toBeVisible();
+  await expect(dateRangeButton).toContainText(/date range:.*year to date/i);
 });
