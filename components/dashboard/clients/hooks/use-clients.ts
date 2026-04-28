@@ -4,7 +4,7 @@ import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type { SessionDateRangePreset } from "@/lib/timezones";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { usePreferences } from "@/lib/preferences/use-preferences";
 
 interface UseClientsParams {
@@ -22,8 +22,8 @@ interface UseClientsResult {
   isLoadingMore: boolean;
   hasNextPage: boolean;
   error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
+  refetch: () => void;
+  loadMore: () => void;
 }
 
 interface ClientsApiResponse {
@@ -34,125 +34,96 @@ interface ClientsApiResponse {
 
 const DEFAULT_PAGE_SIZE = 25;
 
+async function fetchClientsPage(
+  pageParam: string | null,
+  searchQuery: string,
+  sortField: ClientSortField,
+  dateRange: SessionDateRangePreset,
+  pageSize: number,
+  reportingTimezone: string,
+): Promise<ClientsApiResponse> {
+  const params = new URLSearchParams({
+    search: searchQuery,
+    sort: sortField,
+    dateRange,
+    limit: String(pageSize),
+    tz: reportingTimezone,
+  });
+  if (pageParam) {
+    params.set("cursor", pageParam);
+  }
+
+  const res = await fetch(`/api/clients?${params.toString()}`);
+  if (!res.ok) {
+    const body = (await res.json()) as { error?: string };
+    throw new Error(body.error ?? "Could not load clients.");
+  }
+  return (await res.json()) as ClientsApiResponse;
+}
+
 export function useClients({
   searchQuery,
   sortField,
   dateRange,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseClientsParams): UseClientsResult {
-  const { data: preferences } = usePreferences();
+  const { data: preferences, isLoading: isPreferencesLoading } = usePreferences();
 
-  const [clients, setClients] = useState<ClientListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const reportingTimezone = preferences?.reportingTimezone ?? getDefaultReportingTimezone();
 
-  const requestIdRef = useRef(0);
-  const reportingTimezoneRef = useRef(getDefaultReportingTimezone());
-
-  useEffect(() => {
-    if (preferences?.reportingTimezone) {
-      reportingTimezoneRef.current = preferences.reportingTimezone;
-    }
-  }, [preferences?.reportingTimezone]);
-
-  const loadPage = useCallback(
-    async ({
-      cursor,
-      append,
-      reportingTimezoneOverride,
-    }: {
-      cursor: string | null;
-      append: boolean;
-      reportingTimezoneOverride?: string;
-    }) => {
-      const currentRequestId = ++requestIdRef.current;
-      const effectiveTimezone = reportingTimezoneOverride ?? reportingTimezoneRef.current;
-
-      const params = new URLSearchParams({
-        search: searchQuery,
-        sort: sortField,
+  const {
+    data,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage: infiniteHasNextPage,
+    error: queryError,
+    refetch,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["clients", { searchQuery, sortField, dateRange, pageSize }],
+    queryFn: ({ pageParam }) =>
+      fetchClientsPage(
+        pageParam,
+        searchQuery,
+        sortField,
         dateRange,
-        limit: String(pageSize),
-        tz: effectiveTimezone,
-      });
-      if (cursor) {
-        params.set("cursor", cursor);
-      }
+        pageSize,
+        reportingTimezone,
+      ),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: null as string | null,
+    enabled: !!preferences,
+  });
 
-      const res = await fetch(`/api/clients?${params.toString()}`);
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? "Could not load clients.");
-      }
+  const clients = data?.pages.flatMap((page) => page.data) ?? [];
 
-      if (requestIdRef.current !== currentRequestId) {
-        return;
-      }
+  const isLoading = isPreferencesLoading || (isFetching && !isFetchingNextPage);
+  const isLoadingMore = isFetchingNextPage;
 
-      const data = (await res.json()) as ClientsApiResponse;
-      setClients((prev) => (append ? [...prev, ...data.data] : data.data));
-      setHasNextPage(data.hasNextPage);
-      setNextCursor(data.nextCursor);
-    },
-    [dateRange, pageSize, searchQuery, sortField],
-  );
+  let error: string | null = null;
+  if (queryError) {
+    const message = queryError instanceof Error ? queryError.message : "";
+    error =
+      message === "Could not compute date range boundaries."
+        ? "Could not load clients for the selected reporting timezone. Please check your profile timezone and try again."
+        : "Could not load clients. Please try again.";
+  }
 
-  const reload = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await loadPage({
-        cursor: null,
-        append: false,
-        reportingTimezoneOverride: preferences?.reportingTimezone,
-      });
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error &&
-          loadError.message === "Could not compute date range boundaries."
-          ? "Could not load clients for the selected reporting timezone. Please check your profile timezone and try again."
-          : "Could not load clients. Please try again.",
-      );
-      setClients([]);
-      setHasNextPage(false);
-      setNextCursor(null);
-    } finally {
-      setIsLoading(false);
+  const loadMore = () => {
+    if (!isFetchingNextPage && infiniteHasNextPage) {
+      void fetchNextPage();
     }
-  }, [loadPage, preferences?.reportingTimezone]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || isLoading || !hasNextPage) {
-      return;
-    }
-    setIsLoadingMore(true);
-    setError(null);
-    try {
-      await loadPage({ cursor: nextCursor, append: true });
-    } catch {
-      setError("Could not load more clients. Please try again.");
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
-
-  useEffect(() => {
-    if (!preferences) return;
-    void reload();
-  }, [reload, preferences]);
+  };
 
   return {
     clients,
     defaultCurrency: preferences?.defaultCurrency ?? DEFAULT_CURRENCY,
-    reportingTimezone: preferences?.reportingTimezone ?? getDefaultReportingTimezone(),
+    reportingTimezone,
     isLoading,
     isLoadingMore,
-    hasNextPage,
+    hasNextPage: infiniteHasNextPage ?? false,
     error,
-    reload,
+    refetch,
     loadMore,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { ClientListItem } from "@/lib/clients/models";
@@ -9,7 +10,7 @@ interface ClientDeleteModalProps {
   open: boolean;
   client: ClientListItem | null;
   onClose: () => void;
-  onDeleted: () => Promise<void>;
+  onDeleted: () => void;
 }
 
 export function ClientDeleteModal({
@@ -18,6 +19,7 @@ export function ClientDeleteModal({
   onClose,
   onDeleted,
 }: ClientDeleteModalProps) {
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +39,8 @@ export function ClientDeleteModal({
         setError(body.error ?? "Could not delete client.");
         return;
       }
-      await onDeleted();
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      onDeleted();
       onClose();
     } catch {
       setError("Could not delete client.");
