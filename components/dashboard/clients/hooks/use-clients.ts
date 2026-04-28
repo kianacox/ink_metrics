@@ -5,6 +5,7 @@ import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePreferences } from "@/lib/preferences/use-preferences";
 
 interface UseClientsParams {
   searchQuery: string;
@@ -25,11 +26,6 @@ interface UseClientsResult {
   loadMore: () => Promise<void>;
 }
 
-interface PreferencesApiResponse {
-  defaultCurrency: string;
-  reportingTimezone: string;
-}
-
 interface ClientsApiResponse {
   data: ClientListItem[];
   nextCursor: string | null;
@@ -44,9 +40,9 @@ export function useClients({
   dateRange,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseClientsParams): UseClientsResult {
+  const { data: preferences } = usePreferences();
+
   const [clients, setClients] = useState<ClientListItem[]>([]);
-  const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
-  const [reportingTimezone, setReportingTimezone] = useState(getDefaultReportingTimezone());
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -55,34 +51,12 @@ export function useClients({
 
   const requestIdRef = useRef(0);
   const reportingTimezoneRef = useRef(getDefaultReportingTimezone());
-  const didLoadProfileRef = useRef(false);
-  const defaultCurrencyRef = useRef(DEFAULT_CURRENCY);
 
-  const loadPreferences = useCallback(async () => {
-    if (didLoadProfileRef.current) {
-      return {
-        reportingTimezone: reportingTimezoneRef.current,
-        defaultCurrency: defaultCurrencyRef.current,
-      };
+  useEffect(() => {
+    if (preferences?.reportingTimezone) {
+      reportingTimezoneRef.current = preferences.reportingTimezone;
     }
-
-    const res = await fetch("/api/preferences");
-    if (!res.ok) {
-      throw new Error("Could not load preferences.");
-    }
-
-    const data = (await res.json()) as PreferencesApiResponse;
-    const nextCurrency = data.defaultCurrency ?? DEFAULT_CURRENCY;
-    const nextTimezone = data.reportingTimezone ?? getDefaultReportingTimezone();
-
-    setDefaultCurrency(nextCurrency);
-    setReportingTimezone(nextTimezone);
-    defaultCurrencyRef.current = nextCurrency;
-    reportingTimezoneRef.current = nextTimezone;
-    didLoadProfileRef.current = true;
-
-    return { reportingTimezone: nextTimezone, defaultCurrency: nextCurrency };
-  }, []);
+  }, [preferences?.reportingTimezone]);
 
   const loadPage = useCallback(
     async ({
@@ -130,11 +104,10 @@ export function useClients({
     setIsLoading(true);
     setError(null);
     try {
-      const prefs = await loadPreferences();
       await loadPage({
         cursor: null,
         append: false,
-        reportingTimezoneOverride: prefs.reportingTimezone,
+        reportingTimezoneOverride: preferences?.reportingTimezone,
       });
     } catch (loadError) {
       setError(
@@ -149,7 +122,7 @@ export function useClients({
     } finally {
       setIsLoading(false);
     }
-  }, [loadPage, loadPreferences]);
+  }, [loadPage, preferences?.reportingTimezone]);
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || isLoading || !hasNextPage) {
@@ -167,13 +140,14 @@ export function useClients({
   }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
 
   useEffect(() => {
+    if (!preferences) return;
     void reload();
-  }, [reload]);
+  }, [reload, preferences]);
 
   return {
     clients,
-    defaultCurrency,
-    reportingTimezone,
+    defaultCurrency: preferences?.defaultCurrency ?? DEFAULT_CURRENCY,
+    reportingTimezone: preferences?.reportingTimezone ?? getDefaultReportingTimezone(),
     isLoading,
     isLoadingMore,
     hasNextPage,

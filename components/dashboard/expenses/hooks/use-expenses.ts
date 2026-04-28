@@ -9,11 +9,7 @@ import type { ExpenseListItem } from "@/lib/expenses/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface PreferencesApiResponse {
-  defaultCurrency: string;
-  reportingTimezone: string;
-}
+import { usePreferences } from "@/lib/preferences/use-preferences";
 
 const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
@@ -23,9 +19,10 @@ export function useExpenses({
   dateRange = DEFAULT_DATE_RANGE,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseExpensesParams): UseExpensesResult {
+  const { data: preferences } = usePreferences();
+
   const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
   const [rangeTotalMinor, setRangeTotalMinor] = useState(0);
-  const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -33,34 +30,13 @@ export function useExpenses({
   const [error, setError] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
-  const didLoadProfileRef = useRef(false);
-  const defaultCurrencyRef = useRef(DEFAULT_CURRENCY);
   const reportingTimezoneRef = useRef("UTC");
 
-  const loadPreferences = useCallback(async () => {
-    if (didLoadProfileRef.current) {
-      return {
-        defaultCurrency: defaultCurrencyRef.current,
-        reportingTimezone: reportingTimezoneRef.current,
-      };
+  useEffect(() => {
+    if (preferences?.reportingTimezone) {
+      reportingTimezoneRef.current = preferences.reportingTimezone;
     }
-
-    const res = await fetch("/api/preferences");
-    if (!res.ok) {
-      throw new Error("Could not load preferences.");
-    }
-
-    const data = (await res.json()) as PreferencesApiResponse;
-    const nextCurrency = data.defaultCurrency ?? DEFAULT_CURRENCY;
-    const nextTimezone = data.reportingTimezone ?? "UTC";
-
-    setDefaultCurrency(nextCurrency);
-    defaultCurrencyRef.current = nextCurrency;
-    reportingTimezoneRef.current = nextTimezone;
-    didLoadProfileRef.current = true;
-
-    return { defaultCurrency: nextCurrency, reportingTimezone: nextTimezone };
-  }, []);
+  }, [preferences?.reportingTimezone]);
 
   const loadPage = useCallback(
     async ({ cursor, append }: { cursor: string | null; append: boolean }) => {
@@ -104,7 +80,6 @@ export function useExpenses({
     setIsLoading(true);
     setError(null);
     try {
-      await loadPreferences();
       await loadPage({ cursor: null, append: false });
     } catch {
       setError("Could not load expenses. Please try again.");
@@ -115,7 +90,7 @@ export function useExpenses({
     } finally {
       setIsLoading(false);
     }
-  }, [loadPage, loadPreferences]);
+  }, [loadPage]);
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || isLoading || !hasNextPage) {
@@ -133,13 +108,14 @@ export function useExpenses({
   }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
 
   useEffect(() => {
+    if (!preferences) return;
     void reload();
-  }, [reload]);
+  }, [reload, preferences]);
 
   return {
     expenses,
     rangeTotalMinor,
-    defaultCurrency,
+    defaultCurrency: preferences?.defaultCurrency ?? DEFAULT_CURRENCY,
     isLoading,
     isLoadingMore,
     hasNextPage,

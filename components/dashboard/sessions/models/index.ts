@@ -1,6 +1,5 @@
 export type {
   LoadedSessionPreferences,
-  UseSessionPreferencesResult,
   UseSessionsPaginationParams,
   UseSessionsPaginationResult,
   UseSessionsParams,
