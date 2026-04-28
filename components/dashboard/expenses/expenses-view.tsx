@@ -80,12 +80,6 @@ export function ExpensesView() {
         </div>
       ) : null}
 
-      <ExpenseCategoryFilterPills
-        selectedCategories={selectedCategories}
-        onToggle={toggleCategory}
-        onClearAll={() => setSelectedCategories(new Set())}
-      />
-
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-foreground sm:text-lg">All expenses</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -93,6 +87,13 @@ export function ExpensesView() {
         </p>
         <div className="mt-4">
           <DateRangeDropdown value={dateRange} onChange={setDateRange} />
+        </div>
+        <div className="mt-4">
+          <ExpenseCategoryFilterPills
+            selectedCategories={selectedCategories}
+            onToggle={toggleCategory}
+            onClearAll={() => setSelectedCategories(new Set())}
+          />
         </div>
       </div>
 
