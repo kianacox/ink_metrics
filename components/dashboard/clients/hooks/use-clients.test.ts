@@ -1,6 +1,8 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useClients } from "./use-clients";
 import { createWrapper } from "@/lib/test-utils/query-wrapper";
+import { ClientSortField } from "@/lib/clients/models";
+import { SessionDateRangePreset } from "@/lib/timezones";
 
 const MOCK_PREFERENCES = {
   defaultCurrency: "USD",
@@ -156,10 +158,10 @@ describe("useClients", () => {
     );
 
     const { result, rerender } = renderHook(
-      (props: { sortField: "session_count" | "total_value" }) =>
+      (props: { sortField: ClientSortField }) =>
         useClients({ ...DEFAULT_PARAMS, sortField: props.sortField }),
       {
-        initialProps: { sortField: "session_count" as const },
+        initialProps: { sortField: "session_count" as ClientSortField },
         wrapper: createWrapper(),
       },
     );
@@ -187,10 +189,10 @@ describe("useClients", () => {
     );
 
     const { result, rerender } = renderHook(
-      (props: { dateRange: "last90Days" | "allTime" }) =>
+      (props: { dateRange: SessionDateRangePreset }) =>
         useClients({ ...DEFAULT_PARAMS, dateRange: props.dateRange }),
       {
-        initialProps: { dateRange: "last90Days" as const },
+        initialProps: { dateRange: "last90Days" as SessionDateRangePreset },
         wrapper: createWrapper(),
       },
     );
