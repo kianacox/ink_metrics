@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useSessions } from "./use-sessions";
+import { createWrapper } from "@/lib/test-utils/query-wrapper";
 
 describe("useSessions", () => {
   beforeEach(() => {
@@ -12,12 +13,14 @@ describe("useSessions", () => {
       json: () => Promise.resolve({ error: "Unauthorized" }),
     }) as jest.Mock;
 
-    const { result } = renderHook(() =>
-      useSessions({
-        searchQuery: "",
-        sortField: "date",
-        dateRange: "allTime",
-      }),
+    const { result } = renderHook(
+      () =>
+        useSessions({
+          searchQuery: "",
+          sortField: "date",
+          dateRange: "allTime",
+        }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => {
@@ -45,12 +48,14 @@ describe("useSessions", () => {
           }),
       }) as jest.Mock;
 
-    const { result } = renderHook(() =>
-      useSessions({
-        searchQuery: "",
-        sortField: "date",
-        dateRange: "allTime",
-      }),
+    const { result } = renderHook(
+      () =>
+        useSessions({
+          searchQuery: "",
+          sortField: "date",
+          dateRange: "allTime",
+        }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => {

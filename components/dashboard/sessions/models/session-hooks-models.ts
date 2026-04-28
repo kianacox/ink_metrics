@@ -6,13 +6,6 @@ export interface LoadedSessionPreferences {
   reportingTimezone: string;
 }
 
-export interface UseSessionPreferencesResult {
-  defaultCurrency: string;
-  reportingTimezone: string;
-  ensureLoaded: () => Promise<LoadedSessionPreferences>;
-  getCurrentReportingTimezone: () => string;
-}
-
 export interface UseSessionsParams {
   searchQuery: string;
   sortField: SessionSortField;

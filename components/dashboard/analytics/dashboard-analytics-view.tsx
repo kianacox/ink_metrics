@@ -9,7 +9,8 @@ import {
   formatPercentage,
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
-import { useSessionPreferences } from "@/components/dashboard/sessions/hooks/use-session-preferences";
+import { usePreferences } from "@/lib/preferences/use-preferences";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { Info, X } from "lucide-react";
 
 const TAKE_HOME_COMPARISON_ITEMS = [
@@ -113,15 +114,12 @@ function hasAnyMetricData(analytics: DashboardAnalyticsResponse): boolean {
 
 export function DashboardAnalyticsView() {
   const retentionInfoTitleId = useId();
-  const { defaultCurrency: effectiveCurrencyCode, ensureLoaded } = useSessionPreferences();
+  const { data: preferences } = usePreferences();
+  const effectiveCurrencyCode = preferences?.defaultCurrency ?? DEFAULT_CURRENCY;
   const [analytics, setAnalytics] = useState<DashboardAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
-
-  useEffect(() => {
-    void ensureLoaded().catch(() => {});
-  }, [ensureLoaded]);
 
   const loadAnalytics = useCallback(async () => {
     setIsLoading(true);
