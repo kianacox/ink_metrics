@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
 import { ExpensesByCategoryCardContent } from "@/components/dashboard/analytics/expenses-by-category-card";
 import { Button, ErrorState, Skeleton } from "@/components/ui";
@@ -9,6 +9,7 @@ import {
   formatPercentage,
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
+import { useAnalytics } from "@/lib/dashboard-analytics/use-analytics";
 import { usePreferences } from "@/lib/preferences/use-preferences";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { Info, X } from "lucide-react";
@@ -116,35 +117,14 @@ export function DashboardAnalyticsView() {
   const retentionInfoTitleId = useId();
   const { data: preferences } = usePreferences();
   const effectiveCurrencyCode = preferences?.defaultCurrency ?? DEFAULT_CURRENCY;
-  const [analytics, setAnalytics] = useState<DashboardAnalyticsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: analytics = null,
+    isLoading,
+    isError,
+    refetch,
+  } = useAnalytics(preferences);
+  const error = isError ? "Could not load dashboard analytics." : null;
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
-
-  const loadAnalytics = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/dashboard/analytics?month=current", {
-        method: "GET",
-      });
-      if (!response.ok) {
-        throw new Error("Could not load dashboard analytics.");
-      }
-
-      const payload = (await response.json()) as DashboardAnalyticsResponse;
-      setAnalytics(payload);
-    } catch {
-      setError("Could not load dashboard analytics.");
-      setAnalytics(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadAnalytics();
-  }, [loadAnalytics]);
 
   useEffect(() => {
     if (!isRetentionInfoOpen) {
@@ -194,7 +174,7 @@ export function DashboardAnalyticsView() {
       </div>
 
       {error ? (
-        <ErrorState message={error} onRetry={() => void loadAnalytics()} />
+        <ErrorState message={error} onRetry={() => void refetch()} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <AnalyticsCard
