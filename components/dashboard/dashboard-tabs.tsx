@@ -22,10 +22,14 @@ export function DashboardTabs({ displayName }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>(() =>
     searchParams.get("tab") === "insights" ? "insights" : "actions",
   );
+  const [insightsMounted, setInsightsMounted] = useState(() =>
+    searchParams.get("tab") === "insights",
+  );
 
   const setTab = useCallback(
     (tab: DashboardTab) => {
       setActiveTab(tab);
+      if (tab === "insights") setInsightsMounted(true);
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", tab);
       window.history.replaceState(null, "", `?${params.toString()}`);
@@ -76,7 +80,7 @@ export function DashboardTabs({ displayName }: DashboardTabsProps) {
         aria-labelledby="tab-insights"
         hidden={activeTab !== "insights"}
       >
-        <DashboardAnalyticsView />
+        {insightsMounted ? <DashboardAnalyticsView /> : null}
       </div>
     </div>
   );
