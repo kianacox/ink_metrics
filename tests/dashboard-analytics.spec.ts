@@ -16,6 +16,7 @@ const EXPECTED_RETENTION = {
   numerator: 10,
   denominator: 11,
   rate: 10 / 11,
+  totalSessions: 49,
 } as const;
 const EXPECTED_AVG_PROFIT = {
   sessionCount: 10,
@@ -101,6 +102,7 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
     numerator: 0,
     denominator: 0,
     rate: 0,
+    totalSessions: 0,
   });
   expect(analyticsPayload.averageProfitPerSession).toEqual({
     sessionCount: 0,
@@ -322,4 +324,38 @@ test("expenses by category card shows correct values after adding expenses via U
   await expect(card.getByText("£25.00")).toBeVisible();
   await expect(card.getByText("£15.00")).toBeVisible();
   await expect(card.getByLabel("Total expenses")).toContainText("£40.00");
+});
+
+test("retention card shows insufficient data message when user has too few sessions or clients", async ({ page }) => {
+  const email = `dashboard-retention-thin-${Date.now()}@${mailboxDomain}`;
+  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await completeProfileSetupMinimal(page, email);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  // 2 sessions, 2 clients — below both thresholds (< 4 sessions OR < 3 clients)
+  await createSessionWithNewClient(page, { clientName: "Thin Client A", price: "100.00" });
+  await createSessionWithNewClient(page, { clientName: "Thin Client B", price: "150.00" });
+
+  const analyticsResponse = await page.request.get("/api/dashboard/analytics?month=current");
+  expect(analyticsResponse.ok()).toBeTruthy();
+  const analyticsPayload = await analyticsResponse.json();
+  expect(analyticsPayload.retention.totalSessions).toBe(2);
+  expect(analyticsPayload.retention.denominator).toBe(2);
+
+  await page.goto("/dashboard?tab=insights");
+
+  const retentionTitle = page.getByText("Lifetime client retention rate", { exact: true });
+  await expect(retentionTitle).toBeVisible();
+  const retentionCard = retentionTitle
+    .locator("xpath=ancestor::div[contains(@class,'h-full')]")
+    .first();
+
+  await expect(
+    retentionCard.getByText(
+      "Please log more clients and sessions to make use of this metric.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(retentionCard.getByText("%", { exact: false })).toHaveCount(0);
 });

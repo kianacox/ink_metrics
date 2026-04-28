@@ -255,15 +255,23 @@ export function DashboardAnalyticsView() {
               </Button>
             )}
           >
-            <div className="space-y-2 text-sm">
-              <p className="text-2xl font-semibold text-foreground">
-                {formatPercentage(analytics?.retention.rate ?? 0)}
-              </p>
-              <p className="text-muted-foreground">
-                {analytics?.retention.numerator ?? 0} of {analytics?.retention.denominator ?? 0}{" "}
-                clients have returned.
-              </p>
-            </div>
+            {analytics &&
+            (analytics.retention.totalSessions < 4 || analytics.retention.denominator < 3) ? (
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <p>Please log more clients and sessions to make use of this metric.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <p className="text-2xl font-semibold text-foreground">
+                  {formatPercentage(analytics?.retention.rate ?? 0)}
+                </p>
+                <p className="text-muted-foreground">
+                  {analytics?.retention.numerator ?? 0} of {analytics?.retention.denominator ?? 0}{" "}
+                  clients have returned.
+                </p>
+              </div>
+            )}
           </AnalyticsCard>
 
           <AnalyticsCard

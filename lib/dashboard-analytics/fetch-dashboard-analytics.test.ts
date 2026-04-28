@@ -17,6 +17,7 @@ function buildSupabaseMock({
     {
       unique_clients_total: 8,
       clients_with_2plus_sessions_total: 3,
+      total_sessions: 20,
     },
   ],
   retentionRpcError = null,
@@ -36,6 +37,7 @@ function buildSupabaseMock({
   retentionRpcData?: Array<{
     unique_clients_total: number | string | null;
     clients_with_2plus_sessions_total: number | string | null;
+    total_sessions: number | string | null;
   }>;
   retentionRpcError?: { message: string } | null;
   expensesCategoryRpcData?: Array<{ category: string; total_minor: number | string | null }>;
@@ -113,6 +115,7 @@ describe("fetchDashboardAnalytics", () => {
       numerator: 3,
       denominator: 8,
       rate: 0.375,
+      totalSessions: 20,
     });
     expect(result.averageProfitPerSession).toEqual({
       sessionCount: 10,
@@ -455,6 +458,7 @@ describe("fetchDashboardAnalytics", () => {
         {
           unique_clients_total: "-0",
           clients_with_2plus_sessions_total: "Infinity",
+          total_sessions: null,
         },
       ],
     });
@@ -474,6 +478,7 @@ describe("fetchDashboardAnalytics", () => {
       numerator: 0,
       denominator: 0,
       rate: 0,
+      totalSessions: 0,
     });
     expect(result.averageProfitPerSession).toEqual({
       sessionCount: 0,
@@ -487,6 +492,7 @@ describe("fetchDashboardAnalytics", () => {
         {
           unique_clients_total: 0,
           clients_with_2plus_sessions_total: 5,
+          total_sessions: 0,
         },
       ],
     });
@@ -500,6 +506,7 @@ describe("fetchDashboardAnalytics", () => {
       numerator: 5,
       denominator: 0,
       rate: 0,
+      totalSessions: 0,
     });
   });
 

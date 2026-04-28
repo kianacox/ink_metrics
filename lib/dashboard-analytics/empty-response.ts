@@ -22,6 +22,7 @@ export function buildEmptyAnalyticsResponse(
       numerator: 0,
       denominator: 0,
       rate: 0,
+      totalSessions: 0,
     },
     averageProfitPerSession: {
       valueMinor: 0,
