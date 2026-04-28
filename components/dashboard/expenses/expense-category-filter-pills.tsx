@@ -35,15 +35,15 @@ export function ExpenseCategoryFilterPills({
           );
         })}
       </div>
-      {selectedCategories.size > 0 ? (
-        <button
-          type="button"
-          onClick={onClearAll}
-          className="self-start text-sm text-muted-foreground underline hover:text-foreground"
-        >
-          Clear all
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={onClearAll}
+        className={`self-start text-sm text-muted-foreground underline hover:text-foreground ${selectedCategories.size === 0 ? "invisible" : ""}`}
+        aria-hidden={selectedCategories.size === 0}
+        tabIndex={selectedCategories.size === 0 ? -1 : undefined}
+      >
+        Clear all
+      </button>
     </div>
   );
 }
