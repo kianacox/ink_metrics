@@ -11,11 +11,16 @@ declare
   demo_user_id uuid := '33333333-3333-3333-3333-333333333333';
   tz_user_id uuid := '44444444-4444-4444-4444-444444444444';
   la_user_id uuid := '55555555-5555-5555-5555-555555555555';
+  -- Retention QA users: thin (below threshold → message) and boundary (at threshold → real rate)
+  retention_thin_id uuid := '66666666-6666-6666-6666-666666666666';
+  retention_boundary_id uuid := '77777777-7777-7777-7777-777777777777';
   session_user_email text := 'seeded-session-user@example.com';
   incomplete_user_email text := 'seeded-incomplete-user@example.com';
   demo_user_email text := 'test@test.com';
   tz_user_email text := 'seeded-tz-user@example.com';
   la_user_email text := 'seeded-la-user@example.com';
+  retention_thin_email text := 'seeded-retention-thin@example.com';
+  retention_boundary_email text := 'seeded-retention-boundary@example.com';
 begin
   -- -------------------------------------------------------------------------
   -- Cleanup (order matters: child tables first)
@@ -25,22 +30,22 @@ begin
   where user_id in (demo_user_id, la_user_id);
 
   delete from public.sessions
-  where user_id in (demo_user_id, tz_user_id, la_user_id);
+  where user_id in (demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   delete from public.clients
-  where user_id in (demo_user_id, tz_user_id, la_user_id);
+  where user_id in (demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   delete from public.artist_compensation_versions
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   delete from public.profiles
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   delete from auth.identities
-  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
+  where user_id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   delete from auth.users
-  where id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id);
+  where id in (session_user_id, incomplete_user_id, demo_user_id, tz_user_id, la_user_id, retention_thin_id, retention_boundary_id);
 
   -- -------------------------------------------------------------------------
   -- Auth users
@@ -172,6 +177,48 @@ begin
       '{}',
       now(),
       now()
+    ),
+    (
+      '00000000-0000-0000-0000-000000000000',
+      retention_thin_id,
+      'authenticated',
+      'authenticated',
+      retention_thin_email,
+      crypt('Password123!', gen_salt('bf')),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{}',
+      now(),
+      now()
+    ),
+    (
+      '00000000-0000-0000-0000-000000000000',
+      retention_boundary_id,
+      'authenticated',
+      'authenticated',
+      retention_boundary_email,
+      crypt('Password123!', gen_salt('bf')),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{}',
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -238,6 +285,26 @@ begin
       now(),
       now(),
       now()
+    ),
+    (
+      gen_random_uuid(),
+      retention_thin_id,
+      jsonb_build_object('sub', retention_thin_id::text, 'email', retention_thin_email),
+      'email',
+      retention_thin_email,
+      now(),
+      now(),
+      now()
+    ),
+    (
+      gen_random_uuid(),
+      retention_boundary_id,
+      jsonb_build_object('sub', retention_boundary_id::text, 'email', retention_boundary_email),
+      'email',
+      retention_boundary_email,
+      now(),
+      now(),
+      now()
     );
 
   -- -------------------------------------------------------------------------
@@ -261,7 +328,11 @@ begin
     -- Asia/Tokyo (UTC+9): used for timezone edge-case QA
     (tz_user_id, 'Tokyo TZ User', 'USD', 'Asia/Tokyo', 1, true, now(), now()),
     -- America/Los_Angeles (UTC-8): used for behind-UTC timezone QA
-    (la_user_id, 'LA TZ User', 'USD', 'America/Los_Angeles', 1, true, now(), now());
+    (la_user_id, 'LA TZ User', 'USD', 'America/Los_Angeles', 1, true, now(), now()),
+    -- Retention QA: thin user (2 sessions, 2 clients) → message shows
+    (retention_thin_id, 'Retention Thin User', 'GBP', 'Europe/London', 1, true, now(), now()),
+    -- Retention QA: boundary user (4 sessions, 3 clients, 1 returning) → 33% shows
+    (retention_boundary_id, 'Retention Boundary User', 'GBP', 'Europe/London', 1, true, now(), now());
 
   -- -------------------------------------------------------------------------
   -- Compensation versions
@@ -335,6 +406,38 @@ begin
     (
       '55555555-5555-5555-5555-000000000001',
       la_user_id,
+      now() - interval '6 months',
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      now(),
+      now()
+    ),
+    (
+      '66666666-6666-6666-6666-000000000001',
+      retention_thin_id,
+      now() - interval '6 months',
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      now(),
+      now()
+    ),
+    (
+      '77777777-7777-7777-7777-000000000001',
+      retention_boundary_id,
       now() - interval '6 months',
       null,
       false,
@@ -594,5 +697,57 @@ begin
     ('55550002-0000-0000-0000-000000000006', la_user_id, 'Cartridge refill pack',     'cartridges',      2200, 'USD', '2026-03-19', null, null, null, now(), now()),
     ('55550002-0000-0000-0000-000000000007', la_user_id, 'Stencil paper (50 sheets)', 'other_equipment', 1200, 'USD', '2026-04-05', null, null, null, now(), now()),
     ('55550002-0000-0000-0000-000000000008', la_user_id, 'Studio supplies misc',      'miscellaneous',   3100, 'USD', '2026-04-18', null, null, null, now(), now());
+
+  -- -------------------------------------------------------------------------
+  -- Retention thin user (2 sessions, 2 clients) — message shows
+  -- totalSessions=2 < 4 OR denominator=2 < 3 → both conditions true
+  -- -------------------------------------------------------------------------
+
+  insert into public.clients (client_id, user_id, name, contact_info, created_at)
+  values
+    ('66660000-0000-0000-0000-000000000001', retention_thin_id, 'Alex Kim',    null, now()),
+    ('66660000-0000-0000-0000-000000000002', retention_thin_id, 'Sam Torres',  null, now());
+
+  insert into public.sessions (
+    session_id,
+    user_id,
+    client_id,
+    price,
+    session_at,
+    compensation_version_id
+  )
+  values
+    ('66660001-0000-0000-0000-000000000001', retention_thin_id, '66660000-0000-0000-0000-000000000001', 15000, '2026-03-10', '66666666-6666-6666-6666-000000000001'),
+    ('66660001-0000-0000-0000-000000000002', retention_thin_id, '66660000-0000-0000-0000-000000000002', 12000, '2026-04-02', '66666666-6666-6666-6666-000000000001');
+
+  -- -------------------------------------------------------------------------
+  -- Retention boundary user (4 sessions, 3 clients, 1 returning) — real rate shows
+  -- totalSessions=4, denominator=3 → neither threshold fires
+  -- Client A: 2 sessions → returning. B, C: 1 session each → not returning.
+  -- Rate: 1 of 3 = 33%
+  -- -------------------------------------------------------------------------
+
+  insert into public.clients (client_id, user_id, name, contact_info, created_at)
+  values
+    ('77770000-0000-0000-0000-000000000001', retention_boundary_id, 'Jordan Lee',   null, now()),
+    ('77770000-0000-0000-0000-000000000002', retention_boundary_id, 'Casey Morgan', null, now()),
+    ('77770000-0000-0000-0000-000000000003', retention_boundary_id, 'Riley Quinn',  null, now());
+
+  insert into public.sessions (
+    session_id,
+    user_id,
+    client_id,
+    price,
+    session_at,
+    compensation_version_id
+  )
+  values
+    -- Jordan Lee: 2 sessions → returning client
+    ('77770001-0000-0000-0000-000000000001', retention_boundary_id, '77770000-0000-0000-0000-000000000001', 20000, '2026-02-10', '77777777-7777-7777-7777-000000000001'),
+    ('77770001-0000-0000-0000-000000000002', retention_boundary_id, '77770000-0000-0000-0000-000000000001', 18000, '2026-03-15', '77777777-7777-7777-7777-000000000001'),
+    -- Casey Morgan: 1 session
+    ('77770001-0000-0000-0000-000000000003', retention_boundary_id, '77770000-0000-0000-0000-000000000002', 25000, '2026-03-20', '77777777-7777-7777-7777-000000000001'),
+    -- Riley Quinn: 1 session
+    ('77770001-0000-0000-0000-000000000004', retention_boundary_id, '77770000-0000-0000-0000-000000000003', 15000, '2026-04-05', '77777777-7777-7777-7777-000000000001');
 
 end $$;
