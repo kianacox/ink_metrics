@@ -80,7 +80,6 @@ export function ExpensesView() {
         </div>
       ) : null}
 
-
       <ExpenseCategoryFilterPills
         selectedCategories={selectedCategories}
         onToggle={toggleCategory}
