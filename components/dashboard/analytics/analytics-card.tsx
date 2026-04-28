@@ -24,7 +24,7 @@ export function AnalyticsCard({
   children,
 }: AnalyticsCardProps) {
   return (
-    <AnimatedCard index={index} className="h-full">
+    <AnimatedCard index={index} className="h-full" {...(state === "loading" ? { initial: false } : {})}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="leading-tight text-base">{title}</CardTitle>
