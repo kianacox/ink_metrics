@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePreferences } from "@/lib/preferences/use-preferences";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { ActionCard, type Action } from "./action-card";
 import { ActionCardSkeleton } from "./action-card-skeleton";
 import { ActionsEmptyState } from "./actions-empty-state";
@@ -14,7 +15,7 @@ interface ActionsViewProps {
 
 export function ActionsView({ displayName }: ActionsViewProps) {
   const { data: preferences } = usePreferences();
-  const defaultCurrency = preferences?.defaultCurrency;
+  const defaultCurrency = preferences?.defaultCurrency ?? DEFAULT_CURRENCY;
   const [actions, setActions] = useState<Action[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
