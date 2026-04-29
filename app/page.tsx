@@ -84,7 +84,7 @@ function ActionCard({
   const isHigh = action.priority === "HIGH";
   return (
     <div
-      className={`relative overflow-hidden rounded-lg border bg-card ${
+      className={`relative overflow-hidden border bg-card ${
         isHigh ? "border-destructive/30" : "border-border"
       }`}
     >
@@ -131,7 +131,7 @@ function ActionCard({
           </div>
         </div>
 
-        <div className="rounded-md bg-muted/40 px-3 py-2.5">
+        <div className="bg-muted/40 px-3 py-2.5">
           <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
             &ldquo;{action.template}&rdquo;
           </p>
@@ -139,7 +139,7 @@ function ActionCard({
 
         <div className="mt-3 flex items-center gap-2">
           <button
-            className="inline-flex cursor-default items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary opacity-60"
+            className="inline-flex cursor-default items-center gap-1.5 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary opacity-60"
             tabIndex={-1}
             aria-hidden="true"
           >
@@ -147,7 +147,7 @@ function ActionCard({
             Copy message
           </button>
           <button
-            className="inline-flex cursor-default items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-60"
+            className="inline-flex cursor-default items-center gap-1 px-2.5 py-1 text-xs font-medium text-muted-foreground opacity-60"
             tabIndex={-1}
             aria-hidden="true"
           >

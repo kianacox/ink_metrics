@@ -165,4 +165,36 @@ describe("ActionCard", () => {
     expect(onDismissError).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /dismiss/i })).not.toBeDisabled();
   });
+
+  describe("type label and priority badge", () => {
+    it("shows Retention label for lapsed_repeat", () => {
+      renderCard({ actionType: "lapsed_repeat" });
+      expect(screen.getByText("Retention")).toBeInTheDocument();
+    });
+
+    it("shows Follow-up label for new_client", () => {
+      renderCard({ actionType: "new_client" });
+      expect(screen.getByText("Follow-up")).toBeInTheDocument();
+    });
+
+    it("shows In Progress label for in_progress", () => {
+      renderCard({ actionType: "in_progress" });
+      expect(screen.getByText("In Progress")).toBeInTheDocument();
+    });
+
+    it("shows HIGH priority badge for lapsed_repeat", () => {
+      renderCard({ actionType: "lapsed_repeat" });
+      expect(screen.getByText("HIGH")).toBeInTheDocument();
+    });
+
+    it("shows MEDIUM priority badge for new_client", () => {
+      renderCard({ actionType: "new_client" });
+      expect(screen.getByText("MEDIUM")).toBeInTheDocument();
+    });
+
+    it("shows MEDIUM priority badge for in_progress", () => {
+      renderCard({ actionType: "in_progress" });
+      expect(screen.getByText("MEDIUM")).toBeInTheDocument();
+    });
+  });
 });
