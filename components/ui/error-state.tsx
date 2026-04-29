@@ -1,3 +1,4 @@
+import { AlertCircle } from "lucide-react";
 import { Button } from "./button";
 
 interface ErrorStateProps {
@@ -7,11 +8,13 @@ interface ErrorStateProps {
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
-      <p className="text-sm text-destructive">{message}</p>
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <AlertCircle className="h-10 w-10 text-muted-foreground" />
+      <p className="font-semibold text-foreground">Something went wrong</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
       {onRetry ? (
-        <Button type="button" className="mt-3" variant="outline" onClick={onRetry}>
-          Retry
+        <Button type="button" variant="outline" onClick={onRetry}>
+          Try again
         </Button>
       ) : null}
     </div>

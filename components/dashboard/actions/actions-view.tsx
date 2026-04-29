@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePreferences } from "@/lib/preferences/use-preferences";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { ErrorState } from "@/components/ui";
 import { ActionCard, type Action } from "./action-card";
 import { ActionCardSkeleton } from "./action-card-skeleton";
 import { ActionsEmptyState } from "./actions-empty-state";
-import { ActionsErrorState } from "./actions-error-state";
 
 interface ActionsViewProps {
   displayName: string | null;
@@ -76,7 +76,12 @@ export function ActionsView({ displayName }: ActionsViewProps) {
         </div>
       )}
 
-      {!isLoading && hasError && <ActionsErrorState onRetry={fetchActions} />}
+      {!isLoading && hasError && (
+        <ErrorState
+          message="Couldn't load actions. Try refreshing."
+          onRetry={fetchActions}
+        />
+      )}
 
       {!isLoading && !hasError && actions.length === 0 && <ActionsEmptyState />}
 
