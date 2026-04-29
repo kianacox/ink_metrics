@@ -37,7 +37,7 @@ export function ExpensesView() {
     isLoadingMore,
     hasNextPage,
     error,
-    reload,
+    refetch,
     loadMore,
   } = useExpenses({ selectedCategories: selectedCategoriesArray, dateRange });
 
@@ -102,7 +102,7 @@ export function ExpensesView() {
       {!isLoading && hasFatalError ? (
         <ErrorState
           message={error ?? "Could not load expenses."}
-          onRetry={() => void reload()}
+          onRetry={refetch}
         />
       ) : null}
 
@@ -160,8 +160,7 @@ export function ExpensesView() {
         open={createOpen}
         defaultCurrency={defaultCurrency}
         onClose={() => setCreateOpen(false)}
-        onCreated={async () => {
-          await reload();
+        onCreated={() => {
           setToastMessage("Expense logged successfully.");
         }}
       />
@@ -170,8 +169,7 @@ export function ExpensesView() {
         expense={editingExpense}
         defaultCurrency={defaultCurrency}
         onClose={() => setEditingExpense(null)}
-        onUpdated={async () => {
-          await reload();
+        onUpdated={() => {
           setToastMessage("Expense updated successfully.");
         }}
       />
@@ -179,8 +177,7 @@ export function ExpensesView() {
         open={deletingExpense !== null}
         expense={deletingExpense}
         onClose={() => setDeletingExpense(null)}
-        onDeleted={async () => {
-          await reload();
+        onDeleted={() => {
           setToastMessage("Expense deleted successfully.");
         }}
       />

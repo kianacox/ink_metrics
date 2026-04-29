@@ -88,8 +88,8 @@ export interface UseExpensesResult {
   isLoadingMore: boolean;
   hasNextPage: boolean;
   error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
+  refetch: () => void;
+  loadMore: () => void;
 }
 
 export interface ExpensesApiResponse {
