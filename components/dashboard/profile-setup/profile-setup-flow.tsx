@@ -70,10 +70,11 @@ export function ProfileSetupFlow({ initialCurrency, initialTimezone }: ProfileSe
 
   const isNextDisabled = useMemo(() => {
     if (isSubmitting) return true;
+    if (activeMobileStep === "identity") return displayName.trim() === "";
     if (activeMobileStep === "chairRent") return payChairRent === null;
     if (activeMobileStep === "rentType") return payChairRent !== false && rentType === null;
     return false;
-  }, [activeMobileStep, payChairRent, rentType, isSubmitting]);
+  }, [activeMobileStep, displayName, payChairRent, rentType, isSubmitting]);
 
   function resetRentDetails(nextPayChairRent: ChairRentChoice) {
     if (nextPayChairRent === false) {
