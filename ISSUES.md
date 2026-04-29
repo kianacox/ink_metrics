@@ -1,38 +1,8 @@
 # Issues
 
-_Last updated: 2026-04-29T00:00:00Z_
+_Last updated: 2026-04-29T11:30:00Z_
 
 ## READY
-
-- #71: Add skeleton fallbacks to Suspense boundaries
-  scope: app/dashboard/page.tsx, components/shared/site-header.tsx, app/auth/error/page.tsx, components/marketing/marketing-layout.tsx
-  risk: low
-  depends: none
-  brief: #71 (see issue comments)
-
-- #74: Redesign ErrorState component to match site styling
-  scope: components/ui/error-state.tsx, components/dashboard/actions/actions-error-state.tsx, components/dashboard/actions/actions-view.tsx
-  risk: low
-  depends: none
-  brief: #74 (see issue comments)
-
-- #76: bug(profile-setup): Next button not disabled when display name is empty on identity step
-  scope: components/dashboard/profile-setup/profile-setup-flow.tsx
-  risk: low
-  depends: none
-  brief: #76 (see issue comments)
-
-- #94: feat(clients): tier classification module and unit tests
-  scope: lib/clients/tier.ts
-  risk: low
-  depends: none
-  brief: #94 (see issue comments)
-
-- #100: feat(analytics): month boundary utility and unit tests
-  scope: lib/dashboard-analytics/month-window.ts
-  risk: low
-  depends: none
-  brief: #100 (see issue comments)
 
 - #109: feat(marketing): contact form page with email delivery
   scope: app/contact/page.tsx, app/api/contact/route.ts, lib/contact/send-contact-email.ts, supabase/migrations/, components/marketing/marketing-layout.tsx
@@ -44,11 +14,11 @@ _Last updated: 2026-04-29T00:00:00Z_
 
 - #95: feat(clients): server-side tier filter (DB migration → API)
   depends: #94
-  reason: ClientTier type from #94 required
+  reason: #94 PR #111 pending merge
 
 - #96: feat(clients): replace Returning badge with tier badge on rows and cards
   depends: #94
-  reason: getClientTier function from #94 required
+  reason: #94 PR #111 pending merge
 
 - #97: feat(clients): tier filter pills and view wiring
   depends: #95, #96
@@ -60,7 +30,7 @@ _Last updated: 2026-04-29T00:00:00Z_
 
 - #101: feat(analytics): parameterise analytics RPCs by month and update API response
   depends: #100
-  reason: parseMonthParam and hasPriorMonthData from #100 required
+  reason: #100 PR #114 pending merge
 
 - #102: feat(analytics): month navigation UI and URL sync
   depends: #101
@@ -72,7 +42,7 @@ _Last updated: 2026-04-29T00:00:00Z_
 
 - #91: feat(tanstack): wrap all mutation calls with useMutation
   depends: #84, #86
-  reason: expenses and sessions must be on useInfiniteQuery before mutations are migrated (PRs #106, #104 pending review)
+  reason: expenses (#84 PR #106) and sessions (#86 PR #104) pending merge
 
 - #110: feat(marketing): feedback form page with DB storage
   depends: #109
@@ -80,11 +50,11 @@ _Last updated: 2026-04-29T00:00:00Z_
 
 ## IN REVIEW (ready-for-human)
 
+- #71: Add skeleton fallbacks to Suspense boundaries — PR #113
+- #74: Redesign ErrorState component to match site styling — PR #112
+- #76: bug(profile-setup): Next button not disabled when display name is empty — PR #115
 - #84: feat(tanstack): migrate useExpenses to useInfiniteQuery — PR #106
-  reason: CI failures across all checks — investigate infrastructure vs real failure, then human review + manual QA
-
 - #86: feat(tanstack): migrate useSessionsPagination to useInfiniteQuery — PR #104
-  reason: CI failures across all checks — investigate infrastructure vs real failure, then human review + manual QA
-
+- #94: feat(clients): tier classification module and unit tests — PR #111
+- #100: feat(analytics): month boundary utility and unit tests — PR #114
 - #105: feat(actions): restyle action cards to match landing page design — PR #107
-  reason: CI failures across all checks — investigate infrastructure vs real failure, then human review

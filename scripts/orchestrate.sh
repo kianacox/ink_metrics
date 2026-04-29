@@ -15,8 +15,9 @@ GIT_EMAIL=$(git config user.email)
 echo "🚀 Launching orchestrator (max $MAX_TURNS turns per agent)..."
 
 docker run -it --rm \
-  -v "$REPO_ROOT:/repo" \
-  -v "$HOME/.claude:/root/.claude" \
+  -v "$REPO_ROOT:/Users/kianacox/Code/ink_metrics" \
+  -v "$HOME/.claude:/home/agent/.claude" \
+  -v "$HOME/.claude.json:/home/agent/.claude.json" \
   -e GITHUB_TOKEN="$GITHUB_TOKEN" \
   -e GIT_AUTHOR_NAME="$GIT_NAME" \
   -e GIT_AUTHOR_EMAIL="$GIT_EMAIL" \
@@ -26,4 +27,4 @@ docker run -it --rm \
   "$IMAGE_NAME" \
   --dangerously-skip-permissions \
   --max-turns "$MAX_TURNS" \
-  -p "You are the orchestrator. Read CLAUDE.md and ISSUES.md and begin orchestration. Each worker Task must also be launched with --max-turns $MAX_TURNS."
+  -p "You are the orchestrator. Read CLAUDE.md and ISSUES.md. Use the Task tool to spawn parallel subagents for each READY issue. Do not use Docker or shell commands to spawn agents — use the Task tool only. Each worker Task must also be launched with --max-turns $MAX_TURNS."
