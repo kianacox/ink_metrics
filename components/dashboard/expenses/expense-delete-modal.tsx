@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { ExpenseListItem } from "@/lib/expenses/models";
@@ -9,7 +10,7 @@ export interface ExpenseDeleteModalProps {
   open: boolean;
   expense: ExpenseListItem | null;
   onClose: () => void;
-  onDeleted: () => Promise<void>;
+  onDeleted: () => void;
 }
 
 export function ExpenseDeleteModal({
@@ -18,6 +19,7 @@ export function ExpenseDeleteModal({
   onClose,
   onDeleted,
 }: ExpenseDeleteModalProps) {
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +40,9 @@ export function ExpenseDeleteModal({
         return;
       }
 
-      await onDeleted();
+      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      onDeleted();
       onClose();
     } catch {
       setError("Could not delete expense.");

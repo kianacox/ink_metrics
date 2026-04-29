@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { Paperclip } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -19,7 +20,7 @@ export interface ExpenseCreateModalProps {
   open: boolean;
   defaultCurrency: string;
   onClose: () => void;
-  onCreated: () => Promise<void>;
+  onCreated: () => void;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -31,6 +32,7 @@ export function ExpenseCreateModal({
   onCreated,
 }: ExpenseCreateModalProps) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const [item, setItem] = useState("");
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [amount, setAmount] = useState("");
@@ -120,7 +122,9 @@ export function ExpenseCreateModal({
           // Non-blocking: expense was saved but receipt upload failed
           const warning = `Expense logged, but receipt could not be uploaded: ${uploadResult.error}`;
           setReceiptWarning(warning);
-          await onCreated();
+          await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+          await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+          onCreated();
           return; // keep modal open for retry
         } else {
           // Step 3: patch with receipt metadata
@@ -136,7 +140,9 @@ export function ExpenseCreateModal({
         }
       }
 
-      await onCreated();
+      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      onCreated();
       resetForm();
       onClose();
     } catch {

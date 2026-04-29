@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -21,7 +22,7 @@ export interface ExpenseEditModalProps {
   expense: ExpenseListItem | null;
   defaultCurrency: string;
   onClose: () => void;
-  onUpdated: () => Promise<void>;
+  onUpdated: () => void;
 }
 
 export function ExpenseEditModal({
@@ -32,6 +33,7 @@ export function ExpenseEditModal({
   onUpdated,
 }: ExpenseEditModalProps) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const [item, setItem] = useState("");
   const [category, setCategory] = useState<(typeof EXPENSE_CATEGORIES)[number]>(
     EXPENSE_CATEGORIES[0],
@@ -121,7 +123,9 @@ export function ExpenseEditModal({
           setReceiptWarning(
             `Expense saved, but receipt could not be uploaded: ${uploadResult.error}`,
           );
-          await onUpdated();
+          await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+          await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+          onUpdated();
           return; // keep modal open for retry
         }
 
@@ -136,7 +140,9 @@ export function ExpenseEditModal({
         });
       }
 
-      await onUpdated();
+      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      onUpdated();
       onClose();
     } catch {
       setError("Could not update expense.");
