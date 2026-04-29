@@ -31,18 +31,63 @@ describe("ProfileSetupFlow mobile step validation", () => {
     fireEvent.click(buttons[0]);
   }
 
-  describe("chairRent step (step 2)", () => {
-    it("disables Next button when payChairRent is null", () => {
+  function fillDisplayName(value: string) {
+    const inputs = screen.getAllByLabelText(/^name$/i);
+    // Mobile card renders first in DOM
+    fireEvent.change(inputs[0], { target: { value } });
+  }
+
+  describe("identity step (step 1)", () => {
+    it("disables Next button when displayName is empty", () => {
       renderFlow();
+
+      expect(getMobileNext()).toBeDisabled();
+    });
+
+    it("disables Next button when displayName is only whitespace", () => {
+      renderFlow();
+
+      fillDisplayName("   ");
+
+      expect(getMobileNext()).toBeDisabled();
+    });
+
+    it("enables Next button when displayName has a non-whitespace character", () => {
+      renderFlow();
+
+      fillDisplayName("J");
+
+      expect(getMobileNext()).toBeEnabled();
+    });
+
+    it("re-disables Next button if displayName is cleared", () => {
+      renderFlow();
+
+      fillDisplayName("Jane");
+      expect(getMobileNext()).toBeEnabled();
+
+      fillDisplayName("");
+      expect(getMobileNext()).toBeDisabled();
+    });
+  });
+
+  describe("chairRent step (step 2)", () => {
+    function advanceToChairRentStep() {
+      renderFlow();
+      // Identity step requires a non-empty display name to enable Next
+      fillDisplayName("Test User");
       // Advance from identity (step 1) to chairRent (step 2)
       clickNext();
+    }
+
+    it("disables Next button when payChairRent is null", () => {
+      advanceToChairRentStep();
 
       expect(getMobileNext()).toBeDisabled();
     });
 
     it("enables Next button after selecting Yes", () => {
-      renderFlow();
-      clickNext();
+      advanceToChairRentStep();
 
       clickFirstButton("Yes");
 
@@ -50,8 +95,7 @@ describe("ProfileSetupFlow mobile step validation", () => {
     });
 
     it("enables Next button after selecting No", () => {
-      renderFlow();
-      clickNext();
+      advanceToChairRentStep();
 
       clickFirstButton("No");
 
@@ -62,6 +106,7 @@ describe("ProfileSetupFlow mobile step validation", () => {
   describe("rentType step (step 3)", () => {
     function advanceToRentTypeStep() {
       renderFlow();
+      fillDisplayName("Test User");
       // Advance to chairRent step
       clickNext();
       // Select Yes to pay chair rent
@@ -94,6 +139,7 @@ describe("ProfileSetupFlow mobile step validation", () => {
 
     it("enables Next button when payChairRent is false (no chair rent path)", () => {
       renderFlow();
+      fillDisplayName("Test User");
       // Advance to chairRent step
       clickNext();
       // Select No — does not pay chair rent
@@ -109,6 +155,7 @@ describe("ProfileSetupFlow mobile step validation", () => {
   describe("marketing consent checkbox", () => {
     it("renders unchecked marketing consent checkbox on mobile rentDetails step", () => {
       renderFlow();
+      fillDisplayName("Test User");
       // Advance through all steps to rentDetails (step 4)
       clickNext(); // identity → chairRent
       clickFirstButton("No");
@@ -124,6 +171,7 @@ describe("ProfileSetupFlow mobile step validation", () => {
 
     it("toggles marketing consent checkbox on mobile rentDetails step", () => {
       renderFlow();
+      fillDisplayName("Test User");
       // Advance to rentDetails (step 4) via no-chair-rent path
       clickNext();
       clickFirstButton("No");
