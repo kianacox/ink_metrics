@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
@@ -10,7 +11,7 @@ interface SessionDeleteModalProps {
   open: boolean;
   session: SessionListItem | null;
   onClose: () => void;
-  onDeleted: () => Promise<void>;
+  onDeleted: () => void;
 }
 
 export function SessionDeleteModal({
@@ -19,6 +20,7 @@ export function SessionDeleteModal({
   onClose,
   onDeleted,
 }: SessionDeleteModalProps) {
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,9 @@ export function SessionDeleteModal({
         return;
       }
 
-      await onDeleted();
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      onDeleted();
       onClose();
     } catch {
       setError("Could not delete session.");

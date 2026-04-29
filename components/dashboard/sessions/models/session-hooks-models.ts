@@ -22,8 +22,8 @@ export interface UseSessionsResult {
   isLoadingMore: boolean;
   hasNextPage: boolean;
   error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
+  refetch: () => void;
+  loadMore: () => void;
 }
 
 export interface UseSessionsPaginationParams {
@@ -31,10 +31,6 @@ export interface UseSessionsPaginationParams {
   sortField: SessionSortField;
   dateRange: SessionDateRangePreset;
   pageSize: number;
-  ensureSessionPreferencesLoaded: () => Promise<
-    Pick<LoadedSessionPreferences, "reportingTimezone">
-  >;
-  getCurrentReportingTimezone: () => string;
 }
 
 export interface UseSessionsPaginationResult {
@@ -44,6 +40,6 @@ export interface UseSessionsPaginationResult {
   isLoadingMore: boolean;
   hasNextPage: boolean;
   error: string | null;
-  reload: () => Promise<void>;
-  loadMore: () => Promise<void>;
+  refetch: () => void;
+  loadMore: () => void;
 }

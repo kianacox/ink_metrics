@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
 import { validateEditableSessionFields } from "@/components/dashboard/session-form/utils/session-form-validation";
@@ -14,7 +15,7 @@ interface SessionEditModalProps {
   reportingTimezone: string;
   currencyCode: string;
   onClose: () => void;
-  onUpdated: () => Promise<void>;
+  onUpdated: () => void;
 }
 
 function toProfitValue(priceMinor: number): string {
@@ -30,6 +31,7 @@ export function SessionEditModal({
   onUpdated,
 }: SessionEditModalProps) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const [profit, setProfit] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [inProgress, setInProgress] = useState(false);
@@ -84,7 +86,9 @@ export function SessionEditModal({
         return;
       }
 
-      await onUpdated();
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      onUpdated();
       onClose();
     } catch {
       setError("Could not update session.");

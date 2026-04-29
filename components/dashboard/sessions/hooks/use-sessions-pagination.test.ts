@@ -1,135 +1,134 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { useSessionsPagination } from "./use-sessions-pagination";
-import type { FetchSessionsPageResult } from "@/lib/sessions/models";
+import { createWrapper } from "@/lib/test-utils/query-wrapper";
+
+const MOCK_PREFERENCES = {
+  defaultCurrency: "GBP",
+  reportingTimezone: "Europe/London",
+};
+
+const MOCK_PAGE_1 = {
+  data: [
+    { session_id: "session-1", price: 1000, session_at: "2026-04-08", clients: { name: "Alice" } },
+    { session_id: "session-2", price: 2000, session_at: "2026-04-07", clients: { name: "Bob" } },
+  ],
+  nextCursor: "cursor-abc",
+  hasNextPage: true,
+};
+
+const MOCK_PAGE_2 = {
+  data: [
+    { session_id: "session-3", price: 3000, session_at: "2026-04-06", clients: { name: "Charlie" } },
+  ],
+  nextCursor: null,
+  hasNextPage: false,
+};
 
 describe("useSessionsPagination", () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
 
-  it("does not fetch another page when hasNextPage is false", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          data: [],
-          nextCursor: null,
-          hasNextPage: false,
-        } satisfies FetchSessionsPageResult),
-    }) as jest.Mock;
+  it("fetches preferences then sessions on mount", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PREFERENCES) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PAGE_1) }) as jest.Mock;
 
-    const ensureSessionPreferencesLoaded = async () => ({
-      reportingTimezone: "UTC",
-    });
-    const getCurrentReportingTimezone = () => "UTC";
-
-    const { result } = renderHook(() =>
-      useSessionsPagination({
-        searchQuery: "",
-        sortField: "date",
-        dateRange: "allTime",
-        pageSize: 25,
-        ensureSessionPreferencesLoaded,
-        getCurrentReportingTimezone,
-      }),
+    const { result } = renderHook(
+      () => useSessionsPagination({ searchQuery: "", sortField: "date", dateRange: "allTime", pageSize: 25 }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    await act(async () => {
-      await result.current.loadMore();
-    });
-
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result.current.sessions).toHaveLength(2);
+    expect(result.current.sessions[0].id).toBe("session-1");
+    expect(result.current.hasNextPage).toBe(true);
+    expect(result.current.error).toBeNull();
   });
 
-  it("keeps the latest reload result when requests resolve out of order", async () => {
-    let resolveFirst: ((value: Response) => void) | null = null;
-    let resolveSecond: ((value: Response) => void) | null = null;
-
-    const firstPromise = new Promise<Response>((resolve) => {
-      resolveFirst = resolve;
-    });
-    const secondPromise = new Promise<Response>((resolve) => {
-      resolveSecond = resolve;
-    });
-
-    const makeResponse = (result: FetchSessionsPageResult): Response =>
-      ({
-        ok: true,
-        json: () => Promise.resolve(result),
-      }) as Response;
+  it("does not fetch sessions until preferences resolve", async () => {
+    let resolvePrefs!: (value: unknown) => void;
+    const prefsPromise = new Promise((res) => { resolvePrefs = res; });
 
     global.fetch = jest
       .fn()
-      .mockReturnValueOnce(firstPromise)
-      .mockReturnValueOnce(secondPromise) as jest.Mock;
+      .mockReturnValueOnce({ ok: true, json: () => prefsPromise })
+      .mockResolvedValue({ ok: true, json: () => Promise.resolve(MOCK_PAGE_1) }) as jest.Mock;
 
-    const ensureSessionPreferencesLoaded = async () => ({
-      reportingTimezone: "UTC",
-    });
-    const getCurrentReportingTimezone = () => "UTC";
-
-    const { result } = renderHook(() =>
-      useSessionsPagination({
-        searchQuery: "",
-        sortField: "date",
-        dateRange: "allTime",
-        pageSize: 25,
-        ensureSessionPreferencesLoaded,
-        getCurrentReportingTimezone,
-      }),
+    const { result } = renderHook(
+      () => useSessionsPagination({ searchQuery: "", sortField: "date", dateRange: "allTime", pageSize: 25 }),
+      { wrapper: createWrapper() },
     );
 
-    let secondReloadPromise: Promise<void> | null = null;
-    await act(async () => {
-      secondReloadPromise = result.current.reload();
-    });
+    expect(result.current.sessions).toHaveLength(0);
 
     await act(async () => {
-      resolveSecond?.(
-        makeResponse({
-          data: [
-            {
-              session_id: "session-2",
-              price: 2000,
-              session_at: "2026-04-09",
-              clients: { name: "Bob" },
-            },
-          ],
-          nextCursor: null,
-          hasNextPage: false,
-        }),
-      );
-      await Promise.resolve();
-    });
-
-    await act(async () => {
-      await secondReloadPromise;
-    });
-
-    await act(async () => {
-      resolveFirst?.(
-        makeResponse({
-          data: [
-            {
-              session_id: "session-1",
-              price: 1000,
-              session_at: "2026-04-08",
-              clients: { name: "Alice" },
-            },
-          ],
-          nextCursor: null,
-          hasNextPage: false,
-        }),
-      );
-      await Promise.resolve();
+      resolvePrefs(MOCK_PREFERENCES);
     });
 
     await waitFor(() => {
-      expect(result.current.sessions[0]?.id).toBe("session-2");
+      expect(result.current.isLoading).toBe(false);
     });
+
+    expect(result.current.sessions).toHaveLength(2);
+  });
+
+  it("does not fetch another page when hasNextPage is false", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PREFERENCES) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...MOCK_PAGE_1, nextCursor: null, hasNextPage: false }),
+      }) as jest.Mock;
+
+    const { result } = renderHook(
+      () => useSessionsPagination({ searchQuery: "", sortField: "date", dateRange: "allTime", pageSize: 25 }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    result.current.loadMore();
+
+    expect(global.fetch).toHaveBeenCalledTimes(2); // prefs + 1 sessions page, no extra
+  });
+
+  it("appends sessions when loading more", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PREFERENCES) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PAGE_1) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(MOCK_PAGE_2) }) as jest.Mock;
+
+    const { result } = renderHook(
+      () => useSessionsPagination({ searchQuery: "", sortField: "date", dateRange: "allTime", pageSize: 25 }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.sessions).toHaveLength(2);
+    expect(result.current.hasNextPage).toBe(true);
+
+    await act(async () => {
+      result.current.loadMore();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoadingMore).toBe(false);
+    });
+
+    expect(result.current.sessions).toHaveLength(3);
+    expect(result.current.sessions[2].id).toBe("session-3");
+    expect(result.current.hasNextPage).toBe(false);
   });
 });

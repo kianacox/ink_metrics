@@ -51,7 +51,7 @@ export function SessionsView() {
     isLoadingMore,
     hasNextPage,
     error,
-    reload,
+    refetch,
     loadMore,
   } = useSessions({
     searchQuery,
@@ -144,7 +144,7 @@ export function SessionsView() {
       {!isLoading && hasFatalError ? (
         <ErrorState
           message={error ?? "Could not load sessions."}
-          onRetry={() => void reload()}
+          onRetry={refetch}
         />
       ) : null}
 
@@ -176,7 +176,7 @@ export function SessionsView() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => void loadMore()}
+                onClick={loadMore}
                 disabled={isLoadingMore}
               >
                 {isLoadingMore ? "Loading more…" : "Load more sessions"}
@@ -199,7 +199,7 @@ export function SessionsView() {
       <AddSessionModal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSaved={() => void reload()}
+        onSaved={() => { setToastMessage("Session saved successfully."); }}
       />
 
       <SessionEditModal
@@ -208,8 +208,7 @@ export function SessionsView() {
         reportingTimezone={reportingTimezone}
         currencyCode={defaultCurrency}
         onClose={() => setEditingSession(null)}
-        onUpdated={async () => {
-          await reload();
+        onUpdated={() => {
           setToastMessage("Session updated successfully.");
         }}
       />
@@ -217,8 +216,7 @@ export function SessionsView() {
         open={deletingSession !== null}
         session={deletingSession}
         onClose={() => setDeletingSession(null)}
-        onDeleted={async () => {
-          await reload();
+        onDeleted={() => {
           setToastMessage("Session deleted successfully.");
         }}
       />
