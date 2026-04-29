@@ -1,135 +1,96 @@
 "use client";
 
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { mapSessionRowsToListItems } from "@/components/dashboard/sessions/utils/session-formatting";
-import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePreferences } from "@/lib/preferences/use-preferences";
+import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type {
   UseSessionsPaginationParams,
   UseSessionsPaginationResult,
 } from "@/components/dashboard/sessions/models";
 import type { FetchSessionsPageResult } from "@/lib/sessions/models";
 
+async function fetchSessionsPage(
+  pageParam: string | null,
+  searchQuery: string,
+  sortField: string,
+  dateRange: string,
+  pageSize: number,
+  reportingTimezone: string,
+): Promise<FetchSessionsPageResult> {
+  const params = new URLSearchParams({
+    search: searchQuery,
+    sort: sortField,
+    dateRange,
+    limit: String(pageSize),
+    tz: reportingTimezone,
+  });
+  if (pageParam) {
+    params.set("cursor", pageParam);
+  }
+  const res = await fetch(`/api/sessions?${params.toString()}`);
+  if (!res.ok) {
+    const body = (await res.json()) as { error?: string };
+    throw new Error(body.error ?? "Could not load sessions.");
+  }
+  return (await res.json()) as FetchSessionsPageResult;
+}
+
 export function useSessionsPagination({
   searchQuery,
   sortField,
   dateRange,
   pageSize,
-  ensureSessionPreferencesLoaded,
-  getCurrentReportingTimezone,
 }: UseSessionsPaginationParams): UseSessionsPaginationResult {
-  const [sessions, setSessions] = useState<SessionListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const requestIdRef = useRef(0);
+  const { data: preferences, isLoading: isPreferencesLoading } = usePreferences();
+  const reportingTimezone = preferences?.reportingTimezone ?? getDefaultReportingTimezone();
 
-  const loadPage = useCallback(
-    async ({
-      cursor,
-      append,
-      reportingTimezoneOverride,
-    }: {
-      cursor: string | null;
-      append: boolean;
-      reportingTimezoneOverride?: string;
-    }) => {
-      const currentRequestId = ++requestIdRef.current;
-      const effectiveTimezone = reportingTimezoneOverride ?? getCurrentReportingTimezone();
+  const {
+    data,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage: infiniteHasNextPage,
+    error: queryError,
+    refetch,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["sessions", { searchQuery, sortField, dateRange, pageSize }],
+    queryFn: ({ pageParam }) =>
+      fetchSessionsPage(pageParam, searchQuery, sortField, dateRange, pageSize, reportingTimezone),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: null as string | null,
+    enabled: !!preferences,
+  });
 
-      const params = new URLSearchParams({
-        search: searchQuery,
-        sort: sortField,
-        dateRange,
-        limit: String(pageSize),
-        tz: effectiveTimezone,
-      });
-      if (cursor) {
-        params.set("cursor", cursor);
-      }
+  const sessions = data?.pages.flatMap((page) => mapSessionRowsToListItems(page.data)) ?? [];
+  const totalCount = sessions.length;
 
-      const res = await fetch(`/api/sessions?${params.toString()}`);
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? "Could not load sessions.");
-      }
+  const isLoading = isPreferencesLoading || (isFetching && !isFetchingNextPage);
+  const isLoadingMore = isFetchingNextPage;
 
-      const pageResult = (await res.json()) as FetchSessionsPageResult;
+  let error: string | null = null;
+  if (queryError) {
+    const message = queryError instanceof Error ? queryError.message : "";
+    error =
+      message === "Could not compute date range boundaries."
+        ? "Could not load sessions for the selected reporting timezone. Please check your profile timezone and try again."
+        : "Could not load sessions. Please try again.";
+  }
 
-      if (requestIdRef.current !== currentRequestId) {
-        return;
-      }
-
-      const mappedPage = mapSessionRowsToListItems(pageResult.data);
-      let nextTotalCount = mappedPage.length;
-      setSessions((previousSessions) => {
-        const nextSessions = append ? [...previousSessions, ...mappedPage] : mappedPage;
-        nextTotalCount = nextSessions.length;
-        return nextSessions;
-      });
-      setTotalCount(nextTotalCount);
-      setHasNextPage(pageResult.hasNextPage);
-      setNextCursor(pageResult.nextCursor);
-    },
-    [dateRange, getCurrentReportingTimezone, pageSize, searchQuery, sortField],
-  );
-
-  const reload = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const sessionPreferences = await ensureSessionPreferencesLoaded();
-      await loadPage({
-        cursor: null,
-        append: false,
-        reportingTimezoneOverride: sessionPreferences.reportingTimezone,
-      });
-    } catch (loadError) {
-      const nextErrorMessage =
-        loadError instanceof Error &&
-        loadError.message === "Could not compute date range boundaries."
-          ? "Could not load sessions for the selected reporting timezone. Please check your profile timezone and try again."
-          : "Could not load sessions. Please try again.";
-      setError(nextErrorMessage);
-      setSessions([]);
-      setTotalCount(0);
-      setHasNextPage(false);
-      setNextCursor(null);
-    } finally {
-      setIsLoading(false);
+  const loadMore = () => {
+    if (!isFetchingNextPage && infiniteHasNextPage) {
+      void fetchNextPage();
     }
-  }, [ensureSessionPreferencesLoaded, loadPage]);
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || isLoading || !hasNextPage) {
-      return;
-    }
-
-    setIsLoadingMore(true);
-    setError(null);
-    try {
-      await loadPage({ cursor: nextCursor, append: true });
-    } catch {
-      setError("Could not load more sessions. Please try again.");
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasNextPage, isLoading, isLoadingMore, loadPage, nextCursor]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  };
 
   return {
     sessions,
     totalCount,
     isLoading,
     isLoadingMore,
-    hasNextPage,
+    hasNextPage: infiniteHasNextPage ?? false,
     error,
-    reload,
+    refetch: () => void refetch(),
     loadMore,
   };
 }

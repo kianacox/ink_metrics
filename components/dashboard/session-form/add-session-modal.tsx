@@ -15,6 +15,7 @@ import { validateSessionForm } from "@/components/dashboard/session-form/utils/s
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "luxon";
 
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
@@ -30,6 +31,7 @@ interface AddSessionModalProps {
 
 export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }: AddSessionModalProps = {}) {
   const titleId = useId();
+  const queryClient = useQueryClient();
   const isControlled = controlledOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isControlled ? controlledOpen : internalOpen;
@@ -166,6 +168,8 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
         return;
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
       setOpen(false);
       resetForm();
       setToast({ message: "Session saved successfully." });
