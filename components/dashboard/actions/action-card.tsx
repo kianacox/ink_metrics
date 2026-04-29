@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button, Card, CardContent, CardFooter } from "@/components/ui";
 import { formatMinorAsCurrency } from "@/lib/dashboard-analytics";
+import { getActionTypeLabel, isHighPriority } from "./action-priority";
 import type { Action } from "./types";
 
 export type { Action };
@@ -31,6 +32,10 @@ export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: 
   const [isCopied, setIsCopied] = useState(false);
   const [isDismissing, setIsDismissing] = useState(false);
 
+  const high = isHighPriority(action.actionType);
+  const typeLabel = getActionTypeLabel(action.actionType);
+  const priority = high ? "HIGH" : "MEDIUM";
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(action.messageTemplate);
@@ -56,15 +61,47 @@ export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: 
   }, [action.actionId, onDismiss, onDismissError]);
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="font-semibold text-foreground">{action.clientName}</p>
-        <p className="mt-1 text-sm text-foreground">
-          {getNudgeCopy(action.actionType, action.weeksSince)}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {formatMinorAsCurrency(action.revenueAtRiskMinor, currencyCode)} at risk
-        </p>
+    <Card className="relative overflow-hidden">
+      {/* Left accent bar */}
+      <div
+        className={`absolute inset-y-0 left-0 w-0.5 ${high ? "bg-destructive" : "bg-amber-400 dark:bg-amber-500"}`}
+      />
+
+      <CardContent className="pl-4 pt-5">
+        {/* Header: type label + priority badge */}
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {typeLabel}
+          </span>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+              high
+                ? "bg-destructive/10 text-destructive"
+                : "bg-amber-400/15 text-amber-700 dark:text-amber-400"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${high ? "bg-destructive" : "bg-amber-500"}`}
+            />
+            {priority}
+          </span>
+        </div>
+
+        {/* Client info + revenue at risk */}
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-foreground">{action.clientName}</p>
+            <p className="mt-0.5 text-sm text-foreground">
+              {getNudgeCopy(action.actionType, action.weeksSince)}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">at risk</p>
+            <p className="text-base font-bold text-foreground">
+              {formatMinorAsCurrency(action.revenueAtRiskMinor, currencyCode)}
+            </p>
+          </div>
+        </div>
 
         <AnimatePresence initial={false}>
           {isTemplateOpen && (
@@ -76,14 +113,14 @@ export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: 
               transition={{ duration: 0.2, ease: "easeInOut" }}
               style={{ overflow: "hidden" }}
             >
-              <div className="mt-4 rounded border border-border bg-muted p-3 text-sm text-foreground whitespace-pre-wrap">
+              <div className="rounded-none border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground whitespace-pre-wrap">
                 {action.messageTemplate}
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-2"
+                className="mt-2 rounded-none"
                 onClick={handleCopy}
               >
                 {isCopied ? "Copied!" : "Copy message"}
@@ -98,6 +135,7 @@ export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: 
           type="button"
           variant="ghost"
           size="sm"
+          className="rounded-none"
           onClick={() => setIsTemplateOpen((prev) => !prev)}
         >
           {isTemplateOpen ? "Hide message" : "View message"}
@@ -106,6 +144,7 @@ export function ActionCard({ action, currencyCode, onDismiss, onDismissError }: 
           type="button"
           variant="ghost"
           size="sm"
+          className="rounded-none"
           onClick={handleDismiss}
           disabled={isDismissing}
         >
