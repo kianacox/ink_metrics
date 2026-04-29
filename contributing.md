@@ -11,17 +11,6 @@ This project values small, reliable, test-backed changes.
 - Keep functions and components focused on one responsibility.
 - Extract duplicate logic instead of repeating code.
 
-## Product Alignment
-
-Before implementing, check relevant specs in `docs/`:
-
-- `docs/ink_metrics.spec.md`
-- `docs/slice1.spec.md`
-- `docs/slice2.spec.md`
-- `docs/slice3.spec.md`
-
-If code and spec disagree, follow product intent and call out the mismatch in PR notes.
-
 ## Code Standards
 
 - Use TypeScript strictness and keep types explicit where it improves clarity.

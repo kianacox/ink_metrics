@@ -9,9 +9,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Primary source docs:
 
 - `docs/ink_metrics.spec.md` (product context and roadmap)
-- `docs/slice1.spec.md` (auth + session logging)
-- `docs/slice2.spec.md` (profile page)
-- `docs/slice3.spec.md` (clients tracking)
 
 ## Stack and Architecture
 
@@ -35,18 +32,19 @@ High-level structure:
 
 Three client factories — use the right one:
 
-| File | When to use |
-|------|------------|
-| `lib/supabase/client.ts` (`createBrowserClient`) | Client components, browser context |
-| `lib/supabase/server.ts` (`createServerClient`) | Server components, API route handlers, auth-aware queries |
-| `lib/supabase/admin.ts` (`createAdminClient`) | Service-role operations only (e.g. seeding, bypassing RLS) — never expose to client |
+| File                                             | When to use                                                                         |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `lib/supabase/client.ts` (`createBrowserClient`) | Client components, browser context                                                  |
+| `lib/supabase/server.ts` (`createServerClient`)  | Server components, API route handlers, auth-aware queries                           |
+| `lib/supabase/admin.ts` (`createAdminClient`)    | Service-role operations only (e.g. seeding, bypassing RLS) — never expose to client |
 
 ### API route pattern
 
 All authenticated route handlers follow this guard pattern:
 
 ```ts
-const { supabase, user, errorResponse } = await requireAuthenticatedApiUser("message");
+const { supabase, user, errorResponse } =
+  await requireAuthenticatedApiUser("message");
 if (errorResponse) return errorResponse;
 ```
 
