@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AddSessionModal } from "@/components/dashboard/session-form/add-session-modal";
 import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
+import { DashboardTabsSkeleton } from "@/components/dashboard/dashboard-tabs-skeleton";
 import { bootstrapUserProfile } from "@/lib/profiles/bootstrap-user-profile";
 import { getProfileDisplayName } from "@/lib/profiles/get-profile-display-name";
 import { isUserProfileComplete } from "@/lib/profiles/is-user-profile-complete";
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
         </p>
         <AddSessionModal />
       </section>
-      <Suspense>
+      <Suspense fallback={<DashboardTabsSkeleton />}>
         <DashboardTabs displayName={displayName} />
       </Suspense>
     </div>
