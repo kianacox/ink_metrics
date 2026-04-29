@@ -35,5 +35,8 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      NEXT_PUBLIC_ENABLE_QUERY_DEVTOOLS: "false",
+    },
   },
 });
