@@ -18,7 +18,14 @@ export function SiteHeader() {
           <ThemeSwitcher />
         </div>
         <div className="flex min-w-0 justify-end">
-          <Suspense>
+          <Suspense
+            fallback={
+              <div
+                aria-hidden
+                className="h-9 w-20 animate-pulse rounded-md bg-muted"
+              />
+            }
+          >
             <AuthButton />
           </Suspense>
         </div>

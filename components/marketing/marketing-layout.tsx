@@ -52,7 +52,14 @@ function MarketingHeader({
           </nav>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Suspense>
+          <Suspense
+            fallback={
+              <div
+                aria-hidden
+                className="h-9 w-9 animate-pulse rounded-md bg-muted"
+              />
+            }
+          >
             <ThemeSwitcher />
           </Suspense>
           <Button

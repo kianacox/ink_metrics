@@ -47,7 +47,14 @@ export default function Page({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Suspense>
+          <Suspense
+            fallback={
+              <div
+                aria-hidden
+                className="h-32 w-full animate-pulse rounded-md bg-muted"
+              />
+            }
+          >
             <ErrorContent searchParams={searchParams} />
           </Suspense>
         </CardContent>
