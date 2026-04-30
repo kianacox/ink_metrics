@@ -165,7 +165,7 @@ export function DashboardAnalyticsView() {
       }
       const queryString = params.toString();
       const url = queryString ? `${pathname}?${queryString}` : pathname;
-      router.replace(url);
+      router.push(url);
     },
     [pathname, router, searchParams],
   );
