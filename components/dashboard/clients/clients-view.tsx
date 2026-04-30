@@ -12,15 +12,17 @@ import {
 } from "@/components/ui";
 import { useClients } from "@/components/dashboard/clients/hooks/use-clients";
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
+import type { ClientTier } from "@/lib/clients/tier";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
-import { DateRangeDropdown, DATE_RANGE_OPTIONS } from "@/components/dashboard/shared/date-range-dropdown";
+import { DateRangeDropdown } from "@/components/dashboard/shared/date-range-dropdown";
 import { ClientsCards } from "./clients-cards";
 import { ClientsSkeleton } from "./clients-skeleton";
 import { ClientsTable } from "./clients-table";
 import { ClientCreateModal } from "./client-create-modal";
 import { ClientEditModal } from "./client-edit-modal";
 import { ClientDeleteModal } from "./client-delete-modal";
+import { ClientTierFilterPills } from "./client-tier-filter-pills";
 
 const SORT_FIELDS: Array<{ label: string; value: ClientSortField }> = [
   { label: "Sessions", value: "session_count" },
@@ -44,6 +46,7 @@ export function ClientsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<ClientSortField>(DEFAULT_SORT_FIELD);
   const [dateRange, setDateRange] = useState<SessionDateRangePreset>(DEFAULT_DATE_RANGE);
+  const [tier, setTier] = useState<ClientTier | null>(null);
   const [editingClient, setEditingClient] = useState<ClientListItem | null>(null);
   const [deletingClient, setDeletingClient] = useState<ClientListItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -58,7 +61,7 @@ export function ClientsView() {
     error,
     refetch,
     loadMore,
-  } = useClients({ searchQuery, sortField, dateRange });
+  } = useClients({ searchQuery, sortField, dateRange, tier });
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -77,11 +80,18 @@ export function ClientsView() {
 
   const selectedSortLabel =
     SORT_FIELDS.find((o) => o.value === sortField)?.label ?? "Sessions";
-  const selectedDateRangeLabel =
-    DATE_RANGE_OPTIONS.find((o) => o.value === dateRange)?.label ?? "Last 90 days";
   const dateRangeShortLabel = DATE_RANGE_SHORT_LABEL[dateRange] ?? "range";
   const hasClients = clients.length > 0;
   const hasFatalError = Boolean(error) && !hasClients;
+
+  const emptyStateMessage =
+    tier === "vip"
+      ? "No VIP clients yet."
+      : tier === "regular"
+      ? "No regular clients yet."
+      : tier === "one-timer"
+      ? "No one-time clients yet."
+      : "No clients yet.";
 
   return (
     <section className="flex flex-col gap-4 sm:gap-6">
@@ -131,6 +141,7 @@ export function ClientsView() {
 
             <DateRangeDropdown value={dateRange} onChange={setDateRange} />
           </div>
+          <ClientTierFilterPills activeTier={tier} onChange={setTier} />
         </div>
       </div>
 
@@ -145,7 +156,7 @@ export function ClientsView() {
 
       {!isLoading && !error && !hasClients ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground sm:p-8">
-          No clients found for {selectedDateRangeLabel.toLowerCase()}.
+          {emptyStateMessage}
         </div>
       ) : null}
 

@@ -30,6 +30,7 @@ const DEFAULT_PARAMS = {
   searchQuery: "",
   sortField: "session_count" as const,
   dateRange: "last90Days" as const,
+  tier: null,
 };
 
 function makeFetchMock(...responses: Array<{ ok: boolean; body: unknown }>) {
@@ -248,6 +249,76 @@ describe("useClients", () => {
     expect(result.current.error).toBe(
       "Could not load clients for the selected reporting timezone. Please check your profile timezone and try again.",
     );
+  });
+
+  it("includes tier in the clients query string when set", async () => {
+    global.fetch = makeFetchMock({ ok: true, body: MOCK_CLIENTS_PAGE_1 });
+
+    const { result } = renderHook(
+      () => useClients({ ...DEFAULT_PARAMS, tier: "vip" }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    const clientsCalls = (global.fetch as jest.Mock).mock.calls.filter(
+      ([url]: [string]) => (url as string).includes("/api/clients"),
+    );
+    expect(clientsCalls.length).toBeGreaterThan(0);
+    expect(clientsCalls[0][0]).toContain("tier=vip");
+  });
+
+  it("omits tier from the clients query string when null", async () => {
+    global.fetch = makeFetchMock({ ok: true, body: MOCK_CLIENTS_PAGE_1 });
+
+    const { result } = renderHook(
+      () => useClients({ ...DEFAULT_PARAMS, tier: null }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    const clientsCalls = (global.fetch as jest.Mock).mock.calls.filter(
+      ([url]: [string]) => (url as string).includes("/api/clients"),
+    );
+    expect(clientsCalls.length).toBeGreaterThan(0);
+    expect(clientsCalls[0][0]).not.toContain("tier=");
+  });
+
+  it("resets to page 1 when tier changes", async () => {
+    global.fetch = makeFetchMock(
+      { ok: true, body: MOCK_CLIENTS_PAGE_1 },
+      { ok: true, body: MOCK_CLIENTS_PAGE_2 },
+    );
+
+    const { result, rerender } = renderHook(
+      (props: { tier: "vip" | "regular" | "one-timer" | null }) =>
+        useClients({ ...DEFAULT_PARAMS, tier: props.tier }),
+      {
+        initialProps: { tier: null as "vip" | "regular" | "one-timer" | null },
+        wrapper: createWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.clients).toHaveLength(2);
+
+    rerender({ tier: "vip" });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // After tier change, fresh fetch returns page 2 data (only 1 item)
+    expect(result.current.clients).toHaveLength(1);
+    expect(result.current.clients[0].name).toBe("Charlie");
   });
 
   it("does not fetch clients until preferences are loaded", async () => {
