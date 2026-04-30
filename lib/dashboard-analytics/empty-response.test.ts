@@ -34,10 +34,8 @@ describe("buildEmptyAnalyticsResponse", () => {
       valueMinor: 0,
       sessionCount: 0,
     });
-    expect(result.hoursTattooing).toEqual({
-      totalMinutes: 0,
-      totalHours: 0,
-    });
+    expect("hoursTattooing" in result).toBe(false);
+    expect(result.hasPriorMonthData).toBe(false);
     expect(result.expensesByCategory.totalMinor).toBe(0);
     expect(result.expensesByCategory.items).toHaveLength(EXPENSE_CATEGORIES.length);
     expect(result.expensesByCategory.items.map((item) => item.category)).toEqual(EXPENSE_CATEGORIES);

@@ -48,11 +48,73 @@ describe("GET /api/dashboard/analytics", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(400);
-    expect(payload).toEqual({
-      error: "Only month=current is supported.",
-      code: "DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH",
-    });
+    expect(payload.code).toBe("DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH");
     expect(mockedFetchDashboardAnalytics).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for malformed YYYY-MM month params", async () => {
+    mockedRequireAuthenticatedApiUser.mockResolvedValue({
+      supabase: {} as never,
+      user: { id: "user-1" } as never,
+      errorResponse: null,
+    });
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/analytics?month=2026-13"),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.code).toBe("DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH");
+    expect(mockedFetchDashboardAnalytics).not.toHaveBeenCalled();
+  });
+
+  it("accepts a valid YYYY-MM month param and passes it to fetchDashboardAnalytics", async () => {
+    mockedRequireAuthenticatedApiUser.mockResolvedValue({
+      supabase: { rpc: jest.fn() } as never,
+      user: { id: "user-1" } as never,
+      errorResponse: null,
+    });
+    mockedFetchDashboardAnalytics.mockResolvedValue({
+      monthLabel: "March",
+      timeWindow: {
+        startUtcIso: "2026-03-01T00:00:00.000Z",
+        endUtcIso: "2026-04-01T00:00:00.000Z",
+        timezone: "Europe/London",
+      },
+      takeHome: {
+        grossMinor: 0,
+        paidToStudioMinor: 0,
+        totalExpensesMinor: 0,
+        netMinor: 0,
+      },
+      retention: {
+        numerator: 0,
+        denominator: 0,
+        rate: 0,
+        totalSessions: 0,
+      },
+      averageProfitPerSession: {
+        valueMinor: 0,
+        sessionCount: 0,
+      },
+      expensesByCategory: {
+        items: [],
+        totalMinor: 0,
+      },
+      hasPriorMonthData: false,
+    });
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/analytics?month=2026-03"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedFetchDashboardAnalytics).toHaveBeenCalledWith({
+      supabase: { rpc: expect.any(Function) },
+      userId: "user-1",
+      monthParam: "2026-03",
+    });
   });
 
   it("returns analytics payload for authenticated requests", async () => {
@@ -78,19 +140,17 @@ describe("GET /api/dashboard/analytics", () => {
         numerator: 3,
         denominator: 8,
         rate: 0.375,
+        totalSessions: 20,
       },
       averageProfitPerSession: {
         valueMinor: 0,
         sessionCount: 0,
       },
-      hoursTattooing: {
-        totalMinutes: 0,
-        totalHours: 0,
-      },
       expensesByCategory: {
         items: [],
         totalMinor: 0,
       },
+      hasPriorMonthData: true,
     });
 
     const response = await GET(new Request("http://localhost/api/dashboard/analytics?month=current"));
@@ -100,6 +160,7 @@ describe("GET /api/dashboard/analytics", () => {
     expect(mockedFetchDashboardAnalytics).toHaveBeenCalledWith({
       supabase: { rpc: expect.any(Function) },
       userId: "user-1",
+      monthParam: "current",
     });
     expect(payload.takeHome).toEqual({
       grossMinor: 196000,
@@ -111,6 +172,7 @@ describe("GET /api/dashboard/analytics", () => {
       numerator: 3,
       denominator: 8,
       rate: 0.375,
+      totalSessions: 20,
     });
     expect(payload.averageProfitPerSession).toEqual({
       valueMinor: 0,

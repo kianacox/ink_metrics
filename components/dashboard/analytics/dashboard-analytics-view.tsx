@@ -102,10 +102,6 @@ function hasAnyMetricData(analytics: DashboardAnalyticsResponse): boolean {
     return true;
   }
 
-  if (analytics.hoursTattooing.totalMinutes !== 0 || analytics.hoursTattooing.totalHours !== 0) {
-    return true;
-  }
-
   if (analytics.expensesByCategory.totalMinor !== 0) {
     return true;
   }

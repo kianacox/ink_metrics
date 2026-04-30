@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildEmptyAnalyticsResponse,
-  computeCurrentMonthWindow,
+  hasPriorMonthData,
+  parseMonthParam,
   type DashboardAnalyticsResponse,
 } from "@/lib/dashboard-analytics";
 import { getDefaultReportingTimezone, getEffectiveReportingTimezone } from "@/lib/timezones";
@@ -10,11 +11,13 @@ import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
 export const DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH_CODE =
   "DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH";
 
+const MONTH_PARAM_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
+
 export class DashboardAnalyticsMonthParamError extends Error {
   readonly code = DASHBOARD_ANALYTICS_UNSUPPORTED_MONTH_CODE;
 
   constructor() {
-    super("Only month=current is supported.");
+    super("Unsupported month param. Use 'current' or YYYY-MM.");
   }
 }
 
@@ -82,7 +85,11 @@ function toSafeRate({
 }
 
 export function assertSupportedDashboardAnalyticsMonth(monthParam: string | null): void {
-  if (monthParam && monthParam !== "current") {
+  if (
+    monthParam &&
+    monthParam !== "current" &&
+    !MONTH_PARAM_REGEX.test(monthParam)
+  ) {
     throw new DashboardAnalyticsMonthParamError();
   }
 }
@@ -112,14 +119,14 @@ async function fetchReportingTimezone({
 export async function fetchDashboardAnalytics({
   supabase,
   userId,
+  monthParam = "current",
 }: {
   supabase: SupabaseClient;
   userId: string;
+  monthParam?: string;
 }): Promise<DashboardAnalyticsResponse> {
   const reportingTimezone = await fetchReportingTimezone({ supabase, userId });
-  const monthWindow = computeCurrentMonthWindow({
-    timezone: reportingTimezone,
-  });
+  const monthWindow = parseMonthParam(monthParam, reportingTimezone);
   const emptyResponse = buildEmptyAnalyticsResponse(monthWindow);
   const { data: takeHomeRows, error: takeHomeError } = await supabase.rpc(
     "compute_dashboard_take_home_summary",
@@ -177,6 +184,13 @@ export async function fetchDashboardAnalytics({
   }));
   const totalExpensesMinorByCategory = expenseItems.reduce((sum, item) => sum + item.totalMinor, 0);
 
+  const priorMonthData = await hasPriorMonthData({
+    supabase,
+    userId,
+    monthParam,
+    timezone: reportingTimezone,
+  });
+
   return {
     ...emptyResponse,
     takeHome: {
@@ -202,5 +216,6 @@ export async function fetchDashboardAnalytics({
       items: expenseItems,
       totalMinor: totalExpensesMinorByCategory,
     },
+    hasPriorMonthData: priorMonthData,
   };
 }

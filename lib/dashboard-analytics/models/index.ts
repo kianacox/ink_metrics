@@ -23,11 +23,6 @@ export interface AverageProfitPerSessionStat {
   sessionCount: number;
 }
 
-export interface HoursTattooingStat {
-  totalMinutes: number;
-  totalHours: number;
-}
-
 export interface ExpenseCategoryTotal {
   category: string;
   totalMinor: number;
@@ -44,6 +39,6 @@ export interface DashboardAnalyticsResponse {
   takeHome: TakeHomeSummary;
   retention: RetentionStat;
   averageProfitPerSession: AverageProfitPerSessionStat;
-  hoursTattooing: HoursTattooingStat;
   expensesByCategory: ExpensesByCategoryStat;
+  hasPriorMonthData: boolean;
 }

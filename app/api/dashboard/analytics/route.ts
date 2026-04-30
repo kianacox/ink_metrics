@@ -27,13 +27,14 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
-    const monthParam = url.searchParams.get("month");
+    const monthParam = url.searchParams.get("month") ?? "current";
     assertSupportedDashboardAnalyticsMonth(monthParam);
 
     return NextResponse.json(
       await fetchDashboardAnalytics({
         supabase,
         userId: user.id,
+        monthParam,
       }),
     );
   } catch (error) {
