@@ -205,8 +205,6 @@ worktrees. Each agent operates in an isolated worktree under `./agents/`.
 4. Run checks:
    - `npm run lint`
    - `npm test` scoped to touched files
-   - Relevant Playwright spec if you touched a user-visible flow.
-     Never run `npm run test:e2e`.
 5. If any check fails: write output to `./FAILED.md` and stop.
 6. If all checks pass: write `./READY_FOR_REVIEW.md` with the full
    output of `git diff main...HEAD` and stop.
