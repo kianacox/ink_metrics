@@ -3,19 +3,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { DashboardAnalyticsResponse } from "@/lib/dashboard-analytics";
 import { DashboardAnalyticsView } from "./dashboard-analytics-view";
 
-const replaceMock = jest.fn();
+const navigateMock = jest.fn();
 let currentSearchParams = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => currentSearchParams,
   useRouter: () => ({
     replace: (url: string) => {
-      replaceMock(url);
+      navigateMock(url);
       const queryString = url.split("?")[1] ?? "";
       currentSearchParams = new URLSearchParams(queryString);
     },
     push: (url: string) => {
-      replaceMock(url);
+      navigateMock(url);
       const queryString = url.split("?")[1] ?? "";
       currentSearchParams = new URLSearchParams(queryString);
     },
@@ -78,7 +78,7 @@ function renderWithProviders(ui: React.ReactElement) {
 
 describe("DashboardAnalyticsView URL sync", () => {
   beforeEach(() => {
-    replaceMock.mockReset();
+    navigateMock.mockReset();
     currentSearchParams = new URLSearchParams();
     jest.useFakeTimers();
     // Lock "now" to April 30 2026 local
@@ -146,9 +146,9 @@ describe("DashboardAnalyticsView URL sync", () => {
     });
     fireEvent.click(prevButton);
 
-    expect(replaceMock).toHaveBeenCalled();
-    const replacedUrl = replaceMock.mock.calls[replaceMock.mock.calls.length - 1][0];
-    expect(replacedUrl).toContain("month=2026-03");
+    expect(navigateMock).toHaveBeenCalled();
+    const navigatedUrl = navigateMock.mock.calls[navigateMock.mock.calls.length - 1][0];
+    expect(navigatedUrl).toContain("month=2026-03");
   });
 
   it("removes the ?month param when navigating back to the current month", async () => {
@@ -170,9 +170,9 @@ describe("DashboardAnalyticsView URL sync", () => {
     });
     fireEvent.click(nextButton);
 
-    expect(replaceMock).toHaveBeenCalled();
-    const replacedUrl = replaceMock.mock.calls[replaceMock.mock.calls.length - 1][0];
-    expect(replacedUrl).not.toContain("month=");
+    expect(navigateMock).toHaveBeenCalled();
+    const navigatedUrl = navigateMock.mock.calls[navigateMock.mock.calls.length - 1][0];
+    expect(navigatedUrl).not.toContain("month=");
   });
 
   it("disables the previous button when hasPriorMonthData is false", async () => {
