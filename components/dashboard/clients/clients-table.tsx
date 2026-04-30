@@ -1,7 +1,14 @@
-import { Button } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem } from "@/lib/clients/models";
+import { getClientTier, type ClientTier } from "@/lib/clients/tier";
 import { Pencil, Trash2 } from "lucide-react";
+
+const TIER_LABELS: Record<ClientTier, string> = {
+  vip: "VIP",
+  regular: "Regular",
+  "one-timer": "One-timer",
+};
 
 interface ClientsTableProps {
   clients: ClientListItem[];
@@ -49,18 +56,14 @@ export function ClientsTable({
         </thead>
         <tbody>
           {clients.map((client) => {
-            const isReturning = client.lifetimeSessionCount > 1;
+            const tier = getClientTier(client.lifetimeSessionCount);
             const lastSessionLabel = formatLastSessionDate(client.lastSessionAt);
 
             return (
               <tr key={client.id} className="border-t border-border">
                 <td className="px-4 py-3 text-sm font-medium text-foreground">
                   <div className="flex flex-col items-start gap-1">
-                    {isReturning ? (
-                      <span className="inline-flex items-center whitespace-nowrap rounded-none bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
-                        Returning client
-                      </span>
-                    ) : null}
+                    <Badge variant="secondary">{TIER_LABELS[tier]}</Badge>
                     <span>{client.name}</span>
                   </div>
                 </td>
