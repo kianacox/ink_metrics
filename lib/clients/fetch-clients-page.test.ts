@@ -40,8 +40,52 @@ describe("fetchClientsPage", () => {
       p_page_size: 26,
       p_cursor_sort_value: null,
       p_cursor_client_id: null,
+      p_tier: null,
     });
     expect(result.data).toHaveLength(1);
+  });
+
+  it("forwards the tier param to the RPC when provided", async () => {
+    const rpc = jest.fn().mockResolvedValue({ data: [], error: null });
+    const supabase = { rpc } as unknown as Parameters<typeof fetchClientsPage>[0]["supabase"];
+
+    await fetchClientsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "session_count",
+      cursor: null,
+      limit: 25,
+      dateRange: "allTime",
+      tier: "vip",
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      "fetch_clients_page",
+      expect.objectContaining({ p_tier: "vip" }),
+    );
+  });
+
+  it("passes p_tier as null when tier is omitted", async () => {
+    const rpc = jest.fn().mockResolvedValue({ data: [], error: null });
+    const supabase = { rpc } as unknown as Parameters<typeof fetchClientsPage>[0]["supabase"];
+
+    await fetchClientsPage({
+      supabase,
+      userId: "user-1",
+      reportingTimezone: "UTC",
+      searchQuery: "",
+      sortField: "session_count",
+      cursor: null,
+      limit: 25,
+      dateRange: "allTime",
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      "fetch_clients_page",
+      expect.objectContaining({ p_tier: null }),
+    );
   });
 
   it("throws a generic error when RPC fails", async () => {
