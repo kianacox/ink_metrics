@@ -45,6 +45,8 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable key>
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001
 INBUCKET_BASE_URL=http://127.0.0.1:54324
+# Required for /contact form delivery via Resend (server-side only).
+RESEND_API_KEY=<resend api key>
 ```
 
 To retrieve local keys:
