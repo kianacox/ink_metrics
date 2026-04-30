@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { ExpenseListItem } from "@/lib/expenses/models";
+import { useDeleteExpense } from "@/components/dashboard/expenses/hooks/use-expense-mutations";
 
 export interface ExpenseDeleteModalProps {
   open: boolean;
@@ -19,36 +19,25 @@ export function ExpenseDeleteModal({
   onClose,
   onDeleted,
 }: ExpenseDeleteModalProps) {
-  const queryClient = useQueryClient();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useDeleteExpense({
+    onSuccess: () => {
+      onDeleted();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   if (!open || !expense) {
     return null;
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setError(null);
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/expenses/${expense.id}`, {
-        method: "DELETE",
-      });
-      const body = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not delete expense.");
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      onDeleted();
-      onClose();
-    } catch {
-      setError("Could not delete expense.");
-    } finally {
-      setIsDeleting(false);
-    }
+    mutate({ id: expense.id });
   };
 
   return (
@@ -92,7 +81,7 @@ export function ExpenseDeleteModal({
               variant="outline"
               className="w-full sm:w-auto"
               onClick={onClose}
-              disabled={isDeleting}
+              disabled={isPending}
             >
               Cancel
             </Button>
@@ -100,10 +89,10 @@ export function ExpenseDeleteModal({
               type="button"
               variant="destructive"
               className="w-full sm:w-auto"
-              onClick={() => void handleDelete()}
-              disabled={isDeleting}
+              onClick={handleDelete}
+              disabled={isPending}
             >
-              {isDeleting ? "Deleting…" : "Delete permanently"}
+              {isPending ? "Deleting…" : "Delete permanently"}
             </Button>
           </div>
         </CardContent>

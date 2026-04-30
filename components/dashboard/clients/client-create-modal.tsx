@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
+import { useCreateClient } from "@/components/dashboard/clients/hooks/use-client-mutations";
 
 interface ClientCreateModalProps {
   open: boolean;
@@ -13,10 +13,8 @@ interface ClientCreateModalProps {
 
 export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModalProps) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [contactInfo, setContactInfo] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
@@ -30,7 +28,18 @@ export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModa
     onClose();
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const { mutate, isPending } = useCreateClient({
+    onSuccess: () => {
+      reset();
+      onCreated();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
@@ -40,29 +49,7 @@ export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModa
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName, contactInfo: contactInfo.trim() }),
-      });
-
-      const body = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not create client.");
-        return;
-      }
-
-      reset();
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
-      onCreated();
-      onClose();
-    } catch {
-      setError("Could not create client.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    mutate({ name: trimmedName, contactInfo: contactInfo.trim() });
   };
 
   return (
@@ -73,7 +60,7 @@ export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModa
       description="Add a new client. You can attach them to sessions later."
       onClose={handleClose}
     >
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid gap-2">
           <Label htmlFor="create-client-name">Client name</Label>
           <Input
@@ -109,12 +96,12 @@ export function ClientCreateModal({ open, onClose, onCreated }: ClientCreateModa
             variant="outline"
             className="w-full sm:w-auto"
             onClick={handleClose}
-            disabled={isSubmitting}
+            disabled={isPending}
           >
             Cancel
           </Button>
-          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create client"}
+          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+            {isPending ? "Creating..." : "Create client"}
           </Button>
         </div>
       </form>

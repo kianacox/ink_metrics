@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
 import { validateEditableSessionFields } from "@/components/dashboard/session-form/utils/session-form-validation";
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
-import type { UpdateSessionApiResponse } from "@/components/dashboard/sessions/models";
+import { useUpdateSession } from "@/components/dashboard/sessions/hooks/use-session-mutations";
 
 interface SessionEditModalProps {
   open: boolean;
@@ -31,12 +30,20 @@ export function SessionEditModal({
   onUpdated,
 }: SessionEditModalProps) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const [profit, setProfit] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [inProgress, setInProgress] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useUpdateSession({
+    onSuccess: () => {
+      onUpdated();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   useEffect(() => {
     if (!open || !session) {
@@ -52,7 +59,7 @@ export function SessionEditModal({
     return null;
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
@@ -66,35 +73,12 @@ export function SessionEditModal({
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/sessions/${session.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          priceMinor: validationResult.priceMinor,
-          sessionDate: validationResult.sessionDate,
-          inProgress,
-        }),
-      });
-
-      const responseBody = (await response.json()) as UpdateSessionApiResponse;
-      if (!response.ok) {
-        setError(responseBody.error ?? "Could not update session.");
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      onUpdated();
-      onClose();
-    } catch {
-      setError("Could not update session.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    mutate({
+      id: session.id,
+      priceMinor: validationResult.priceMinor,
+      sessionDate: validationResult.sessionDate,
+      inProgress,
+    });
   };
 
   return (
@@ -131,12 +115,12 @@ export function SessionEditModal({
             variant="outline"
             className="w-full sm:w-auto"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isPending}
           >
             Close
           </Button>
-          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Confirm"}
+          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+            {isPending ? "Saving..." : "Confirm"}
           </Button>
         </div>
       </form>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import type { ClientListItem } from "@/lib/clients/models";
+import { useUpdateClient } from "@/components/dashboard/clients/hooks/use-client-mutations";
 
 interface ClientEditModalProps {
   open: boolean;
@@ -20,11 +20,19 @@ export function ClientEditModal({
   onUpdated,
 }: ClientEditModalProps) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [contactInfo, setContactInfo] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useUpdateClient({
+    onSuccess: () => {
+      onUpdated();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   useEffect(() => {
     if (!open || !client) {
@@ -39,7 +47,7 @@ export function ClientEditModal({
     return null;
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
@@ -49,28 +57,7 @@ export function ClientEditModal({
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/clients/${client.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName, contactInfo: contactInfo.trim() }),
-      });
-
-      const body = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not update client.");
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
-      onUpdated();
-      onClose();
-    } catch {
-      setError("Could not update client.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    mutate({ id: client.id, name: trimmedName, contactInfo: contactInfo.trim() });
   };
 
   return (
@@ -81,7 +68,7 @@ export function ClientEditModal({
       description="Update this client's name or contact information."
       onClose={onClose}
     >
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid gap-2">
           <Label htmlFor="edit-client-name">Client name</Label>
           <Input
@@ -116,12 +103,12 @@ export function ClientEditModal({
             variant="outline"
             className="w-full sm:w-auto"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isPending}
           >
             Close
           </Button>
-          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save changes"}
+          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+            {isPending ? "Saving..." : "Save changes"}
           </Button>
         </div>
       </form>

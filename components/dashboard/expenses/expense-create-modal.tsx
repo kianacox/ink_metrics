@@ -2,7 +2,6 @@
 
 import { useId, useRef, useState } from "react";
 import { Paperclip } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -15,6 +14,7 @@ import {
   uploadExpenseReceipt,
   validateReceiptFile,
 } from "@/lib/expenses/upload-expense-receipt";
+import { useCreateExpense } from "@/components/dashboard/expenses/hooks/use-expense-mutations";
 
 export interface ExpenseCreateModalProps {
   open: boolean;
@@ -32,16 +32,23 @@ export function ExpenseCreateModal({
   onCreated,
 }: ExpenseCreateModalProps) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const [item, setItem] = useState("");
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [amount, setAmount] = useState("");
   const [datePurchased, setDatePurchased] = useState(today);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+
+  const { mutateAsync: createExpense, isPending: isCreating } = useCreateExpense({
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const isSubmitting = isCreating || isUploadingReceipt;
 
   function resetForm() {
     setItem("");
@@ -90,66 +97,56 @@ export function ExpenseCreateModal({
       }
     }
 
-    setIsSubmitting(true);
     setReceiptWarning(null);
+
+    let createResponse: { expenseId?: string };
     try {
-      // Step 1: create the expense row
-      const response = await fetch("/api/expenses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item: trimmedItem,
-          category,
-          amountMinor,
-          currencyCode: defaultCurrency,
-          datePurchased,
-        }),
+      createResponse = await createExpense({
+        item: trimmedItem,
+        category,
+        amountMinor,
+        currencyCode: defaultCurrency,
+        datePurchased,
       });
+    } catch {
+      // onError handler already populated `error`
+      return;
+    }
 
-      const body = (await response.json()) as { error?: string; expenseId?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not log expense.");
-        return;
-      }
+    const expenseId = createResponse.expenseId;
 
-      const expenseId = body.expenseId;
-
-      // Step 2 (optional): upload receipt and patch
-      if (receiptFile && expenseId) {
+    // Optional receipt upload + patch
+    if (receiptFile && expenseId) {
+      setIsUploadingReceipt(true);
+      try {
         const uploadResult = await uploadExpenseReceipt({ expenseId, file: receiptFile });
 
         if (isUploadError(uploadResult)) {
           // Non-blocking: expense was saved but receipt upload failed
-          const warning = `Expense logged, but receipt could not be uploaded: ${uploadResult.error}`;
-          setReceiptWarning(warning);
-          await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-          await queryClient.invalidateQueries({ queryKey: ["analytics"] });
+          setReceiptWarning(
+            `Expense logged, but receipt could not be uploaded: ${uploadResult.error}`,
+          );
           onCreated();
           return; // keep modal open for retry
-        } else {
-          // Step 3: patch with receipt metadata
-          await fetch(`/api/expenses/${expenseId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              receiptPath: uploadResult.path,
-              receiptMimeType: uploadResult.mimeType,
-              receiptSizeBytes: uploadResult.sizeBytes,
-            }),
-          });
         }
-      }
 
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      onCreated();
-      resetForm();
-      onClose();
-    } catch {
-      setError("Could not log expense.");
-    } finally {
-      setIsSubmitting(false);
+        await fetch(`/api/expenses/${expenseId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receiptPath: uploadResult.path,
+            receiptMimeType: uploadResult.mimeType,
+            receiptSizeBytes: uploadResult.sizeBytes,
+          }),
+        });
+      } finally {
+        setIsUploadingReceipt(false);
+      }
     }
+
+    onCreated();
+    resetForm();
+    onClose();
   };
 
   if (!open) {
