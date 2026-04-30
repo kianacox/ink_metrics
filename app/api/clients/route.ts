@@ -1,6 +1,7 @@
 import { parseClientCreatePayload } from "@/lib/clients/client-write";
 import { fetchClientsPage } from "@/lib/clients/fetch-clients-page";
 import type { ClientSortField } from "@/lib/clients/models";
+import type { ClientTier } from "@/lib/clients/tier";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
@@ -14,6 +15,7 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
   "yearToDate",
   "allTime",
 ]);
+const VALID_TIERS = new Set<ClientTier>(["vip", "regular", "one-timer"]);
 const DEFAULT_LIMIT = 25;
 
 function errorJson(status: number, code: string, error: string) {
@@ -62,6 +64,15 @@ export async function GET(request: Request) {
   const reportingTimezone = params.get("tz") ?? "UTC";
   const cursorParam = params.get("cursor");
 
+  const tierParam = params.get("tier");
+  let tier: ClientTier | null = null;
+  if (tierParam !== null) {
+    if (!VALID_TIERS.has(tierParam as ClientTier)) {
+      return errorJson(400, "CLIENTS_INVALID_TIER", `Invalid tier: ${tierParam}`);
+    }
+    tier = tierParam as ClientTier;
+  }
+
   try {
     const cursor = decodeCompositeCursor(cursorParam);
     const result = await fetchClientsPage({
@@ -73,6 +84,7 @@ export async function GET(request: Request) {
       cursor,
       limit,
       dateRange,
+      tier,
     });
 
     return NextResponse.json(result);

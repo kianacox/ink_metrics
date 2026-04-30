@@ -49,6 +49,7 @@ export async function fetchClientsPage({
   cursor,
   limit,
   dateRange,
+  tier,
 }: FetchClientsPageParams): Promise<FetchClientsPageResult> {
   const dateRangeStart = getDateRangeStartDate({
     preset: dateRange,
@@ -73,6 +74,7 @@ export async function fetchClientsPage({
     p_page_size: limit + 1,
     p_cursor_sort_value: cursorSortValue,
     p_cursor_client_id: cursor?.id ?? null,
+    p_tier: tier ?? null,
   });
 
   if (error) {
