@@ -15,8 +15,8 @@ import { validateSessionForm } from "@/components/dashboard/session-form/utils/s
 import { SessionEditableFields } from "@/components/dashboard/session-form/session-editable-fields";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "luxon";
+import { useCreateSession } from "@/components/dashboard/sessions/hooks/use-session-mutations";
 
 type SubmitStatus = { type: "success" | "error"; message: string } | null;
 type ToastStatus = { message: string } | null;
@@ -31,7 +31,6 @@ interface AddSessionModalProps {
 
 export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }: AddSessionModalProps = {}) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const isControlled = controlledOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isControlled ? controlledOpen : internalOpen;
@@ -61,11 +60,10 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     reportingTimezone,
     displayAdvertCheckbox,
     loadError,
-    saveSession,
+    addClient,
   } = useSessionFormData(open);
   const [status, setStatus] = useState<SubmitStatus>(null);
   const [toast, setToast] = useState<ToastStatus>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = useCallback((preserveStatus = false) => {
     setClientQuery("");
@@ -80,6 +78,22 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
       setStatus(null);
     }
   }, [reportingTimezone]);
+
+  const { mutate: createSession, isPending: isLoading } = useCreateSession({
+    onSuccess: (data) => {
+      const createdClient = data.client;
+      if (createdClient) {
+        addClient(createdClient);
+      }
+      setOpen(false);
+      resetForm();
+      setToast({ message: "Session saved successfully." });
+      onSaved?.();
+    },
+    onError: (err) => {
+      setStatus({ type: "error", message: err.message });
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -125,10 +139,9 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     normalizedClientName.length >= 1 && !selectedClientId && !createNewClient;
   const shouldShowCreateOption =
     showClientDropdown && !isDuplicateClientName(clients, normalizedClientName);
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStatus(null);
-    setIsLoading(true);
 
     const normalizedNewClientContact = newClientContact.trim();
     const clientId = selectedClientId;
@@ -143,40 +156,19 @@ export function AddSessionModal({ open: controlledOpen, onOpenChange, onSaved }:
     });
     if (!validationResult.valid) {
       setStatus({ type: "error", message: validationResult.errorMessage });
-      setIsLoading(false);
       return;
     }
 
-    try {
-      const result = await saveSession({
-        selectedClientId: clientId,
-        createNewClient,
-        clientName: validationResult.normalizedClientName,
-        clientContact: normalizedNewClientContact,
-        priceMinor: validationResult.priceMinor,
-        sessionDate: validationResult.sessionDate,
-        throughAds: displayAdvertCheckbox && createNewClient ? throughAds : null,
-        inProgress,
-      });
-
-      if (!result.success) {
-        setStatus({
-          type: "error",
-          message: result.message ?? "Could not save session.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      setOpen(false);
-      resetForm();
-      setToast({ message: "Session saved successfully." });
-      onSaved?.();
-    } finally {
-      setIsLoading(false);
-    }
+    createSession({
+      selectedClientId: clientId,
+      createNewClient,
+      clientName: validationResult.normalizedClientName,
+      clientContact: normalizedNewClientContact,
+      priceMinor: validationResult.priceMinor,
+      sessionDate: validationResult.sessionDate,
+      throughAds: displayAdvertCheckbox && createNewClient ? throughAds : null,
+      inProgress,
+    });
   };
 
   return (

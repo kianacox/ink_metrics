@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Input, Label } from "@/components/ui";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
@@ -16,6 +15,7 @@ import {
   validateReceiptFile,
 } from "@/lib/expenses/upload-expense-receipt";
 import { Paperclip } from "lucide-react";
+import { useUpdateExpense } from "@/components/dashboard/expenses/hooks/use-expense-mutations";
 
 export interface ExpenseEditModalProps {
   open: boolean;
@@ -33,18 +33,25 @@ export function ExpenseEditModal({
   onUpdated,
 }: ExpenseEditModalProps) {
   const titleId = useId();
-  const queryClient = useQueryClient();
   const [item, setItem] = useState("");
   const [category, setCategory] = useState<(typeof EXPENSE_CATEGORIES)[number]>(
     EXPENSE_CATEGORIES[0],
   );
   const [amount, setAmount] = useState("");
   const [datePurchased, setDatePurchased] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receiptWarning, setReceiptWarning] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+
+  const { mutateAsync: updateExpense, isPending: isUpdating } = useUpdateExpense({
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const isSubmitting = isUpdating || isUploadingReceipt;
 
   useEffect(() => {
     if (!open || !expense) {
@@ -94,37 +101,32 @@ export function ExpenseEditModal({
       }
     }
 
-    setIsSubmitting(true);
     setReceiptWarning(null);
+
     try {
-      const response = await fetch(`/api/expenses/${expense.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item: trimmedItem,
-          category,
-          amountMinor,
-          currencyCode: defaultCurrency,
-          datePurchased,
-        }),
+      await updateExpense({
+        id: expense.id,
+        item: trimmedItem,
+        category,
+        amountMinor,
+        currencyCode: defaultCurrency,
+        datePurchased,
       });
+    } catch {
+      // onError handler already populated `error`
+      return;
+    }
 
-      const body = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not update expense.");
-        return;
-      }
-
-      // Handle optional receipt replacement
-      if (receiptFile) {
+    // Handle optional receipt replacement
+    if (receiptFile) {
+      setIsUploadingReceipt(true);
+      try {
         const uploadResult = await uploadExpenseReceipt({ expenseId: expense.id, file: receiptFile });
 
         if (isUploadError(uploadResult)) {
           setReceiptWarning(
             `Expense saved, but receipt could not be uploaded: ${uploadResult.error}`,
           );
-          await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-          await queryClient.invalidateQueries({ queryKey: ["analytics"] });
           onUpdated();
           return; // keep modal open for retry
         }
@@ -138,17 +140,13 @@ export function ExpenseEditModal({
             receiptSizeBytes: uploadResult.sizeBytes,
           }),
         });
+      } finally {
+        setIsUploadingReceipt(false);
       }
-
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      onUpdated();
-      onClose();
-    } catch {
-      setError("Could not update expense.");
-    } finally {
-      setIsSubmitting(false);
     }
+
+    onUpdated();
+    onClose();
   };
 
   return (

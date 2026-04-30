@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
-import type { DeleteSessionApiResponse } from "@/components/dashboard/sessions/models";
+import { useDeleteSession } from "@/components/dashboard/sessions/hooks/use-session-mutations";
 
 interface SessionDeleteModalProps {
   open: boolean;
@@ -20,36 +19,25 @@ export function SessionDeleteModal({
   onClose,
   onDeleted,
 }: SessionDeleteModalProps) {
-  const queryClient = useQueryClient();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useDeleteSession({
+    onSuccess: () => {
+      onDeleted();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   if (!open || !session) {
     return null;
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setError(null);
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/sessions/${session.id}`, {
-        method: "DELETE",
-      });
-      const responseBody = (await response.json()) as DeleteSessionApiResponse;
-      if (!response.ok) {
-        setError(responseBody.error ?? "Could not delete session.");
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      onDeleted();
-      onClose();
-    } catch {
-      setError("Could not delete session.");
-    } finally {
-      setIsDeleting(false);
-    }
+    mutate({ id: session.id });
   };
 
   return (
@@ -92,7 +80,7 @@ export function SessionDeleteModal({
               variant="outline"
               className="w-full sm:w-auto"
               onClick={onClose}
-              disabled={isDeleting}
+              disabled={isPending}
             >
               Cancel
             </Button>
@@ -100,10 +88,10 @@ export function SessionDeleteModal({
               type="button"
               variant="destructive"
               className="w-full sm:w-auto"
-              onClick={() => void handleDelete()}
-              disabled={isDeleting}
+              onClick={handleDelete}
+              disabled={isPending}
             >
-              {isDeleting ? "Deleting..." : "Confirm"}
+              {isPending ? "Deleting..." : "Confirm"}
             </Button>
           </div>
         </CardContent>

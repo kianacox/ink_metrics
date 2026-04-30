@@ -3,12 +3,7 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import { useCallback, useEffect, useState } from "react";
-import type {
-  ClientOption,
-  SaveSessionApiResponse,
-  SaveSessionParams,
-  SaveSessionResult,
-} from "@/components/dashboard/session-form/models";
+import type { ClientOption } from "@/components/dashboard/session-form/models";
 
 interface PreferencesApiResponse {
   defaultCurrency: string;
@@ -77,57 +72,20 @@ export function useSessionFormData(open: boolean) {
     };
   }, [open]);
 
-  const saveSession = useCallback(
-    async ({
-      selectedClientId,
-      createNewClient,
-      clientName,
-      clientContact,
-      priceMinor,
-      sessionDate,
-      throughAds,
-      inProgress,
-    }: SaveSessionParams): Promise<SaveSessionResult> => {
-      const response = await fetch("/api/sessions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          selectedClientId,
-          createNewClient,
-          clientName,
-          clientContact,
-          priceMinor,
-          sessionDate,
-          throughAds,
-          inProgress,
-        }),
-      });
-      const responseBody = (await response.json()) as SaveSessionApiResponse;
-      if (!response.ok) {
-        return {
-          success: false,
-          message: responseBody.error ?? "Could not save session.",
-        };
+  const addClient = useCallback((createdClient: ClientOption) => {
+    if (!createdClient.client_id || !createdClient.name) {
+      return;
+    }
+    setClients((prevClients) => {
+      const exists = prevClients.some(
+        (client) => client.client_id === createdClient.client_id,
+      );
+      if (exists) {
+        return prevClients;
       }
-
-      const createdClient = responseBody.client;
-      if (createdClient?.client_id && createdClient.name) {
-        setClients((prevClients) => {
-          const exists = prevClients.some((client) => client.client_id === createdClient.client_id);
-          if (exists) {
-            return prevClients;
-          }
-
-          return [...prevClients, createdClient].sort((a, b) => a.name.localeCompare(b.name));
-        });
-      }
-
-      return { success: true };
-    },
-    [],
-  );
+      return [...prevClients, createdClient].sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }, []);
 
   return {
     clients,
@@ -136,6 +94,6 @@ export function useSessionFormData(open: boolean) {
     reportingTimezone,
     displayAdvertCheckbox,
     loadError,
-    saveSession,
+    addClient,
   };
 }

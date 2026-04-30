@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { ClientListItem } from "@/lib/clients/models";
+import { useDeleteClient } from "@/components/dashboard/clients/hooks/use-client-mutations";
 
 interface ClientDeleteModalProps {
   open: boolean;
@@ -19,34 +19,25 @@ export function ClientDeleteModal({
   onClose,
   onDeleted,
 }: ClientDeleteModalProps) {
-  const queryClient = useQueryClient();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useDeleteClient({
+    onSuccess: () => {
+      onDeleted();
+      onClose();
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   if (!open || !client) {
     return null;
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setError(null);
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/clients/${client.id}`, {
-        method: "DELETE",
-      });
-      const body = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setError(body.error ?? "Could not delete client.");
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
-      onDeleted();
-      onClose();
-    } catch {
-      setError("Could not delete client.");
-    } finally {
-      setIsDeleting(false);
-    }
+    mutate({ id: client.id });
   };
 
   return (
@@ -92,7 +83,7 @@ export function ClientDeleteModal({
               variant="outline"
               className="w-full sm:w-auto"
               onClick={onClose}
-              disabled={isDeleting}
+              disabled={isPending}
             >
               Cancel
             </Button>
@@ -100,10 +91,10 @@ export function ClientDeleteModal({
               type="button"
               variant="destructive"
               className="w-full sm:w-auto"
-              onClick={() => void handleDelete()}
-              disabled={isDeleting}
+              onClick={handleDelete}
+              disabled={isPending}
             >
-              {isDeleting ? "Deleting..." : "Delete permanently"}
+              {isPending ? "Deleting..." : "Delete permanently"}
             </Button>
           </div>
         </CardContent>
