@@ -94,14 +94,20 @@ test.describe("profile editing", () => {
   // -------------------------------------------------------------------------
   // Display name
   // -------------------------------------------------------------------------
-  test("updates display name and shows success message", async ({ page }) => {
+  test("updates display name and shows immediate success message (no effective date)", async ({
+    page,
+  }) => {
     await goToProfilePage(page);
     const profilePanel = getProfilePanel(page);
 
     await profilePanel.locator("#profile-display-name").fill("Updated Artist Name");
     await saveProfileChanges(page);
 
-    await expectProfileSuccess(page);
+    // Name-only changes use the immediate update path — the success message
+    // should not mention an effective date / "applies from".
+    await expectProfileStatus(page, /^profile updated successfully\.$/i);
+    const statusEl = profilePanel.getByRole("status");
+    await expect(statusEl).not.toContainText(/applies from|compensation/i);
   });
 
   test("shows error when display name is less than 2 characters", async ({
