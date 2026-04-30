@@ -1,5 +1,9 @@
 import { fetchProfileSettings } from "@/lib/profiles/fetch-profile-settings";
 import { parseProfileSetupPayload } from "@/lib/profiles/profile-setup";
+import {
+  isDisplayNameOnlyChange,
+  type ActiveProfileSnapshot,
+} from "@/lib/profiles/profile-update-routing";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
 
@@ -72,20 +76,21 @@ export async function PUT(request: Request) {
   } catch {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
-  const { data: profileRows, error: profileFetchError } = await supabase
-    .from("profiles")
-    .select("default_currency,marketing_consent")
-    .eq("user_id", user.id)
-    .limit(1);
 
-  if (profileFetchError) {
+  const settings = await fetchProfileSettings({
+    supabase,
+    userId: user.id,
+  });
+
+  if (!settings) {
     return NextResponse.json(
-      { error: "Could not load current profile details." },
-      { status: 500 },
+      { error: "Profile setup is incomplete." },
+      { status: 409 },
     );
   }
 
-  const currentProfile = profileRows?.[0];
+  const { profile: currentProfile, compensation: currentCompensation } = settings;
+
   if (!currentProfile?.default_currency) {
     return NextResponse.json(
       { error: "Default currency is missing from profile setup." },
@@ -117,6 +122,50 @@ export async function PUT(request: Request) {
     );
   }
 
+  const snapshot: ActiveProfileSnapshot = {
+    displayName: currentProfile.display_name ?? "",
+    reportingTimezone: currentProfile.reporting_timezone ?? "",
+    payChairRent: currentCompensation.pay_chair_rent,
+    rentType: currentCompensation.rent_type,
+    fixedFrequency: currentCompensation.fixed_frequency,
+    fixedAmountMinor: currentCompensation.fixed_amount_minor,
+    commissionRateBps: currentCompensation.commission_rate_bps,
+    commissionCapped: currentCompensation.commission_capped,
+    commissionCapFrequency: currentCompensation.commission_cap_frequency,
+    commissionCapAmountMinor: currentCompensation.commission_cap_amount_minor,
+  };
+
+  const candidateSnapshot: ActiveProfileSnapshot = {
+    displayName: parsedPayload.displayName,
+    reportingTimezone: parsedPayload.reportingTimezone,
+    payChairRent: parsedPayload.payChairRent,
+    rentType: parsedPayload.rentType,
+    fixedFrequency: parsedPayload.fixedFrequency,
+    fixedAmountMinor: parsedPayload.fixedAmountMinor,
+    commissionRateBps: parsedPayload.commissionRateBps,
+    commissionCapped: parsedPayload.commissionCapped,
+    commissionCapFrequency: parsedPayload.commissionCapFrequency,
+    commissionCapAmountMinor: parsedPayload.commissionCapAmountMinor,
+  };
+
+  // Display-name-only path: update the profile row directly without rolling
+  // over the active compensation version. No effective date is returned —
+  // the change is immediate.
+  if (isDisplayNameOnlyChange(snapshot, candidateSnapshot)) {
+    const { error: updateError } = await supabase.rpc(
+      "update_profile_display_name",
+      { p_display_name: parsedPayload.displayName },
+    );
+
+    if (updateError) {
+      return errorJson(400, "PROFILE_UPDATE_FAILED", "Could not update profile.");
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  // Compensation change path (includes display name + chair rent together):
+  // close the active version and open a new one effective tomorrow.
   const { data: newEffectiveFrom, error: rolloverError } = await supabase.rpc(
     "rollover_profile_compensation_version",
     {
