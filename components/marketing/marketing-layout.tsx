@@ -88,6 +88,12 @@ function MarketingFooter() {
         </span>
         <nav className="flex items-center gap-4">
           <Link
+            href="/contact"
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Contact
+          </Link>
+          <Link
             href="/privacy-policy"
             className="text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
