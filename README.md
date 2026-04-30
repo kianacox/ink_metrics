@@ -113,15 +113,42 @@ In UI mode, select a test file (for example `tests/auth.spec.ts`) and run tests 
 
 The Playwright global setup resets local Supabase DB before runs (`supabase db reset --local --yes`) for a clean test state.
 
-### Seeded E2E users
+### Seeded test users
 
-Local DB reset also applies [`supabase/seed.sql`](./supabase/seed.sql), which creates deterministic users for fast-path e2e journeys:
+Local DB reset also applies [`supabase/seed.sql`](./supabase/seed.sql), which creates deterministic users for fast-path e2e journeys. All users except the demo user share password `Password123!`. The demo user password is `Password123` (no `!`).
 
-- `seeded-session-user@example.com` (profile complete)
-- `seeded-incomplete-user@example.com` (profile incomplete)
-- Password comes from `E2E_SEEDED_USER_PASSWORD` (or falls back to `E2E_SIGN_UP_PASSWORD`).
+| Email | Password | Profile | Purpose |
+|---|---|---|---|
+| `seeded-session-user@example.com` | `Password123!` | Complete — "Seeded Session User", GBP, Europe/London | Auth happy path; logged-in dashboard state with no sessions |
+| `seeded-incomplete-user@example.com` | `Password123!` | Incomplete — no display name | Profile-setup redirect; `Next` button disabled until name entered |
+| `test@test.com` | `Password123` | Complete — "Demo Artist", GBP, Europe/London | Full data fixture: 41 sessions, 11 clients (incl. action-signal clients), 15 expenses spanning Jan–Apr 2026; 25% house commission capped at £250/week |
+| `seeded-tz-user@example.com` | `Password123!` | Complete — "Tokyo TZ User", USD, Asia/Tokyo (UTC+9) | Date-boundary QA for ahead-of-UTC timezones; 2 sessions, 2 clients |
+| `seeded-la-user@example.com` | `Password123!` | Complete — "LA TZ User", USD, America/Los_Angeles (UTC−8) | Date-boundary QA for behind-UTC timezones; 16 sessions, 5 clients, 8 expenses |
+| `seeded-retention-thin@example.com` | `Password123!` | Complete — "Retention Thin User", GBP, Europe/London | Retention widget "not enough data" state: 2 sessions, 2 clients (below both thresholds) |
+| `seeded-retention-boundary@example.com` | `Password123!` | Complete — "Retention Boundary User", GBP, Europe/London | Retention widget real-rate state: 4 sessions, 3 clients (1 returning → 33%); sits exactly at the minimum-data threshold |
 
-You can override these in tests with env vars:
+#### Demo user action-signal clients
+
+The demo user (`test@test.com`) includes four clients designed to trigger specific action states on the Actions tab:
+
+| Client | Action signal | Setup |
+|---|---|---|
+| Ravi Sharma | `lapsed_repeat` | 2 sessions, last Jan 22 2026 (≥56 days before Apr 20) |
+| Zoe Campbell | `lapsed_repeat` | 3 sessions, last Feb 10 2026 (≥56 days before Apr 20) |
+| Finn O'Connor | `new_client` | 1 session, Feb 15 2026 (≥42 days before Apr 20) |
+| Dana Cross | `in_progress` | 2 sessions, most recent Mar 10 2026 marked `in_progress=true` (≥28 days) |
+
+#### Test case guidance by user
+
+- **Auth flows** (sign-up, login, logout, password reset): use `seeded-session-user@example.com`
+- **Profile setup / onboarding gate**: use `seeded-incomplete-user@example.com`
+- **Session CRUD, expense CRUD, client CRUD, analytics**: use `test@test.com` (rich fixture data)
+- **Timezone edge cases** (date shown correctly across UTC boundaries): use the Tokyo or LA users
+- **Retention widget — insufficient data message**: use `seeded-retention-thin@example.com`
+- **Retention widget — real percentage display**: use `seeded-retention-boundary@example.com`
+- **Client Actions tab**: use `test@test.com` (action-signal clients are pre-seeded)
+
+#### Environment variable overrides
 
 ```env
 E2E_SIGN_UP_PASSWORD=<required-for-e2e>

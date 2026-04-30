@@ -2,19 +2,32 @@
 
 ## Ubiquitous Language
 
-| User term | Canonical app term | Notes |
-|-----------|-------------------|-------|
-| Chair rent | Paid to studio | Studio deduction — covers both percentage-split and flat-fee compensation models |
+
+| User term             | Canonical app term                 | Notes                                                                                                                                                         |
+| --------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chair rent            | Paid to studio                     | Studio deduction — covers both percentage-split and flat-fee compensation models                                                                              |
+| Compensation settings | Chair rent settings                | The artist's pay-to-studio arrangement: fixed rent or commission rate                                                                                         |
+| Compensation version  | `artist_compensation_versions` row | A time-bounded record of an artist's chair rent arrangement. Multiple versions form a non-overlapping timeline                                                |
+| Rollover              | Compensation version rollover      | Closing the current version (`effective_to = tomorrow`) and inserting a new one (`effective_from = tomorrow`). Triggered only when chair rent settings change |
+| Effective from        | `effective_from`                   | The date a compensation version becomes active. Changes to chair rent are never applied retroactively — they take effect the day after saving                 |
+| Display name          | `display_name`                     | The artist's chosen name shown in the dashboard header. Unrelated to compensation; updated immediately with no version rollover                               |
+| In-progress session   | `in_progress = true` session       | A session logged as started but not yet complete. Triggers an In Progress action card after 28 days                                                           |
+| Lapsed repeat client  | `lapsed_repeat` action             | A client with 2+ sessions whose most recent session was 56+ days ago. Triggers a Retention action card                                                        |
+| New client follow-up  | `new_client` action                | A client with exactly 1 session that was 42+ days ago. Triggers a Follow-up action card                                                                       |
+| Revenue at risk       | `revenue_at_risk_minor`            | The estimated revenue value associated with an action card — average session price for lapsed/new, session price for in-progress                              |
+
 
 ## Client Tiers
 
 Clients are classified into three mutually exclusive tiers based on **lifetime session count**. Tiers are computed, never manually assigned.
 
-| Tier | Condition |
-|------|-----------|
+
+| Tier          | Condition                |
+| ------------- | ------------------------ |
 | **One-timer** | 0 or 1 lifetime sessions |
-| **Regular** | 2–4 lifetime sessions |
-| **VIP** | 5+ lifetime sessions |
+| **Regular**   | 2–4 lifetime sessions    |
+| **VIP**       | 5+ lifetime sessions     |
+
 
 ### Rules
 
@@ -74,11 +87,13 @@ Action cards surface client retention nudges on the insights/actions tab. Each c
 
 ### Priority mapping
 
-| `actionType` | Display label | Priority | Accent colour |
-|---|---|---|---|
-| `lapsed_repeat` | Retention | HIGH | destructive (red) |
-| `new_client` | Follow-up | MEDIUM | amber |
-| `in_progress` | In Progress | MEDIUM | amber |
+
+| `actionType`    | Display label | Priority | Accent colour     |
+| --------------- | ------------- | -------- | ----------------- |
+| `lapsed_repeat` | Retention     | HIGH     | destructive (red) |
+| `new_client`    | Follow-up     | MEDIUM   | amber             |
+| `in_progress`   | In Progress   | MEDIUM   | amber             |
+
 
 ### Visual style
 
@@ -107,12 +122,14 @@ Artists can navigate the analytics dashboard month by month to view historical f
 
 All existing dashboard cards are shown for every month:
 
-| Card | Scope |
-|------|-------|
-| Take-home summary (gross, paid to studio, expenses, net) | Month-scoped |
-| Average profit per session | Month-scoped |
-| Client retention rate | Lifetime (all-time), same for every month |
-| Expenses by category | Month-scoped |
+
+| Card                                                     | Scope                                     |
+| -------------------------------------------------------- | ----------------------------------------- |
+| Take-home summary (gross, paid to studio, expenses, net) | Month-scoped                              |
+| Average profit per session                               | Month-scoped                              |
+| Client retention rate                                    | Lifetime (all-time), same for every month |
+| Expenses by category                                     | Month-scoped                              |
+
 
 Hours tattooing card is **permanently removed** (session duration tracking was dropped).
 
@@ -134,3 +151,4 @@ V1 uses **live computation** — same RPC approach as current dashboard, paramet
 
 - Unit tests: month param parsing, `hasPriorMonthData` boundary logic.
 - E2E tests: navigating between months, correct data per month, disabled navigation states.
+
