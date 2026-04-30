@@ -28,10 +28,6 @@ export function buildEmptyAnalyticsResponse(
       valueMinor: 0,
       sessionCount: 0,
     },
-    hoursTattooing: {
-      totalMinutes: 0,
-      totalHours: 0,
-    },
     expensesByCategory: {
       items: EXPENSE_CATEGORIES.map((category) => ({
         category,
@@ -39,5 +35,6 @@ export function buildEmptyAnalyticsResponse(
       })),
       totalMinor: 0,
     },
+    hasPriorMonthData: false,
   };
 }

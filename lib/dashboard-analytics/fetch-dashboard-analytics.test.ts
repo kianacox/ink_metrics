@@ -1,4 +1,8 @@
-import { fetchDashboardAnalytics } from "@/lib/dashboard-analytics/fetch-dashboard-analytics";
+import {
+  assertSupportedDashboardAnalyticsMonth,
+  DashboardAnalyticsMonthParamError,
+  fetchDashboardAnalytics,
+} from "@/lib/dashboard-analytics/fetch-dashboard-analytics";
 
 function buildSupabaseMock({
   profileError = null,
@@ -23,6 +27,8 @@ function buildSupabaseMock({
   retentionRpcError = null,
   expensesCategoryRpcData = [] as Array<{ category: string; total_minor: number | string | null }>,
   expensesCategoryRpcError = null,
+  priorSessionsCount = 0,
+  priorExpensesCount = 0,
 }: {
   profileError?: { message: string } | null;
   profileTimezone?: string;
@@ -42,14 +48,48 @@ function buildSupabaseMock({
   retentionRpcError?: { message: string } | null;
   expensesCategoryRpcData?: Array<{ category: string; total_minor: number | string | null }>;
   expensesCategoryRpcError?: { message: string } | null;
+  priorSessionsCount?: number;
+  priorExpensesCount?: number;
 }) {
-  const limit = jest.fn().mockResolvedValue({
+  const profileLimit = jest.fn().mockResolvedValue({
     data: [{ reporting_timezone: profileTimezone }],
     error: profileError,
   });
-  const eq = jest.fn(() => ({ limit }));
-  const select = jest.fn(() => ({ eq }));
-  const from = jest.fn(() => ({ select }));
+  const profileEq = jest.fn(() => ({ limit: profileLimit }));
+  const profileSelect = jest.fn(() => ({ eq: profileEq }));
+
+  const sessionsLt = jest.fn().mockResolvedValue({
+    count: priorSessionsCount,
+    error: null,
+  });
+  const sessionsGte = jest.fn(() => ({ lt: sessionsLt }));
+  const sessionsEq = jest.fn(() => ({ gte: sessionsGte }));
+  const sessionsSelect = jest.fn(() => ({ eq: sessionsEq }));
+
+  const expensesLt = jest.fn().mockResolvedValue({
+    count: priorExpensesCount,
+    error: null,
+  });
+  const expensesGte = jest.fn(() => ({ lt: expensesLt }));
+  const expensesEq = jest.fn(() => ({ gte: expensesGte }));
+  const expensesSelect = jest.fn(() => ({ eq: expensesEq }));
+
+  const from = jest.fn((table: string) => {
+    if (table === "profiles") {
+      return { select: profileSelect };
+    }
+    if (table === "sessions") {
+      return { select: sessionsSelect };
+    }
+    if (table === "expenses") {
+      return { select: expensesSelect };
+    }
+    throw new Error(`Unexpected table: ${table}`);
+  });
+
+  const select = profileSelect;
+  const eq = profileEq;
+  const limit = profileLimit;
   const rpc = jest.fn().mockImplementation((functionName: string) => {
     if (functionName === "compute_dashboard_take_home_summary") {
       return Promise.resolve({
@@ -87,6 +127,46 @@ function buildSupabaseMock({
     rpc,
   };
 }
+
+describe("assertSupportedDashboardAnalyticsMonth", () => {
+  it("accepts null", () => {
+    expect(() => assertSupportedDashboardAnalyticsMonth(null)).not.toThrow();
+  });
+
+  it("accepts 'current'", () => {
+    expect(() => assertSupportedDashboardAnalyticsMonth("current")).not.toThrow();
+  });
+
+  it("accepts a valid YYYY-MM month param", () => {
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-03")).not.toThrow();
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-01")).not.toThrow();
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-12")).not.toThrow();
+  });
+
+  it("throws for an out-of-range month number", () => {
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-00")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-13")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+  });
+
+  it("throws for malformed values", () => {
+    expect(() => assertSupportedDashboardAnalyticsMonth("last")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026/03")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+    expect(() => assertSupportedDashboardAnalyticsMonth("2026-3")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+    expect(() => assertSupportedDashboardAnalyticsMonth("26-03")).toThrow(
+      DashboardAnalyticsMonthParamError,
+    );
+  });
+});
 
 describe("fetchDashboardAnalytics", () => {
   it("maps take-home RPC output into the analytics response", async () => {
@@ -671,6 +751,131 @@ describe("fetchDashboardAnalytics", () => {
         ]),
       );
       expect(categories).toHaveLength(7);
+    });
+  });
+
+  describe("monthParam handling", () => {
+    it("defaults to 'current' month when no monthParam is provided", async () => {
+      const mock = buildSupabaseMock({});
+
+      await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      // The take-home RPC should have been called with the user id and a
+      // reporting timezone — the window itself is the "current" window.
+      expect(mock.rpc).toHaveBeenCalledWith(
+        "compute_dashboard_take_home_summary",
+        expect.objectContaining({
+          p_user_id: "user-1",
+          p_reporting_timezone: "Europe/London",
+        }),
+      );
+    });
+
+    it("passes a YYYY-MM monthParam through to the analytics RPCs", async () => {
+      const mock = buildSupabaseMock({});
+
+      await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+        monthParam: "2026-03",
+      });
+
+      // March 2026 in Europe/London: GMT (UTC+0). The window is
+      // [2026-03-01T00:00Z, 2026-04-01T00:00Z) because BST starts late March
+      // 2026 (29 Mar) — but the window is keyed off the *start* of the local
+      // month so the start is exactly 00:00Z.
+      expect(mock.rpc).toHaveBeenCalledWith(
+        "compute_dashboard_take_home_summary",
+        expect.objectContaining({
+          p_user_id: "user-1",
+          p_reporting_timezone: "Europe/London",
+          p_month_start_local_date: "2026-03-01",
+          p_month_end_local_date: "2026-04-01",
+          p_month_start_utc: "2026-03-01T00:00:00.000Z",
+        }),
+      );
+
+      expect(mock.rpc).toHaveBeenCalledWith(
+        "compute_expenses_by_category",
+        expect.objectContaining({
+          p_user_id: "user-1",
+          p_month_start_local_date: "2026-03-01",
+          p_month_end_local_date: "2026-04-01",
+        }),
+      );
+    });
+
+    it("does not scope client retention by month (lifetime)", async () => {
+      const mock = buildSupabaseMock({});
+
+      await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+        monthParam: "2026-03",
+      });
+
+      // compute_lifetime_client_retention should be called with only the
+      // user id — no month window params.
+      expect(mock.rpc).toHaveBeenCalledWith(
+        "compute_lifetime_client_retention",
+        { p_user_id: "user-1" },
+      );
+    });
+  });
+
+  describe("hasPriorMonthData", () => {
+    it("returns hasPriorMonthData: true when the prior month has activity", async () => {
+      const mock = buildSupabaseMock({ priorSessionsCount: 1 });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+        monthParam: "2026-04",
+      });
+
+      expect(result.hasPriorMonthData).toBe(true);
+    });
+
+    it("returns hasPriorMonthData: false when the prior month is empty", async () => {
+      const mock = buildSupabaseMock({
+        priorSessionsCount: 0,
+        priorExpensesCount: 0,
+      });
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+        monthParam: "2026-04",
+      });
+
+      expect(result.hasPriorMonthData).toBe(false);
+    });
+  });
+
+  describe("response shape", () => {
+    it("does not include hoursTattooing in the response", async () => {
+      const mock = buildSupabaseMock({});
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect("hoursTattooing" in result).toBe(false);
+    });
+
+    it("includes hasPriorMonthData in the response", async () => {
+      const mock = buildSupabaseMock({});
+
+      const result = await fetchDashboardAnalytics({
+        supabase: mock.supabase as never,
+        userId: "user-1",
+      });
+
+      expect(typeof result.hasPriorMonthData).toBe("boolean");
     });
   });
 });

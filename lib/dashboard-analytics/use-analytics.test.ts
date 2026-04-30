@@ -32,14 +32,11 @@ const MOCK_ANALYTICS: DashboardAnalyticsResponse = {
     valueMinor: 75000,
     sessionCount: 4,
   },
-  hoursTattooing: {
-    totalMinutes: 480,
-    totalHours: 8,
-  },
   expensesByCategory: {
     items: [{ category: "supplies", totalMinor: 50000 }],
     totalMinor: 50000,
   },
+  hasPriorMonthData: false,
 };
 
 describe("useAnalytics", () => {
