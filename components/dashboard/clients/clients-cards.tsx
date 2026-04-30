@@ -1,7 +1,14 @@
-import { Button, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Badge, Button, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import { formatSessionProfit } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { ClientListItem } from "@/lib/clients/models";
+import { getClientTier, type ClientTier } from "@/lib/clients/tier";
+
+const TIER_LABELS: Record<ClientTier, string> = {
+  vip: "VIP",
+  regular: "Regular",
+  "one-timer": "One-timer",
+};
 
 interface ClientsCardsProps {
   clients: ClientListItem[];
@@ -35,7 +42,7 @@ export function ClientsCards({
   return (
     <div className="grid gap-3 sm:hidden">
       {clients.map((client, idx) => {
-        const isReturning = client.lifetimeSessionCount > 1;
+        const tier = getClientTier(client.lifetimeSessionCount);
         const lastSessionLabel = formatLastSessionDate(client.lastSessionAt);
 
         return (
@@ -43,11 +50,9 @@ export function ClientsCards({
             <CardHeader className="p-4 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  {isReturning ? (
-                    <span className="mb-1.5 inline-flex items-center rounded-none bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
-                      Returning client
-                    </span>
-                  ) : null}
+                  <Badge variant="secondary" className="mb-1.5">
+                    {TIER_LABELS[tier]}
+                  </Badge>
                   <CardTitle className="truncate text-base">{client.name}</CardTitle>
                   {client.contactInfo ? (
                     <p className="mt-0.5 truncate text-sm text-muted-foreground">
