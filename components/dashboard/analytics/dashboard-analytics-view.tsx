@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnalyticsCard } from "@/components/dashboard/analytics/analytics-card";
 import { ExpensesByCategoryCardContent } from "@/components/dashboard/analytics/expenses-by-category-card";
+import { MonthNavigator } from "@/components/dashboard/analytics/month-navigator";
+import {
+  currentYYYYMM,
+  formatMonthLabel,
+  nextMonth,
+  prevMonth,
+} from "@/components/dashboard/analytics/month-arithmetic";
 import { Button, ErrorState, Skeleton } from "@/components/ui";
 import {
   formatMinorAsCurrency,
@@ -13,6 +21,27 @@ import { useAnalytics } from "@/lib/dashboard-analytics/use-analytics";
 import { usePreferences } from "@/lib/preferences/use-preferences";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { Info, X } from "lucide-react";
+
+const CURRENT_MONTH = "current";
+
+interface ReadonlyURLSearchParamsLike {
+  get: (name: string) => string | null;
+  toString: () => string;
+}
+
+function readMonthFromSearchParams(
+  searchParams: URLSearchParams | ReadonlyURLSearchParamsLike,
+): string {
+  const value = searchParams.get("month");
+  if (!value) {
+    return CURRENT_MONTH;
+  }
+  return value;
+}
+
+function resolveYYYYMM(viewedMonth: string): string {
+  return viewedMonth === CURRENT_MONTH ? currentYYYYMM() : viewedMonth;
+}
 
 const TAKE_HOME_COMPARISON_ITEMS = [
   {
@@ -113,14 +142,56 @@ export function DashboardAnalyticsView() {
   const retentionInfoTitleId = useId();
   const { data: preferences } = usePreferences();
   const effectiveCurrencyCode = preferences?.defaultCurrency ?? DEFAULT_CURRENCY;
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const viewedMonth = readMonthFromSearchParams(searchParams);
   const {
     data: analytics = null,
     isLoading,
     isError,
     refetch,
-  } = useAnalytics(preferences);
+  } = useAnalytics(preferences, viewedMonth);
   const error = isError ? "Could not load dashboard analytics." : null;
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
+
+  const navigateToMonth = useCallback(
+    (newMonth: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (newMonth === CURRENT_MONTH) {
+        params.delete("month");
+      } else {
+        params.set("month", newMonth);
+      }
+      const queryString = params.toString();
+      const url = queryString ? `${pathname}?${queryString}` : pathname;
+      router.replace(url);
+    },
+    [pathname, router, searchParams],
+  );
+
+  const handlePrev = useCallback(() => {
+    navigateToMonth(prevMonth(resolveYYYYMM(viewedMonth)));
+  }, [navigateToMonth, viewedMonth]);
+
+  const handleNext = useCallback(() => {
+    if (viewedMonth === CURRENT_MONTH) {
+      return;
+    }
+    const candidate = nextMonth(viewedMonth);
+    if (candidate === currentYYYYMM()) {
+      navigateToMonth(CURRENT_MONTH);
+      return;
+    }
+    navigateToMonth(candidate);
+  }, [navigateToMonth, viewedMonth]);
+
+  const { monthLabel: navMonthLabel, year: navYear } = useMemo(
+    () => formatMonthLabel(resolveYYYYMM(viewedMonth)),
+    [viewedMonth],
+  );
+  const canGoNext = viewedMonth !== CURRENT_MONTH;
+  const canGoPrev = analytics?.hasPriorMonthData ?? false;
 
   useEffect(() => {
     if (!isRetentionInfoOpen) {
@@ -168,6 +239,15 @@ export function DashboardAnalyticsView() {
           as you log sessions and expenses.
         </p>
       </div>
+
+      <MonthNavigator
+        monthLabel={navMonthLabel}
+        year={navYear}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+      />
 
       {error ? (
         <ErrorState message={error} onRetry={() => void refetch()} />
