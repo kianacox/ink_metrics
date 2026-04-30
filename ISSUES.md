@@ -1,6 +1,6 @@
 # Issues
 
-_Last updated: 2026-04-29T11:30:00Z_
+_Last updated: 2026-04-30T17:30:00Z_
 
 ## READY
 
@@ -10,27 +10,41 @@ _Last updated: 2026-04-29T11:30:00Z_
   depends: none
   brief: #109 (see issue comments)
 
-## BLOCKED
-
-- #95: feat(clients): server-side tier filter (DB migration → API)
-  depends: #94
-  reason: #94 PR #111 pending merge
-
-- #96: feat(clients): replace Returning badge with tier badge on rows and cards
-  depends: #94
-  reason: #94 PR #111 pending merge
-
-- #97: feat(clients): tier filter pills and view wiring
-  depends: #95, #96
-  reason: API tier param (#95) and badge component (#96) must land first
-
-- #98: test(clients): E2E tests for tier filter pills and badges
-  depends: #97
-  reason: UI under test does not exist until #97 ships
+- #116: bug: profile display name changes trigger compensation version rollover instead of immediate update
+  scope: app/api/profile/route.ts, supabase/migrations/, components/dashboard/profile/profile-edit-form.tsx, components/dashboard/profile/hooks/use-save-profile.ts, lib/profiles/fetch-profile-settings.ts
+  risk: medium
+  depends: none
+  brief: #116 (see issue comments)
 
 - #101: feat(analytics): parameterise analytics RPCs by month and update API response
-  depends: #100
-  reason: #100 PR #114 pending merge
+  scope: supabase/migrations/, app/api/dashboard/analytics/route.ts, lib/analytics/
+  risk: medium
+  depends: none
+  brief: #101 (see issue comments)
+
+- #95: feat(clients): server-side tier filter (DB migration → API)
+  scope: supabase/migrations/, app/api/clients/route.ts, lib/clients/fetch-clients-page.ts
+  risk: low
+  depends: none
+  brief: #95 (see issue comments)
+
+- #96: feat(clients): replace Returning badge with tier badge on rows and cards
+  scope: components/dashboard/clients/clients-table.tsx, components/dashboard/clients/clients-cards.tsx, lib/clients/tier.ts
+  risk: low
+  depends: none
+  brief: #96 (see issue comments)
+
+- #91: feat(tanstack): wrap all mutation calls with useMutation
+  scope: components/dashboard/sessions/, components/dashboard/expenses/, components/dashboard/clients/
+  risk: medium
+  depends: none
+  brief: #91 (see issue comments)
+
+## BLOCKED
+
+- #110: feat(marketing): feedback form page with DB storage
+  depends: #109
+  reason: both modify MarketingFooter — #109 adds Contact link first to avoid merge conflict
 
 - #102: feat(analytics): month navigation UI and URL sync
   depends: #101
@@ -40,21 +54,10 @@ _Last updated: 2026-04-29T11:30:00Z_
   depends: #102
   reason: UI under test does not exist until #102 ships
 
-- #91: feat(tanstack): wrap all mutation calls with useMutation
-  depends: #84, #86
-  reason: expenses (#84 PR #106) and sessions (#86 PR #104) pending merge
+- #97: feat(clients): tier filter pills and view wiring
+  depends: #95, #96
+  reason: API tier param (#95) and badge component (#96) must land first
 
-- #110: feat(marketing): feedback form page with DB storage
-  depends: #109
-  reason: both modify MarketingFooter — #109 adds Contact link first to avoid merge conflict
-
-## IN REVIEW (ready-for-human)
-
-- #71: Add skeleton fallbacks to Suspense boundaries — PR #113
-- #74: Redesign ErrorState component to match site styling — PR #112
-- #76: bug(profile-setup): Next button not disabled when display name is empty — PR #115
-- #84: feat(tanstack): migrate useExpenses to useInfiniteQuery — PR #106
-- #86: feat(tanstack): migrate useSessionsPagination to useInfiniteQuery — PR #104
-- #94: feat(clients): tier classification module and unit tests — PR #111
-- #100: feat(analytics): month boundary utility and unit tests — PR #114
-- #105: feat(actions): restyle action cards to match landing page design — PR #107
+- #98: test(clients): E2E tests for tier filter pills and badges
+  depends: #97
+  reason: UI under test does not exist until #97 ships
