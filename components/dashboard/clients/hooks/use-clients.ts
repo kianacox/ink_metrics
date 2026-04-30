@@ -1,6 +1,7 @@
 "use client";
 
 import type { ClientListItem, ClientSortField } from "@/lib/clients/models";
+import type { ClientTier } from "@/lib/clients/tier";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type { SessionDateRangePreset } from "@/lib/timezones";
@@ -11,6 +12,7 @@ interface UseClientsParams {
   searchQuery: string;
   sortField: ClientSortField;
   dateRange: SessionDateRangePreset;
+  tier: ClientTier | null;
   pageSize?: number;
 }
 
@@ -39,6 +41,7 @@ async function fetchClientsPage(
   searchQuery: string,
   sortField: ClientSortField,
   dateRange: SessionDateRangePreset,
+  tier: ClientTier | null,
   pageSize: number,
   reportingTimezone: string,
 ): Promise<ClientsApiResponse> {
@@ -51,6 +54,9 @@ async function fetchClientsPage(
   });
   if (pageParam) {
     params.set("cursor", pageParam);
+  }
+  if (tier) {
+    params.set("tier", tier);
   }
 
   const res = await fetch(`/api/clients?${params.toString()}`);
@@ -65,6 +71,7 @@ export function useClients({
   searchQuery,
   sortField,
   dateRange,
+  tier,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseClientsParams): UseClientsResult {
   const { data: preferences, isLoading: isPreferencesLoading } = usePreferences();
@@ -80,13 +87,14 @@ export function useClients({
     refetch,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ["clients", { searchQuery, sortField, dateRange, pageSize }],
+    queryKey: ["clients", { searchQuery, sortField, dateRange, tier, pageSize }],
     queryFn: ({ pageParam }) =>
       fetchClientsPage(
         pageParam,
         searchQuery,
         sortField,
         dateRange,
+        tier,
         pageSize,
         reportingTimezone,
       ),
