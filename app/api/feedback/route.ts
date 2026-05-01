@@ -31,13 +31,6 @@ export async function POST(request: Request) {
     "You must be signed in to submit feedback.",
   );
   if (errorResponse) return errorResponse;
-  if (!user) {
-    return errorJson(
-      401,
-      "FEEDBACK_UNAUTHENTICATED",
-      "You must be signed in to submit feedback.",
-    );
-  }
 
   let body: Record<string, unknown>;
   try {
@@ -67,7 +60,7 @@ export async function POST(request: Request) {
   const { count, error: countError } = await supabase
     .from("feedback")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
+    .eq("user_id", user!.id)
     .gte("created_at", since);
 
   if (countError) {
@@ -87,7 +80,7 @@ export async function POST(request: Request) {
   }
 
   const { error: insertError } = await supabase.from("feedback").insert({
-    user_id: user.id,
+    user_id: user!.id,
     category,
     message: message.trim(),
   });
