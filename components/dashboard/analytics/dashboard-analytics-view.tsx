@@ -11,7 +11,7 @@ import {
   nextMonth,
   prevMonth,
 } from "@/components/dashboard/analytics/month-arithmetic";
-import { Button, ErrorState, Skeleton } from "@/components/ui";
+import { Button, ErrorState } from "@/components/ui";
 import {
   formatMinorAsCurrency,
   formatPercentage,
@@ -145,15 +145,21 @@ export function DashboardAnalyticsView() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const viewedMonth = readMonthFromSearchParams(searchParams);
+  const [displayedMonth, setDisplayedMonth] = useState(() =>
+    readMonthFromSearchParams(searchParams),
+  );
   const {
     data: analytics = null,
     isLoading,
     isError,
     refetch,
-  } = useAnalytics(preferences, viewedMonth);
+  } = useAnalytics(preferences, displayedMonth);
   const error = isError ? "Could not load dashboard analytics." : null;
   const [isRetentionInfoOpen, setIsRetentionInfoOpen] = useState(false);
+
+  useEffect(() => {
+    setDisplayedMonth(readMonthFromSearchParams(searchParams));
+  }, [searchParams]);
 
   const navigateToMonth = useCallback(
     (newMonth: string) => {
@@ -171,27 +177,27 @@ export function DashboardAnalyticsView() {
   );
 
   const handlePrev = useCallback(() => {
-    navigateToMonth(prevMonth(resolveYYYYMM(viewedMonth)));
-  }, [navigateToMonth, viewedMonth]);
+    const newMonth = prevMonth(resolveYYYYMM(displayedMonth));
+    setDisplayedMonth(newMonth);
+    navigateToMonth(newMonth);
+  }, [displayedMonth, navigateToMonth]);
 
   const handleNext = useCallback(() => {
-    if (viewedMonth === CURRENT_MONTH) {
+    if (displayedMonth === CURRENT_MONTH) {
       return;
     }
-    const candidate = nextMonth(viewedMonth);
-    if (candidate === currentYYYYMM()) {
-      navigateToMonth(CURRENT_MONTH);
-      return;
-    }
-    navigateToMonth(candidate);
-  }, [navigateToMonth, viewedMonth]);
+    const candidate = nextMonth(displayedMonth);
+    const newMonth = candidate === currentYYYYMM() ? CURRENT_MONTH : candidate;
+    setDisplayedMonth(newMonth);
+    navigateToMonth(newMonth);
+  }, [displayedMonth, navigateToMonth]);
 
   const { monthLabel: navMonthLabel, year: navYear } = useMemo(
-    () => formatMonthLabel(resolveYYYYMM(viewedMonth)),
-    [viewedMonth],
+    () => formatMonthLabel(resolveYYYYMM(displayedMonth)),
+    [displayedMonth],
   );
-  const canGoNext = viewedMonth !== CURRENT_MONTH;
-  const canGoPrev = analytics?.hasPriorMonthData ?? false;
+  const canGoNext = displayedMonth !== CURRENT_MONTH;
+  const canGoPrev = isLoading ? true : (analytics?.hasPriorMonthData ?? false);
 
   useEffect(() => {
     if (!isRetentionInfoOpen) {
@@ -227,13 +233,9 @@ export function DashboardAnalyticsView() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        {isLoading ? (
-          <Skeleton className="h-8 w-48" />
-        ) : (
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {(analytics?.monthLabel ?? "This month")} Performance
-          </h1>
-        )}
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          {navMonthLabel} {navYear} Performance
+        </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Your monthly business snapshot uses your reporting timezone and updates
           as you log sessions and expenses.
