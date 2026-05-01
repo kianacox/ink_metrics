@@ -94,6 +94,12 @@ function MarketingFooter() {
             Contact
           </Link>
           <Link
+            href="/feedback"
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Feedback
+          </Link>
+          <Link
             href="/privacy-policy"
             className="text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
