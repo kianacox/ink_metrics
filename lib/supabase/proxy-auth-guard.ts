@@ -31,7 +31,8 @@ function isPublicRoute(pathname: string): boolean {
 
   if (
     pathname.startsWith("/privacy-policy") ||
-    pathname.startsWith("/terms-and-conditions")
+    pathname.startsWith("/terms-and-conditions") ||
+    pathname.startsWith("/contact")
   ) {
     return true;
   }
