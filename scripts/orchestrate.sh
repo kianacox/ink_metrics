@@ -186,8 +186,9 @@ mode_qa() {
     else
       info "Creating QA worktree at ${QA_WORKTREE}..."
       mkdir -p "$REPO_ROOT/qa"
+      git fetch origin "$PR_BRANCH"
       git worktree add "$QA_WORKTREE" "$PR_BRANCH" 2>/dev/null \
-        || git worktree add "$QA_WORKTREE" --track "origin/${PR_BRANCH}"
+        || git worktree add "$QA_WORKTREE" "origin/${PR_BRANCH}"
     fi
 
     echo ""
@@ -260,8 +261,9 @@ mode_qa() {
         # Ensure agent worktree exists (create if removed after previous pass)
         if [[ ! -d "$WORKTREE_PATH" ]]; then
           info "Creating agent worktree at ${WORKTREE_PATH}..."
+          git fetch origin "$PR_BRANCH"
           git worktree add "$WORKTREE_PATH" "$PR_BRANCH" 2>/dev/null \
-            || git worktree add "$WORKTREE_PATH" --track "origin/${PR_BRANCH}"
+            || git worktree add "$WORKTREE_PATH" "origin/${PR_BRANCH}"
         else
           info "Updating agent worktree..."
           git -C "$WORKTREE_PATH" fetch origin
