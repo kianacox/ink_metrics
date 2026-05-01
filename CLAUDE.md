@@ -282,6 +282,14 @@ worktrees. Each agent operates in an isolated worktree under `./agents/`.
    output of `git diff main...HEAD` and stop.
    Do not open PRs. Do not self-review.
 
+### If you are a fix agent (QA feedback cycle)
+
+- You will receive the original brief plus QA feedback from human testing.
+- Make only the changes needed to address the feedback.
+- Run lint and tests scoped to touched files.
+- Commit and push to the existing branch — do NOT open a new PR.
+- Write FAILED.md and stop if any check fails.
+
 ### Shared local state risks
 
 These resources are shared across all worktrees and must not be stomped on:
