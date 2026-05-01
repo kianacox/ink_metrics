@@ -1,6 +1,6 @@
 # Issues
 
-_Last updated: 2026-05-01T12:00:00Z_
+_Last updated: 2026-05-01T17:30:00Z_
 
 ## READY
 
@@ -16,11 +16,13 @@ _Last updated: 2026-05-01T12:00:00Z_
   depends: none
   brief: #128 (see issue body)
 
-## BLOCKED
-
 - #103: test(analytics): E2E tests for monthly history navigation
-  depends: #102
-  reason: UI under test does not exist until #102 (PR #124) merges
+  scope: tests/analytics.spec.ts
+  risk: low
+  depends: none
+  brief: #103 (see issue body)
+
+## BLOCKED
 
 - #129: refactor(sessions): extract compensation hydration out of session fetch
   depends: #128
