@@ -45,6 +45,13 @@ describe("resolveProxyRedirectPath", () => {
         isProfileComplete: false,
       }),
     ).toBeNull();
+    expect(
+      resolveProxyRedirectPath({
+        pathname: "/contact",
+        hasUser: false,
+        isProfileComplete: false,
+      }),
+    ).toBeNull();
   });
 
   it("does not redirect unauthenticated users for API routes", () => {
