@@ -539,7 +539,22 @@ begin
     ('cccccccc-cccc-cccc-cccc-cccccccc0038', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0005', 10000, '2026-04-10', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
     ('cccccccc-cccc-cccc-cccc-cccccccc0039', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0002', 22000, '2026-04-11', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
     ('cccccccc-cccc-cccc-cccc-cccccccc0040', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0004', 16000, '2026-04-12', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
-    ('cccccccc-cccc-cccc-cccc-cccccccc0041', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', 20000, '2026-04-14', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null);
+    ('cccccccc-cccc-cccc-cccc-cccccccc0041', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', 20000, '2026-04-14', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+
+    -- May 2026 (10 sessions) — same weekly distribution as April → gross 196,000, paidToStudio 47,000
+    -- Week of May  4 (Mon–Sun): gross 68,000 → commission 17,000 (under 25,000 cap)
+    -- Week of May 11 (Mon–Sun): gross 108,000 → commission 27,000, capped at 25,000
+    -- Week of May 18 (Mon–Sun): gross 20,000 → commission 5,000; total = 47,000
+    ('cccccccc-cccc-cccc-cccc-cccccccc0050', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0002', 24000, '2026-05-04', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0051', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0004', 12000, '2026-05-06', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0052', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', 32000, '2026-05-08', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0053', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0007', 18000, '2026-05-11', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0054', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0001', 14000, '2026-05-12', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0055', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0003', 28000, '2026-05-13', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0056', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0005', 10000, '2026-05-14', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0057', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0002', 22000, '2026-05-15', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0058', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0004', 16000, '2026-05-16', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null),
+    ('cccccccc-cccc-cccc-cccc-cccccccc0059', demo_user_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbb0006', 20000, '2026-05-18', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null);
 
   -- -------------------------------------------------------------------------
   -- Action-signal sessions (trigger lapsed_repeat, new_client, in_progress)
@@ -608,7 +623,9 @@ begin
     ('dddddddd-dddd-dddd-dddd-dddddddd0012', demo_user_id, 'New grip tape roll',        'other_equipment',  900, 'GBP', '2026-03-17', null, null, null, now(), now()),
     ('dddddddd-dddd-dddd-dddd-dddddddd0013', demo_user_id, 'Rotary machine upgrade',    'machines',       22000, 'GBP', '2026-03-24', null, null, null, now(), now()),
     ('dddddddd-dddd-dddd-dddd-dddddddd0014', demo_user_id, 'Miscellaneous studio supplies', 'miscellaneous', 3400, 'GBP', '2026-04-02', null, null, null, now(), now()),
-    ('dddddddd-dddd-dddd-dddd-dddddddd0015', demo_user_id, 'Black cartridge pack x50', 'cartridges',       2800, 'GBP', '2026-04-09', null, null, null, now(), now());
+    ('dddddddd-dddd-dddd-dddd-dddddddd0015', demo_user_id, 'Black cartridge pack x50', 'cartridges',       2800, 'GBP', '2026-04-09', null, null, null, now(), now()),
+    ('dddddddd-dddd-dddd-dddd-dddddddd0016', demo_user_id, 'Miscellaneous studio supplies', 'miscellaneous', 3400, 'GBP', '2026-05-05', null, null, null, now(), now()),
+    ('dddddddd-dddd-dddd-dddd-dddddddd0017', demo_user_id, 'Black cartridge pack x50', 'cartridges',       2800, 'GBP', '2026-05-09', null, null, null, now(), now());
 
   -- -------------------------------------------------------------------------
   -- Timezone test user (Asia/Tokyo, UTC+9) — used for date boundary QA
