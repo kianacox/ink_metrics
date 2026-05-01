@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { loginAsSeededUser } from "./auth-helpers";
+import { loginAsSeededUser, loginAsUser } from "./auth-helpers";
 import {
   createClient,
   deleteClientFromClientsPage,
@@ -7,8 +7,13 @@ import {
   expectClientNotVisibleInTable,
   expectClientVisibleInTable,
   goToClientsPage,
+  selectAllTimeDateRange,
+  selectTierPill,
 } from "./client-helpers";
 import { createSessionWithNewClient } from "./session-helpers";
+
+const DEMO_USER_EMAIL = "test@test.com";
+const DEMO_USER_PASSWORD = "Password123";
 
 function uniqueClientName(prefix: string): string {
   return `${prefix}-${Date.now()}`;
@@ -167,4 +172,103 @@ test("changes date range filter and updates button label", async ({ page }) => {
   await dateRangeButton.click();
   await page.getByRole("menuitem", { name: /^year to date$/i }).click();
   await expect(dateRangeButton).toContainText(/date range:.*year to date/i);
+});
+
+test.describe("tier filter pills", () => {
+  // Use the demo user — it has seeded clients spanning all three tiers.
+  // Lifetime tier counts (from supabase/seed.sql):
+  //   VIP (5+ sessions):     Emma Wilson, Sophie Turner, James Fletcher,
+  //                           Priya Patel, Marcus Reid, Chloe Andrews, Theo Brooks
+  //   Regular (2–4):         Ravi Sharma, Zoe Campbell, Dana Cross
+  //   One-timer (0–1):       Finn O'Connor
+
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    // The top-level beforeEach signs us in as the seeded session user
+    // (which has no clients). Clear cookies before logging in as the
+    // demo user so the seeded clients with sessions are visible.
+    await page.context().clearCookies();
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, {
+      waitForDashboard: true,
+    });
+    await goToClientsPage(page);
+    // Switch to All time so lifetime-tiered clients are guaranteed in view
+    // regardless of the default 90-day window.
+    await selectAllTimeDateRange(page);
+  });
+
+  test("VIP pill shows only VIP clients", async ({ page }) => {
+    await selectTierPill(page, "VIP");
+    await expectClientVisibleInTable(page, "Emma Wilson");
+    await expectClientNotVisibleInTable(page, "Finn O'Connor");
+    await expectClientNotVisibleInTable(page, "Ravi Sharma");
+  });
+
+  test("Regular pill shows only regular clients", async ({ page }) => {
+    await selectTierPill(page, "Regular");
+    await expectClientVisibleInTable(page, "Ravi Sharma");
+    await expectClientNotVisibleInTable(page, "Emma Wilson");
+    await expectClientNotVisibleInTable(page, "Finn O'Connor");
+  });
+
+  test("One-timer pill shows only one-timer clients", async ({ page }) => {
+    await selectTierPill(page, "One-timer");
+    await expectClientVisibleInTable(page, "Finn O'Connor");
+    await expectClientNotVisibleInTable(page, "Emma Wilson");
+    await expectClientNotVisibleInTable(page, "Ravi Sharma");
+  });
+
+  test("All pill restores the full client list", async ({ page }) => {
+    await selectTierPill(page, "VIP");
+    await expectClientNotVisibleInTable(page, "Finn O'Connor");
+
+    await selectTierPill(page, "All");
+    await expectClientVisibleInTable(page, "Emma Wilson");
+    await expectClientVisibleInTable(page, "Finn O'Connor");
+    await expectClientVisibleInTable(page, "Ravi Sharma");
+  });
+
+  test("tier badges are visible on client rows", async ({ page }) => {
+    // Each row renders a tier badge alongside the client name. We assert
+    // the VIP badge appears in Emma Wilson's row and the One-timer badge
+    // appears in Finn O'Connor's row.
+    const emmaRow = page.locator("tbody tr", { hasText: "Emma Wilson" }).first();
+    await expect(emmaRow).toContainText("VIP");
+
+    const finnRow = page.locator("tbody tr", { hasText: "Finn O'Connor" }).first();
+    await expect(finnRow).toContainText("One-timer");
+
+    const raviRow = page.locator("tbody tr", { hasText: "Ravi Sharma" }).first();
+    await expect(raviRow).toContainText("Regular");
+  });
+
+  test("VIP pill composes with search to narrow within VIPs only", async ({ page }) => {
+    await selectTierPill(page, "VIP");
+    await page
+      .getByRole("textbox", { name: /search clients/i })
+      .fill("Emma");
+    await page.waitForTimeout(400); // debounce
+    await expectClientVisibleInTable(page, "Emma Wilson");
+    await expectClientNotVisibleInTable(page, "Sophie Turner");
+    await expectClientNotVisibleInTable(page, "Finn O'Connor");
+  });
+});
+
+test.describe("tier filter pills empty state", () => {
+  // The seeded session-complete user has zero clients, so any tier filter
+  // applied yields the tier-aware empty-state copy.
+
+  test("shows tier-aware empty state when no clients match selected tier", async ({
+    page,
+  }) => {
+    await goToClientsPage(page);
+    await selectTierPill(page, "VIP");
+    await expect(page.getByText("No VIP clients yet.")).toBeVisible();
+
+    await selectTierPill(page, "Regular");
+    await expect(page.getByText("No regular clients yet.")).toBeVisible();
+
+    await selectTierPill(page, "One-timer");
+    await expect(page.getByText("No one-time clients yet.")).toBeVisible();
+  });
 });
