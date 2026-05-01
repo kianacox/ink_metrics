@@ -1,39 +1,67 @@
 # Issues
 
-_Last updated: 2026-04-30T20:35:00Z_
+_Last updated: 2026-05-01T00:00:00Z_
 
 ## READY
 
-_(none — both prior READY items now have PRs open awaiting human review)_
-
-## IN REVIEW
-
-- #97: feat(clients): tier filter pills and view wiring
-  PR: #123 (https://github.com/kianacox/ink_metrics/pull/123)
-  branch: fix/issue-97
-  worktree: ./agents/issue-97
-  reviewer: APPROVED iter 1
+- #98: test(clients): E2E tests for tier filter pills and badges
+  scope: tests/client-tracking.spec.ts, tests/client-helpers.ts
+  risk: low
+  depends: none
+  brief: #98 (see issue comments)
 
 - #102: feat(analytics): month navigation UI and URL sync
-  PR: #124 (https://github.com/kianacox/ink_metrics/pull/124)
-  branch: fix/issue-102
-  worktree: ./agents/issue-102
-  reviewer: CHANGES REQUESTED iter 1 (router.replace → router.push), APPROVED iter 2
+  scope: components/dashboard/analytics/, app/dashboard/page.tsx, lib/dashboard-analytics/
+  risk: medium
+  depends: none
+  brief: #102 (see issue comments)
+
+- #110: feat(marketing): feedback form page with DB storage
+  scope: app/feedback/page.tsx, app/api/feedback/route.ts, supabase/migrations/, components/marketing/marketing-layout.tsx
+  risk: low
+  depends: none
+  brief: #110 (see issue comments)
+
+- #125: refactor(sessions): consolidate session models into single source of truth
+  scope: lib/sessions/models/
+  risk: low
+  depends: none
+  brief: #125 (see issue body)
+
+- #126: refactor: extract shared pagination constants to lib/constants.ts
+  scope: lib/constants.ts, app/api/clients/route.ts, app/api/sessions/route.ts, app/api/expenses/route.ts
+  risk: low
+  depends: none
+  brief: #126 (see issue body)
+
+- #127: refactor(actions): split compute-and-upsert-actions into 3-phase pipeline
+  scope: lib/actions/compute-and-upsert-actions.ts, lib/actions/action-db.ts
+  risk: medium
+  depends: none
+  brief: #127 (see issue body)
 
 ## BLOCKED
-
-- #98: test(clients): E2E tests for tier filter pills and badges
-  depends: #97 (PR #123 merge)
-  reason: UI under test does not exist until #97 ships
 
 - #103: test(analytics): E2E tests for monthly history navigation
   depends: #102 (PR #124 merge)
   reason: UI under test does not exist until #102 ships
 
-- #109: feat(marketing): contact form page with email delivery
-  depends: PR #121 merge
-  reason: PR open and awaiting human review — not available for agent pickup
+- #128: refactor(sessions): fix inverted dependency — move session UI types to lib/sessions
+  depends: #125
+  reason: session models must be consolidated before types can be relocated
 
-- #110: feat(marketing): feedback form page with DB storage
-  depends: #109
-  reason: both modify MarketingFooter — #109 PR (#121) must merge first to avoid conflict
+- #129: refactor(sessions): extract compensation hydration out of session fetch
+  depends: #125
+  reason: session models must be consolidated before refactoring session fetch
+
+- #130: refactor: slim API handlers by extracting business logic to domain lib
+  depends: #126
+  reason: shared constants must be extracted before slimming handlers
+
+- #131: refactor: add barrel exports (index.ts) to lib/clients, lib/sessions, lib/expenses
+  depends: #125, #128
+  reason: session model consolidation and inverted-dep fix must land so exports reflect clean surface
+
+- #132: refactor: deduplicate pagination logic with shared useInfiniteApiQuery hook
+  depends: #131
+  reason: barrel exports must exist so hook imports are clean
