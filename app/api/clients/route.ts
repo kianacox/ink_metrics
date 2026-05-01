@@ -2,6 +2,7 @@ import { parseClientCreatePayload } from "@/lib/clients/client-write";
 import { fetchClientsPage } from "@/lib/clients/fetch-clients-page";
 import type { ClientSortField } from "@/lib/clients/models";
 import type { ClientTier } from "@/lib/clients/tier";
+import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
@@ -16,7 +17,6 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
   "allTime",
 ]);
 const VALID_TIERS = new Set<ClientTier>(["vip", "regular", "one-timer"]);
-const DEFAULT_LIMIT = 25;
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
@@ -56,8 +56,8 @@ export async function GET(request: Request) {
     1,
     Math.min(
       100,
-      Number.parseInt(params.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
-        DEFAULT_LIMIT,
+      Number.parseInt(params.get("limit") ?? String(DEFAULT_PAGE_LIMIT), 10) ||
+        DEFAULT_PAGE_LIMIT,
     ),
   );
 

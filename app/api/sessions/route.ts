@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
@@ -13,7 +14,6 @@ const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
   "yearToDate",
   "allTime",
 ]);
-const DEFAULT_LIMIT = 25;
 
 function errorJson(status: number, code: string, error: string) {
   return NextResponse.json({ error, code }, { status });
@@ -53,8 +53,8 @@ export async function GET(request: Request) {
     1,
     Math.min(
       100,
-      Number.parseInt(params.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
-        DEFAULT_LIMIT,
+      Number.parseInt(params.get("limit") ?? String(DEFAULT_PAGE_LIMIT), 10) ||
+        DEFAULT_PAGE_LIMIT,
     ),
   );
   const reportingTimezone = params.get("tz") ?? "UTC";

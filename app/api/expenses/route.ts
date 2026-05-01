@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { createExpense } from "@/lib/expenses/expense-db";
 import { parseExpenseCreatePayload } from "@/lib/expenses/expense-write";
 import { fetchExpensesPage } from "@/lib/expenses/fetch-expenses-page";
@@ -7,7 +8,6 @@ import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticate
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
 
-const DEFAULT_LIMIT = 25;
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
 
 const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
@@ -53,8 +53,8 @@ export async function GET(request: Request) {
     1,
     Math.min(
       100,
-      Number.parseInt(params.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
-        DEFAULT_LIMIT,
+      Number.parseInt(params.get("limit") ?? String(DEFAULT_PAGE_LIMIT), 10) ||
+        DEFAULT_PAGE_LIMIT,
     ),
   );
   const cursorParam = params.get("cursor");
