@@ -184,14 +184,55 @@ describe("DashboardAnalyticsView URL sync", () => {
 
     renderWithProviders(<DashboardAnalyticsView />);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
-    });
-
     const prevButton = await screen.findByRole("button", {
       name: /previous month/i,
     });
-    expect(prevButton).toBeDisabled();
+
+    await waitFor(() => {
+      expect(prevButton).toBeDisabled();
+    });
+  });
+
+  it("keeps the previous button enabled while the new month is loading", async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(buildAnalytics("April 2026", true)),
+      })
+      .mockReturnValueOnce(new Promise<never>(() => {}));
+    global.fetch = fetchMock as jest.Mock;
+
+    renderWithProviders(<DashboardAnalyticsView />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    const prevButton = screen.getByRole("button", { name: /previous month/i });
+    fireEvent.click(prevButton);
+
+    expect(screen.getByRole("button", { name: /previous month/i })).not.toBeDisabled();
+  });
+
+  it("updates the heading immediately on navigation without waiting for data", async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(buildAnalytics("April 2026", true)),
+      })
+      .mockReturnValueOnce(new Promise<never>(() => {}));
+    global.fetch = fetchMock as jest.Mock;
+
+    renderWithProviders(<DashboardAnalyticsView />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    const prevButton = screen.getByRole("button", { name: /previous month/i });
+    fireEvent.click(prevButton);
+
+    expect(
+      screen.getByRole("heading", { name: /march 2026 performance/i }),
+    ).toBeInTheDocument();
   });
 
   it("disables the next button when viewing the current month", async () => {
