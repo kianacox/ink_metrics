@@ -4,10 +4,26 @@ const CREATED_TOAST_TEXT = "Client created successfully.";
 const UPDATED_TOAST_TEXT = "Client updated successfully.";
 const DELETED_TOAST_TEXT = "Client deleted successfully.";
 
+export type ClientTierPillLabel = "All" | "VIP" | "Regular" | "One-timer";
+
 export async function goToClientsPage(page: Page): Promise<void> {
   await page.goto("/dashboard/clients");
   await expect(page).toHaveURL(/\/dashboard\/clients/);
   await expect(page.getByRole("heading", { name: /^clients$/i })).toBeVisible();
+}
+
+export async function selectAllTimeDateRange(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /date range:/i }).click();
+  await page.getByRole("menuitem", { name: /^all time$/i }).click();
+}
+
+export async function selectTierPill(
+  page: Page,
+  label: ClientTierPillLabel,
+): Promise<void> {
+  const pill = page.getByRole("button", { name: label, exact: true });
+  await pill.click();
+  await expect(pill).toHaveAttribute("aria-pressed", "true");
 }
 
 export async function openCreateClientModal(page: Page): Promise<void> {
