@@ -264,7 +264,7 @@ test.describe("tier filter pills empty state", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.context().clearCookies();
-    await loginAsDemoUser(page);
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
     await goToClientsPage(page);
   });
 
