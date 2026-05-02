@@ -67,7 +67,7 @@ GIT_EMAIL=$(git config user.email || echo "agent@local")
 
 build_image() {
   info "Building Docker image ${BOLD}${IMAGE_NAME}${RESET}..."
-  docker build -t "$IMAGE_NAME" "$REPO_ROOT/docker"
+  docker build -t "$IMAGE_NAME" -f "$REPO_ROOT/docker/Dockerfile" "$REPO_ROOT"
   success "Image ready."
 }
 
