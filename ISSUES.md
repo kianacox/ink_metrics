@@ -1,43 +1,28 @@
 # Issues
 
-_Last updated: 2026-05-02T00:00:00Z_
+_Last updated: 2026-05-02T09:00:00Z_
 
 ## READY
 
-- #127: refactor(actions): split compute-and-upsert-actions into 3-phase pipeline
-  scope: lib/actions/compute-and-upsert-actions.ts, lib/actions/action-db.ts
-  risk: medium
-  depends: none
-  brief: #127 (see issue body)
-
-- #128: refactor(sessions): fix inverted dependency — move session UI types to lib/sessions
-  scope: lib/sessions/models/index.ts, lib/sessions/fetch-sessions-page.ts, components/dashboard/sessions/utils/session-listing.ts, components/dashboard/sessions/utils/session-formatting.ts
-  risk: low
-  depends: none
-  brief: #128 (see issue body)
-
-- #130: refactor: slim API handlers by extracting business logic to domain lib
-  scope: app/api/clients/route.ts, app/api/sessions/route.ts, app/api/expenses/route.ts, lib/api-response.ts, lib/clients/, lib/sessions/, lib/expenses/
-  risk: medium
-  depends: none
-  brief: #130 (see issue body)
-
-- #103: test(analytics): E2E tests for monthly history navigation
-  scope: tests/analytics.spec.ts, supabase/seed.sql
-  risk: low
-  depends: none
-  brief: #103 (see issue body)
+_None — all four READY items shipped to PR this run. Re-evaluate BLOCKED items once their dependencies merge._
 
 ## BLOCKED
 
 - #129: refactor(sessions): extract compensation hydration out of session fetch
-  depends: #128
+  depends: #128 (PR #138)
   reason: both touch lib/sessions/fetch-sessions-page.ts — must not run in parallel; #128 lands first
 
 - #131: refactor: add barrel exports (index.ts) to lib/clients, lib/sessions, lib/expenses
-  depends: #128
+  depends: #128 (PR #138)
   reason: inverted-dep fix must land so exported surface is clean
 
 - #132: refactor: deduplicate pagination logic with shared useInfiniteApiQuery hook
   depends: #131
   reason: barrel exports must exist so hook imports are clean
+
+## In flight (PR open, awaiting merge)
+
+- #127 → PR #137 (refactor(actions): split compute-and-upsert-actions into 3-phase pipeline)
+- #128 → PR #138 (refactor(sessions): move SessionRow and SessionSortField to lib/sessions/models)
+- #130 → PR #139 (refactor: extract API handler business logic to domain lib)
+- #103 → PR #140 (test(analytics): E2E tests for monthly history navigation)
