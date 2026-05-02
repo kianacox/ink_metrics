@@ -15,8 +15,10 @@
 #   ./orchestrate.sh clean        # tidy up worktrees and containers
 #
 # ENVIRONMENT
-#   GITHUB_TOKEN   required for gh CLI inside container
-#   MAX_TURNS      max turns per agent (default 75)
+#   GITHUB_TOKEN          required for gh CLI inside container
+#   MAX_TURNS             max turns per agent (default 75)
+#   ORCHESTRATOR_TIMEOUT  hard timeout in seconds for the orchestrator
+#                         container (default 7200 = 2 hours)
 
 set -euo pipefail
 
@@ -26,6 +28,8 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 IMAGE_NAME="ink-metrics-agent"
 MAX_TURNS="${MAX_TURNS:-75}"
 ORCHESTRATOR_CONTAINER="ink-metrics-orchestrator"
+ORCHESTRATOR_TIMEOUT="${ORCHESTRATOR_TIMEOUT:-7200}"
+NODE_MODULES_VOLUME="ink-metrics-node-modules"
 MODE="${1:-run}"
 
 # ── Colours ──────────────────────────────────────────────────────────────────
@@ -41,6 +45,16 @@ info()    { echo -e "${CYAN}[orchestrate]${RESET} $*"; }
 success() { echo -e "${GREEN}[orchestrate]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[orchestrate]${RESET} $*"; }
 error()   { echo -e "${RED}[orchestrate]${RESET} $*" >&2; exit 1; }
+
+# Send a macOS desktop notification. Silent no-op on other systems.
+notify() {
+  local title="$1"
+  local message="$2"
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e "display notification \"${message}\" with title \"${title}\"" \
+      >/dev/null 2>&1 || true
+  fi
+}
 
 # ── Guards ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +74,10 @@ build_image() {
 # Run Claude inside the container with a fully interactive TTY so you can
 # type replies when the agent asks a question.  The container is named so
 # `resume` can re-attach to it if your terminal dies.
+#
+# The named volume mounted onto node_modules shadows the bind-mount, so the
+# container gets its own Linux-native node_modules and never clobbers the
+# host's macOS install.
 run_claude_interactive() {
   local name="$1"; shift   # container name
   local prompt="$1"; shift # -p value
@@ -70,6 +88,7 @@ run_claude_interactive() {
   docker run -it --rm \
     --name "$name" \
     -v "$REPO_ROOT:/Users/kianacox/Code/ink_metrics" \
+    -v "${NODE_MODULES_VOLUME}:/Users/kianacox/Code/ink_metrics/node_modules" \
     -v "$HOME/.claude:/home/agent/.claude" \
     -v "$HOME/.claude.json:/home/agent/.claude.json" \
     -e GITHUB_TOKEN="$GITHUB_TOKEN" \
@@ -92,11 +111,26 @@ run_claude_interactive() {
 mode_run() {
   build_image
 
-  info "Launching orchestrator (max ${MAX_TURNS} turns)..."
+  info "Launching orchestrator (max ${MAX_TURNS} turns, ${ORCHESTRATOR_TIMEOUT}s wall clock)..."
   echo -e "${YELLOW}Tip: if the agent pauses and asks a question, type your reply directly in this terminal.${RESET}"
   echo -e "${YELLOW}Tip: if you lose the terminal, run ${BOLD}./orchestrate.sh resume${RESET}${YELLOW} to re-attach.${RESET}"
+  echo -e "${YELLOW}Tip: orchestrator will be force-killed after ${ORCHESTRATOR_TIMEOUT}s — set ORCHESTRATOR_TIMEOUT to override.${RESET}"
   echo ""
 
+  # Background watchdog: kill the container after ORCHESTRATOR_TIMEOUT seconds.
+  (
+    sleep "$ORCHESTRATOR_TIMEOUT"
+    if docker ps --format '{{.Names}}' | grep -q "^${ORCHESTRATOR_CONTAINER}$"; then
+      docker kill "$ORCHESTRATOR_CONTAINER" >/dev/null 2>&1 || true
+      notify "ink_metrics" "Orchestrator timed out after ${ORCHESTRATOR_TIMEOUT}s and was killed."
+    fi
+  ) &
+  local watchdog_pid=$!
+
+  # Make sure the watchdog dies with us, however we exit.
+  trap 'kill "$watchdog_pid" 2>/dev/null || true' EXIT
+
+  local exit_status=0
   run_claude_interactive "$ORCHESTRATOR_CONTAINER" \
     "You are the orchestrator for the ink_metrics repo. Read CLAUDE.md and ISSUES.md before doing anything else.
 
@@ -115,9 +149,19 @@ Spawn up to 5 worker Tasks in parallel. Wait for all to complete before running 
 
 ## Everything else
 Follow CLAUDE.md exactly for the review cycle, PR creation, and QA plan.
-Do not ask clarifying questions — make a decision and proceed."
+Do not ask clarifying questions — make a decision and proceed." || exit_status=$?
 
-  success "Orchestrator session ended."
+  # Kill the watchdog now that we're done.
+  kill "$watchdog_pid" 2>/dev/null || true
+  trap - EXIT
+
+  if (( exit_status == 0 )); then
+    success "Orchestrator session ended cleanly."
+    notify "ink_metrics" "Orchestrator finished. Check open PRs and run ./orchestrate.sh qa."
+  else
+    warn "Orchestrator exited with status ${exit_status}."
+    notify "ink_metrics" "Orchestrator exited with status ${exit_status}. Check the terminal."
+  fi
 }
 
 # ── Mode: resume ─────────────────────────────────────────────────────────────
@@ -346,10 +390,12 @@ Instructions:
         info "Spawning fix agent for iteration ${ITERATION}..."
         echo ""
 
-        # Run the fix agent in the agent worktree
+        # Run the fix agent in the agent worktree.
+        # Same node_modules isolation as run_claude_interactive.
         docker run -it --rm \
           --name "ink-metrics-fix-${PR_NUMBER}-iter${ITERATION}" \
           -v "$REPO_ROOT:/Users/kianacox/Code/ink_metrics" \
+          -v "${NODE_MODULES_VOLUME}:/Users/kianacox/Code/ink_metrics/node_modules" \
           -v "$HOME/.claude:/home/agent/.claude" \
           -v "$HOME/.claude.json:/home/agent/.claude.json" \
           -e GITHUB_TOKEN="$GITHUB_TOKEN" \
@@ -398,6 +444,14 @@ mode_clean() {
   docker ps -a --filter "name=ink-metrics" --filter "status=exited" \
     --format '{{.Names}}' | xargs -r docker rm
   success "Containers cleaned."
+
+  echo ""
+  read -rp "Also remove the node_modules Docker volume? Forces fresh install on next run. [y/N]: " NUKE_VOLUME
+  if [[ "${NUKE_VOLUME:-N}" =~ ^[Yy]$ ]]; then
+    docker volume rm "$NODE_MODULES_VOLUME" 2>/dev/null \
+      && success "Volume ${NODE_MODULES_VOLUME} removed." \
+      || warn "Volume ${NODE_MODULES_VOLUME} did not exist or was in use."
+  fi
 }
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
