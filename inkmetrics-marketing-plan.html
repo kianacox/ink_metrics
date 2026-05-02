@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ink_metrics — Marketing Plan</title>
+<title>inkMetrics — Marketing Plan</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -22,8 +22,6 @@
     --amber-light: #fdf0dc;
     --purple: #4a3c8c;
     --purple-light: #eeebf8;
-    --gold: #b8902a;
-    --gold-light: #f7eecf;
     --border: rgba(15,14,13,0.12);
     --border-strong: rgba(15,14,13,0.22);
   }
@@ -82,7 +80,7 @@
     line-height: 1.1;
     letter-spacing: -0.02em;
     color: var(--paper);
-    max-width: 560px;
+    max-width: 520px;
     margin-bottom: 20px;
     position: relative;
   }
@@ -421,141 +419,6 @@
 
   .callout strong { color: var(--accent); }
 
-  /* ── HERO METRICS — what the product actually shows ── */
-  .hero-metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 10px;
-    margin-top: 4px;
-    margin-bottom: 16px;
-  }
-
-  @media (max-width: 700px) {
-    .hero-metrics { grid-template-columns: 1fr 1fr; }
-  }
-
-  .hero-metric {
-    background: var(--paper-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-
-  .hero-metric-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin-bottom: 8px;
-  }
-
-  .hero-metric-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    line-height: 1.2;
-    margin-bottom: 6px;
-    color: var(--ink);
-  }
-
-  .hero-metric-line {
-    font-size: 12px;
-    color: var(--ink-muted);
-    line-height: 1.5;
-  }
-
-  /* ── ACTION CARDS PREVIEW ── */
-  .action-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  @media (max-width: 700px) {
-    .action-grid { grid-template-columns: 1fr; }
-  }
-
-  .action-card {
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--gold);
-    border-radius: 8px;
-    padding: 14px 16px;
-    background: var(--paper-card);
-  }
-
-  .action-card-type {
-    font-family: 'DM Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 6px;
-  }
-
-  .action-card-headline {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ink);
-    margin-bottom: 6px;
-  }
-
-  .action-card-body {
-    font-size: 12px;
-    color: var(--ink-muted);
-    line-height: 1.5;
-    margin-bottom: 8px;
-  }
-
-  .action-card-risk {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--accent-dark);
-    font-weight: 500;
-  }
-
-  /* ── TIER ROW ── */
-  .tiers {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-  @media (max-width: 600px) { .tiers { grid-template-columns: 1fr; } }
-
-  .tier {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    background: var(--paper-card);
-  }
-
-  .tier-pill {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    margin-bottom: 8px;
-    letter-spacing: 0.06em;
-  }
-
-  .tier-onetime .tier-pill { background: var(--paper-dark); color: var(--ink-muted); }
-  .tier-regular .tier-pill { background: var(--teal-light); color: var(--teal); }
-  .tier-vip .tier-pill { background: var(--gold-light); color: var(--gold); }
-
-  .tier-name {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .tier-desc {
-    font-size: 12px;
-    color: var(--ink-muted);
-    line-height: 1.5;
-  }
-
   /* ── CONTENT CALENDAR ── */
   .calendar {
     display: grid;
@@ -694,7 +557,7 @@
 <body>
 
 <header>
-  <div class="header-label">ink_metrics · Marketing Plan</div>
+  <div class="header-label">inkMetrics · Marketing Plan</div>
   <h1>From build to first 50 founding members</h1>
   <div class="header-meta">
     <span class="meta-pill">UK-first</span>
@@ -745,98 +608,23 @@
       </div>
       <div class="decision-row">
         <div class="decision-topic">No Reddit</div>
-        <div class="decision-rationale">Tattoo artists don't discuss money publicly there, and the channel is saturated with low-quality content right now. Not worth the effort.</div>
+        <div class="decision-rationale">Tattoo artists don't discuss finances publicly there, and the channel is saturated with low-quality content right now. Not worth the effort.</div>
       </div>
       <div class="decision-row">
         <div class="decision-topic">MTD deferred</div>
-        <div class="decision-rationale">Data export functionality isn't ready yet. Won't push the MTD compliance angle until features are in place and claims are fully verified. Avoids over-promising.</div>
+        <div class="decision-rationale">Data download functionality isn't ready yet. Won't push MTD compliance angle until features are in place and claims are fully verified. Avoids over-promising.</div>
       </div>
       <div class="decision-row">
         <div class="decision-topic">Core message focus</div>
-        <div class="decision-rationale">Lead with take-home clarity, automatic chair rent maths, and the action cards that surface clients going quiet. These are live, provable, and genuinely differentiated.</div>
+        <div class="decision-rationale">Lead with financial tracking, auto-applied maths, and client relationship management. These are live, provable, and genuinely differentiated.</div>
+      </div>
+      <div class="decision-row">
+        <div class="decision-topic">Faceless content</div>
+        <div class="decision-rationale">Neither founder nor partner are comfortable on camera. All Reels and TikToks built from screen recordings, static text, slideshow founder notes, and hands-at-work clips. Aligns with where the algorithm is heading — faceless B2B-ish content currently outperforms talking-head content in this niche.</div>
       </div>
       <div class="decision-row">
         <div class="decision-topic">Founding counter</div>
         <div class="decision-rationale">Show real signup count on pricing page. Seed honestly: founder + partner + close contacts before going public. No inflated numbers.</div>
-      </div>
-      <div class="decision-row">
-        <div class="decision-topic">Vocabulary lock</div>
-        <div class="decision-rationale">Use artist language across all copy. "Take-home" not "net income". "Chair rent" not "studio fee". "Session" not "transaction". "Regular / VIP" not "returning client".</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- WHAT THE PRODUCT ACTUALLY SHOWS -->
-  <section>
-    <div class="section-eyebrow">The proof points</div>
-    <h2>What ink_metrics actually shows the artist</h2>
-    <p>Every campaign needs to ladder up to one of these screens. They're the moments that turn a curious follower into a founding member — and they're the only feature claims we can fully back today.</p>
-
-    <div class="hero-metrics">
-      <div class="hero-metric">
-        <div class="hero-metric-label">Take-home summary</div>
-        <div class="hero-metric-name">What you actually earned</div>
-        <div class="hero-metric-line">Gross income, chair rent and expenses, total take-home — broken down for any month, with progress bars showing the split.</div>
-      </div>
-      <div class="hero-metric">
-        <div class="hero-metric-label">Retention rate</div>
-        <div class="hero-metric-name">Your loyalty rate</div>
-        <div class="hero-metric-line">The percentage of clients who've come back at least once. The single number that tells artists whether their work is sticking.</div>
-      </div>
-      <div class="hero-metric">
-        <div class="hero-metric-label">Profit per session</div>
-        <div class="hero-metric-name">What you made per job</div>
-        <div class="hero-metric-line">Take-home divided by sessions logged. Not the price on the wall — the real money after chair rent and supplies.</div>
-      </div>
-      <div class="hero-metric">
-        <div class="hero-metric-label">Expenses by category</div>
-        <div class="hero-metric-name">Where the money went</div>
-        <div class="hero-metric-line">Ink, cartridges, needles, machines, travel. Monthly rollup so artists can see where supply costs are creeping.</div>
-      </div>
-    </div>
-
-    <h3 style="margin-top: 32px;">Action cards — the standout feature</h3>
-    <p style="margin-bottom: 16px;">ink_metrics quietly watches client patterns and surfaces who needs a message — with the revenue at stake attached. This is the feature most likely to make an artist stop scrolling.</p>
-
-    <div class="action-grid">
-      <div class="action-card">
-        <div class="action-card-type">In Progress</div>
-        <div class="action-card-headline">Sessions you may have forgotten to close</div>
-        <div class="action-card-body">A piece logged but not marked complete after 4 weeks. Time to follow up.</div>
-        <div class="action-card-risk">~£550 at risk per card</div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-type">Follow-up</div>
-        <div class="action-card-headline">First-timers who haven't booked again</div>
-        <div class="action-card-body">6 weeks since their first visit. A quick message could bring them back.</div>
-        <div class="action-card-risk">Avg session price at stake</div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-type">Retention</div>
-        <div class="action-card-headline">Your regulars going quiet</div>
-        <div class="action-card-body">A returning client hasn't been in for 8+ weeks. Don't let them drift to another shop.</div>
-        <div class="action-card-risk">Their typical spend, ready to recover</div>
-      </div>
-    </div>
-
-    <h3 style="margin-top: 32px;">Client tiers — automatic, no setup</h3>
-    <p style="margin-bottom: 16px;">Every client is sorted into one of three tiers based on session count. Artists see at a glance who their core people are — and who's only come once.</p>
-
-    <div class="tiers">
-      <div class="tier tier-onetime">
-        <span class="tier-pill">One-timer</span>
-        <div class="tier-name">0–1 sessions</div>
-        <div class="tier-desc">Came once, hasn't returned. The pool to win back.</div>
-      </div>
-      <div class="tier tier-regular">
-        <span class="tier-pill">Regular</span>
-        <div class="tier-name">2–4 sessions</div>
-        <div class="tier-desc">Building loyalty. Worth nurturing — they're on the way to VIP.</div>
-      </div>
-      <div class="tier tier-vip">
-        <span class="tier-pill">VIP</span>
-        <div class="tier-name">5+ sessions</div>
-        <div class="tier-desc">Core loyal clients. The artist's most valuable relationships.</div>
       </div>
     </div>
   </section>
@@ -850,63 +638,23 @@
     <div class="message-cards">
       <div class="message-card">
         <div class="message-card-label" style="color: var(--accent);">Pillar 1 · Pain</div>
-        <div class="message-card-hook">"Do you actually know your real take-home after chair rent?"</div>
-        <div class="message-card-body">Targets the gut feeling most artists have — that bookings look full but the money doesn't add up once chair rent and supplies come out. No solution mentioned. Just the question.</div>
+        <div class="message-card-hook">"Do you actually know what you took home last month?"</div>
+        <div class="message-card-body">Targets the gut feeling most artists have — that their bookings look great but the money doesn't add up. No solution mentioned yet. Just the question.</div>
       </div>
       <div class="message-card">
         <div class="message-card-label" style="color: var(--teal);">Pillar 2 · Aspiration</div>
-        <div class="message-card-hook">"Log a session in 30 seconds. See your take-home update live."</div>
-        <div class="message-card-body">Shows what clarity feels like. Use real screenshots of the take-home summary, retention rate, or action cards. Authenticity over polish — this audience spots mockups immediately.</div>
+        <div class="message-card-hook">"Log a session in 30 seconds. Know your true profit instantly."</div>
+        <div class="message-card-body">Shows what clarity feels like. Use real dashboard screenshots from your partner's data. Authenticity over polish — this audience spots mockups immediately.</div>
       </div>
       <div class="message-card">
         <div class="message-card-label" style="color: var(--purple);">Pillar 3 · Trust</div>
         <div class="message-card-hook">"Built by a developer whose partner is a working tattoo artist."</div>
-        <div class="message-card-body">The strongest long-term differentiator. The founder story is genuine and resonates hard with a community that's suspicious of tech built by people who don't understand their world.</div>
+        <div class="message-card-body">Your strongest long-term differentiator. Delivered through build-in-public posts, hands-at-work clips from your partner's station, and slideshow-format founder notes — never on-camera. The genuineness comes from specificity, not from showing faces.</div>
       </div>
     </div>
 
     <div class="callout" style="margin-top: 20px;">
-      <p><strong>What to avoid:</strong> Don't lead with features ("dashboard", "analytics", "export"). Lead with the outcome — "know your real take-home", "spot the regulars going quiet", "see the money sitting on the table". Features are proof points, not hooks. And use artist language: take-home, chair rent, sessions, regulars, VIPs. Never "net income", "studio fee", "transactions", or "returning clients".</p>
-    </div>
-  </section>
-
-  <!-- HOOK BANK -->
-  <section>
-    <div class="section-eyebrow">Hook bank</div>
-    <h2>Ready-to-use copy that maps to real features</h2>
-    <p>Each hook below is tied to a metric or feature that exists in the app today. Mix and match across Reels, ad creative, and email subject lines.</p>
-
-    <div class="message-cards" style="grid-template-columns: 1fr 1fr;">
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--accent);">Take-home</div>
-        <div class="message-card-hook">"You billed £2,030 last month. Want to know what you actually took home?"</div>
-        <div class="message-card-body">Specific number = scroll-stopper. Pair with the take-home summary screenshot. The reveal: £1,281 after chair rent and supplies.</div>
-      </div>
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--teal);">Action cards</div>
-        <div class="message-card-hook">"There's £550 sitting on the table. ink_metrics just told me which client to message."</div>
-        <div class="message-card-body">Pair with the In Progress card screenshot. The hook is the revenue-at-risk number — that's the wedge.</div>
-      </div>
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--gold);">Client tiers</div>
-        <div class="message-card-hook">"58% of your clients come back. Do you know which 42% don't?"</div>
-        <div class="message-card-body">Lifetime retention rate as the hook. Show the clients page with VIP and Regular tags. Identify-the-gap framing.</div>
-      </div>
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--purple);">Profit per session</div>
-        <div class="message-card-hook">"Your day rate is £400. Your real profit per session is £256. Here's why."</div>
-        <div class="message-card-body">Show the breakdown: chair rent and expenses eating into the headline number. The "ah" moment for any artist who's never done this maths.</div>
-      </div>
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--amber);">Expenses</div>
-        <div class="message-card-hook">"You spent £241 on supplies last month. Most of it wasn't ink."</div>
-        <div class="message-card-body">Counterintuitive reveal — travel and equipment usually outweigh ink spend. Pair with the Expenses by category screenshot.</div>
-      </div>
-      <div class="message-card">
-        <div class="message-card-label" style="color: var(--ink-muted);">Founder</div>
-        <div class="message-card-hook">"My partner's a tattoo artist. I built this so she'd stop dreading her tax return."</div>
-        <div class="message-card-body">The trust pillar in one sentence. Use as the pinned launch Reel and the about page lead.</div>
-      </div>
+      <p><strong>What to avoid:</strong> Don't lead with features (dashboard, analytics, export). Lead with the outcome — "know your real take-home." Features are proof points, not hooks.</p>
     </div>
   </section>
 
@@ -928,23 +676,23 @@
       <div class="phase-body">
         <div class="tactic">
           <span class="tactic-tag tag-free">Organic</span>
-          <div class="tactic-title">Instagram Reels — 3x per week</div>
-          <div class="tactic-body">Rotate across the three pillars. Lead with screenshots of the take-home summary and action cards — these are the most thumb-stopping screens in the app. Cross-post to TikTok with five minutes of extra effort.</div>
+          <div class="tactic-title">Instagram Reels — 3x per week, faceless</div>
+          <div class="tactic-body">Rotate across the three pillars. All content built from six faceless formats: screen recordings, static text Reels, before/after splits, hands-only POV, data reveals, and slideshow founder notes. Cross-post to TikTok via SnapTik (strips IG watermark), with more casual lowercase captions for the TT audience.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Organic</span>
-          <div class="tactic-title">Partner-led content</div>
-          <div class="tactic-body">The biggest unfair advantage. Even one short clip per month of your partner talking about chair rent, sessions going quiet, or what she actually took home — not about ink_metrics, just the experience — will outperform any branded post.</div>
+          <div class="tactic-title">Partner-led content — hands and workspace</div>
+          <div class="tactic-body">Your single biggest advantage. Hands-only POV clips from your partner's station — cleaning up, prepping ink caps, sketching, wrapping a finished piece — captioned with honest observations about the financial side. Genre-native format on tattoo TikTok already, so you're matching audience expectations rather than inventing them.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-product">Product</span>
           <div class="tactic-title">Seed the founding counter honestly</div>
-          <div class="tactic-body">Founder, partner, and a small number of close contacts = real early signups before the public launch. "3 of 50 founding spots claimed" is credible and creates genuine scarcity without any deception.</div>
+          <div class="tactic-body">You, your partner, and a small number of close contacts = real early signups before the public launch. "3 of 50 founding spots claimed" is credible and creates genuine scarcity without any deception.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-product">Product</span>
-          <div class="tactic-title">Landing page: take-home first</div>
-          <div class="tactic-body">Lead with "Know your real take-home." Above the fold: the take-home summary screenshot showing gross → chair rent → expenses → take-home. Founding price and counter prominent. CTA: "Claim your founding spot."</div>
+          <div class="tactic-title">Landing page: pain-first copy</div>
+          <div class="tactic-body">Lead with "Do you actually know what you took home last month?" — not a features list. Real dashboard screenshot above the fold. Founding price prominently displayed with the counter. CTA: "Claim your founding spot."</div>
         </div>
       </div>
     </div>
@@ -963,22 +711,22 @@
         <div class="tactic">
           <span class="tactic-tag tag-paid">Paid · £50</span>
           <div class="tactic-title">Meta cold campaign — Instagram only</div>
-          <div class="tactic-body">Target: UK, ages 22–45, interests "tattoo" + "tattoo artist" + "body art", behaviour "self-employed". Creative: take-home summary screenshot + the Pillar 1 hook. Run for the full month at ~£1.65/day. Objective: traffic to pricing page.</div>
+          <div class="tactic-body">Target: UK, ages 22–45, interests "tattoo" + "tattoo artist" + "body art", behaviour "self-employed." Creative: real dashboard screenshot + hook copy. Run for the full month at ~£1.65/day. Objective: Traffic to pricing page.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Free</span>
           <div class="tactic-title">Product Hunt launch</div>
-          <div class="tactic-body">Launch on a Tuesday or Wednesday. Free, generates backlinks that help SEO from day one, and puts ink_metrics in front of makers and journalists outside the tattoo community. Lead the description with action cards — the most "this is novel" feature.</div>
+          <div class="tactic-body">Launch on a Tuesday or Wednesday. Free, generates backlinks that help SEO from day one, and puts inkMetrics in front of makers and journalists outside the tattoo community. Write a genuine founder story in the description.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Organic</span>
-          <div class="tactic-title">Launch Reel — founder story</div>
-          <div class="tactic-body">"We're live. Here's why I built this for my partner." Short, honest, personal. Pin it to the profile. This is the post you link to everywhere for the first month.</div>
+          <div class="tactic-title">Launch Reel — slideshow founder note</div>
+          <div class="tactic-body">"We're live. Here's why I built this." Six-slide static Reel telling the founder story in text, with a quiet trending audio underneath. No on-camera presence. People pause to read each slide, which the algorithm reads as engagement. Pin it to your profile — it's your "what is this account" answer for the first month.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Organic</span>
           <div class="tactic-title">UK tattoo Facebook groups</div>
-          <div class="tactic-body">Without a Facebook account yourself, your partner can share authentically in groups she's already in. One post, her own words, no hard sell. "My partner built this after watching me struggle with chair rent maths and clients going quiet — thought some of you might find it useful."</div>
+          <div class="tactic-body">Without a Facebook account yourself, your partner can share authentically in groups he's already a member of. One post, his own words, no hard sell. "My partner built this tool after watching me struggle with the numbers side — thought some of you might find it useful."</div>
         </div>
       </div>
     </div>
@@ -997,22 +745,22 @@
         <div class="tactic">
           <span class="tactic-tag tag-paid">Paid · £100/mo</span>
           <div class="tactic-title">Meta — split cold + retarget</div>
-          <div class="tactic-body">£60 cold: same UK tattoo artist targeting, lead with whichever proof point screenshot performed best in May (likely take-home or action cards). £40 retarget: pricing page visitors who didn't sign up — softer copy, founding price urgency.</div>
+          <div class="tactic-body">£60 cold: same UK tattoo artist targeting, optimise creative based on May performance. £40 retarget: custom audience of pricing page visitors who didn't sign up — softer copy, founding price urgency.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Email · £30/mo</span>
           <div class="tactic-title">Trial nurture sequence (60-day)</div>
-          <div class="tactic-body">5 emails: Day 1 (welcome + log your first session), Day 7 ("here's what your take-home will look like"), Day 30 ("any regulars going quiet? Check your action cards"), Day 50 (soft conversion + retention rate prompt), Day 58 (final — founding price closes at 50 users).</div>
+          <div class="tactic-body">5 emails: Day 1 (welcome + first session prompt), Day 7 (what your data could look like), Day 30 (midpoint — here's what others discovered), Day 50 (soft conversion), Day 58 (final — founding price closes at 50 users).</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-paid">Content · £70/mo</span>
           <div class="tactic-title">Canva Pro + content creation</div>
-          <div class="tactic-body">Canva Pro (~£13/mo) for brand-consistent graphics. Remaining budget for occasional design help (Fiverr) for ad creatives. Continue 3x Reels/week — start using anonymised real user data and testimonials as creative material.</div>
+          <div class="tactic-body">Canva Pro (~£13/mo) for brand-consistent graphics. Remaining budget for occasional design help (Fiverr) for ad creatives when needed. Continue 3x Reels/week — start using real user data and testimonials as creative material.</div>
         </div>
         <div class="tactic">
           <span class="tactic-tag tag-free">Organic</span>
           <div class="tactic-title">Artist referral programme</div>
-          <div class="tactic-body">Once there are 10+ paying users, launch a referral incentive: one month free for every paying referral. Tattoo artists follow each other closely — one respected artist sharing their take-home dashboard is worth more than any ad spend.</div>
+          <div class="tactic-body">Once you have 10+ paying users, launch a referral incentive: one month free for every paying referral. Tattoo artists follow each other closely — one respected artist sharing their dashboard is worth more than any ad spend.</div>
         </div>
       </div>
     </div>
@@ -1022,27 +770,27 @@
   <section>
     <div class="section-eyebrow">Content</div>
     <h2>Weekly posting rhythm</h2>
-    <p>Three posts per week is sustainable without burning out. Each day maps to a pillar and to a feature in the app.</p>
+    <p>Three posts per week is sustainable without burning out. Each day maps to a pillar.</p>
     <div class="calendar">
       <div class="cal-day cal-mon">
         <div class="cal-day-header">Monday</div>
         <div class="cal-day-body">
           <div class="cal-day-pillar">Pillar 1 — Pain</div>
-          A question or observation about chair rent, hidden costs, or clients going quiet. No product mention. Make artists feel seen.
+          A question or observation about the financial reality of tattooing. No product mention. Make artists feel seen.
         </div>
       </div>
       <div class="cal-day cal-wed">
         <div class="cal-day-header">Wednesday</div>
         <div class="cal-day-body">
           <div class="cal-day-pillar">Pillar 2 — Aspiration</div>
-          A real screenshot of the take-home summary, an action card, or the retention rate. "Here's what knowing your numbers looks like." Soft product presence.
+          A real dashboard screenshot or data insight. "Here's what knowing your numbers looks like." Soft product presence.
         </div>
       </div>
       <div class="cal-day cal-fri">
         <div class="cal-day-header">Friday</div>
         <div class="cal-day-body">
           <div class="cal-day-pillar">Pillar 3 — Trust</div>
-          Behind-the-scenes, founder story, or your partner talking about the business side of her work. Human, unpolished.
+          Build-in-public screenshot, hands-at-work clip from your partner's station, or a static slide explaining a product decision. Faceless, specific, honest.
         </div>
       </div>
     </div>
@@ -1155,7 +903,7 @@
       </div>
       <div class="decision-row">
         <div class="decision-topic">SEO content hub</div>
-        <div class="decision-rationale">Worth building from month 2 onwards — a definitive "tattoo artist take-home UK" guide will compound over time. Not a pre-launch priority.</div>
+        <div class="decision-rationale">Worth building from month 2 onwards — a definitive "tattoo artist finance UK" guide will compound over time. Not a pre-launch priority.</div>
       </div>
       <div class="decision-row">
         <div class="decision-topic">Google Ads</div>
@@ -1173,7 +921,7 @@
 </div>
 
 <footer>
-  ink_metrics · Marketing Plan · May 2026 · UK-first · Pre-launch through Month 3
+  inkMetrics · Marketing Plan · May 2026 · UK-first · Pre-launch through Month 3
 </footer>
 
 </body>
