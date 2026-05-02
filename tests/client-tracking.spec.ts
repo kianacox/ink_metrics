@@ -255,13 +255,26 @@ test.describe("tier filter pills", () => {
 });
 
 test.describe("tier filter pills empty state", () => {
-  // The seeded session-complete user has zero clients, so any tier filter
-  // applied yields the tier-aware empty-state copy.
+  // Log in as the demo user and apply a search that matches no clients,
+  // so every tier filter yields the tier-aware empty-state copy. This is
+  // resilient to earlier tests in this file populating the session-complete
+  // user with one-timer clients (which would otherwise cause the One-timer
+  // assertion to fail).
+
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.context().clearCookies();
+    await loginAsDemoUser(page);
+    await goToClientsPage(page);
+  });
 
   test("shows tier-aware empty state when no clients match selected tier", async ({
     page,
   }) => {
-    await goToClientsPage(page);
+    await page
+      .getByRole("textbox", { name: /search clients/i })
+      .fill("no-such-client-zzz-9999");
+
     await selectTierPill(page, "VIP");
     await expect(page.getByText("No VIP clients yet.")).toBeVisible();
 
