@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Primary source docs:
 
 - `CONTEXT.md`
+- `UBIQUITOUS_LANGUAGE.md`
 
 ## Stack and Architecture
 
