@@ -71,6 +71,14 @@ build_image() {
   success "Image ready."
 }
 
+# Fetch the latest origin/main so worktrees branch from a fresh ref.
+# Run this before spawning agents that create new worktrees.
+sync_main() {
+  info "Fetching latest origin/main..."
+  git fetch origin main \
+    || error "Failed to fetch origin/main. Check network and GITHUB_TOKEN."
+}
+
 # Run Claude inside the container with a fully interactive TTY so you can
 # type replies when the agent asks a question.  The container is named so
 # `resume` can re-attach to it if your terminal dies.
@@ -110,6 +118,7 @@ run_claude_interactive() {
 
 mode_run() {
   build_image
+  sync_main
 
   info "Launching orchestrator (max ${MAX_TURNS} turns, ${ORCHESTRATOR_TIMEOUT}s wall clock)..."
   echo -e "${YELLOW}Tip: if the agent pauses and asks a question, type your reply directly in this terminal.${RESET}"
@@ -139,8 +148,10 @@ Use the Task tool only — no Bash, no Docker, no shell commands to spawn agents
 The Task tool does not support a max-turns parameter — ignore any reference to --max-turns in CLAUDE.md when using the Task tool. The turn limit only applies to shell invocations.
 
 ## Worktree setup
-Before spawning each worker Task, use Bash to pre-create the worktree:
-  git worktree add ./agents/issue-{N} -b fix/issue-{N}
+Before spawning each worker Task, use Bash to pre-create the worktree from the latest origin/main:
+  git fetch origin main
+  git worktree add ./agents/issue-{N} -b fix/issue-{N} origin/main
+This guarantees each agent branches from a fresh main, even if other agents have merged in the meantime.
 Then instruct the worker to operate inside ./agents/issue-{N} as their working directory.
 Do NOT use isolation: worktree on the Task tool — workers must follow the ./agents/issue-{N} convention so their READY_FOR_REVIEW.md and FAILED.md files are readable after the task completes.
 
