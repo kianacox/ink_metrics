@@ -1,6 +1,6 @@
 # Issues
 
-_Last updated: 2026-05-01T17:30:00Z_
+_Last updated: 2026-05-02T00:00:00Z_
 
 ## READY
 
@@ -16,8 +16,14 @@ _Last updated: 2026-05-01T17:30:00Z_
   depends: none
   brief: #128 (see issue body)
 
+- #130: refactor: slim API handlers by extracting business logic to domain lib
+  scope: app/api/clients/route.ts, app/api/sessions/route.ts, app/api/expenses/route.ts, lib/api-response.ts, lib/clients/, lib/sessions/, lib/expenses/
+  risk: medium
+  depends: none
+  brief: #130 (see issue body)
+
 - #103: test(analytics): E2E tests for monthly history navigation
-  scope: tests/analytics.spec.ts
+  scope: tests/analytics.spec.ts, supabase/seed.sql
   risk: low
   depends: none
   brief: #103 (see issue body)
@@ -27,10 +33,6 @@ _Last updated: 2026-05-01T17:30:00Z_
 - #129: refactor(sessions): extract compensation hydration out of session fetch
   depends: #128
   reason: both touch lib/sessions/fetch-sessions-page.ts — must not run in parallel; #128 lands first
-
-- #130: refactor: slim API handlers by extracting business logic to domain lib
-  depends: #126
-  reason: shared constants must be extracted (#126, PR #134) before slimming handlers
 
 - #131: refactor: add barrel exports (index.ts) to lib/clients, lib/sessions, lib/expenses
   depends: #128
