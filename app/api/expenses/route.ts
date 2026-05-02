@@ -1,25 +1,15 @@
+import { errorJson } from "@/lib/api-response";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { createExpense } from "@/lib/expenses/expense-db";
+import {
+  filterValidExpenseCategories,
+  parseExpenseDateRange,
+} from "@/lib/expenses/expense-query-params";
 import { parseExpenseCreatePayload } from "@/lib/expenses/expense-write";
 import { fetchExpensesPage } from "@/lib/expenses/fetch-expenses-page";
-import { EXPENSE_CATEGORIES } from "@/lib/expenses/models";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
-import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
-
-const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
-
-const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
-  "last30Days",
-  "last90Days",
-  "yearToDate",
-  "allTime",
-]);
-
-function errorJson(status: number, code: string, error: string) {
-  return NextResponse.json({ error, code }, { status });
-}
 
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
@@ -38,15 +28,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const params = url.searchParams;
 
-  const rawCategories = params.getAll("category");
-  const categories = rawCategories.filter((c) =>
-    EXPENSE_CATEGORIES.includes(c as (typeof EXPENSE_CATEGORIES)[number]),
-  );
-
-  const rawDateRange = params.get("dateRange") ?? DEFAULT_DATE_RANGE;
-  const dateRange: SessionDateRangePreset = VALID_DATE_RANGES.has(rawDateRange as SessionDateRangePreset)
-    ? (rawDateRange as SessionDateRangePreset)
-    : DEFAULT_DATE_RANGE;
+  const categories = filterValidExpenseCategories(params.getAll("category"));
+  const dateRange = parseExpenseDateRange(params.get("dateRange"));
   const reportingTimezone = params.get("tz") ?? "UTC";
 
   const limit = Math.max(
@@ -74,9 +57,9 @@ export async function GET(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof CursorDecodeError) {
-      return errorJson(400, "EXPENSES_CURSOR_INVALID", error.message);
+      return errorJson(error.message, "EXPENSES_CURSOR_INVALID", 400);
     }
-    return errorJson(500, "EXPENSES_FETCH_FAILED", "Could not load expenses.");
+    return errorJson("Could not load expenses.", "EXPENSES_FETCH_FAILED", 500);
   }
 }
 
@@ -112,7 +95,7 @@ export async function POST(request: Request) {
   const result = await createExpense(supabase, user.id, payload);
 
   if ("error" in result) {
-    return errorJson(500, "EXPENSE_CREATE_FAILED", "Could not create expense.");
+    return errorJson("Could not create expense.", "EXPENSE_CREATE_FAILED", 500);
   }
 
   return NextResponse.json({ success: true, expenseId: result.expenseId });
