@@ -1,4 +1,5 @@
-export type SessionSortField = "date" | "profit";
+import type { SessionSortField } from "@/lib/sessions/models";
+
 export type SessionSortDirection = "asc" | "desc";
 
 export interface SessionListItem {

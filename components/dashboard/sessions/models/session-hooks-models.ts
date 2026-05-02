@@ -1,4 +1,5 @@
-import type { SessionListItem, SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionSortField } from "@/lib/sessions/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 
 export interface LoadedSessionPreferences {

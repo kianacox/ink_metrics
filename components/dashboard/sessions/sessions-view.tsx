@@ -12,10 +12,8 @@ import {
 } from "@/components/ui";
 import { SessionsSkeleton } from "@/components/dashboard/sessions/sessions-skeleton";
 import { useSessions } from "@/components/dashboard/sessions/hooks/use-sessions";
-import type {
-  SessionListItem,
-  SessionSortField,
-} from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionListItem } from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionSortField } from "@/lib/sessions/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { AddSessionModal } from "@/components/dashboard/session-form/add-session-modal";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
