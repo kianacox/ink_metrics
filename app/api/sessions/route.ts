@@ -1,23 +1,20 @@
+import { errorJson } from "@/lib/api-response";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
-import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
+import {
+  CursorDecodeError,
+  decodeCompositeCursor,
+} from "@/lib/pagination/cursor";
+import {
+  parseSessionDateRange,
+  parseSessionSortField,
+} from "@/lib/sessions/session-query-params";
+import { mapSessionCreateRpcError } from "@/lib/sessions/session-rpc-error";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import type { SessionSortField } from "@/lib/sessions/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
-
-const VALID_SORT_FIELDS = new Set<SessionSortField>(["date", "profit"]);
-const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
-  "last30Days",
-  "last90Days",
-  "yearToDate",
-  "allTime",
-]);
-
-function errorJson(status: number, code: string, error: string) {
-  return NextResponse.json({ error, code }, { status });
-}
 
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
@@ -37,17 +34,8 @@ export async function GET(request: Request) {
   const params = url.searchParams;
 
   const searchQuery = params.get("search") ?? "";
-  const rawSort = params.get("sort") ?? "date";
-  const sortField: SessionSortField = VALID_SORT_FIELDS.has(rawSort as SessionSortField)
-    ? (rawSort as SessionSortField)
-    : "date";
-
-  const rawDateRange = params.get("dateRange") ?? "last30Days";
-  const dateRange: SessionDateRangePreset = VALID_DATE_RANGES.has(
-    rawDateRange as SessionDateRangePreset,
-  )
-    ? (rawDateRange as SessionDateRangePreset)
-    : "last30Days";
+  const sortField = parseSessionSortField(params.get("sort"));
+  const dateRange = parseSessionDateRange(params.get("dateRange"));
 
   const limit = Math.max(
     1,
@@ -75,31 +63,16 @@ export async function GET(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof CursorDecodeError) {
-      return errorJson(400, "SESSIONS_CURSOR_INVALID", err.message);
+      return errorJson(err.message, "SESSIONS_CURSOR_INVALID", 400);
     }
-    if (err instanceof Error && err.message === "Could not compute date range boundaries.") {
-      return errorJson(400, "SESSIONS_DATE_RANGE_INVALID", err.message);
+    if (
+      err instanceof Error &&
+      err.message === "Could not compute date range boundaries."
+    ) {
+      return errorJson(err.message, "SESSIONS_DATE_RANGE_INVALID", 400);
     }
-    return errorJson(500, "SESSIONS_FETCH_FAILED", "Could not load sessions.");
+    return errorJson("Could not load sessions.", "SESSIONS_FETCH_FAILED", 500);
   }
-}
-
-function getRpcErrorStatus(message: string): number {
-  if (
-    message === "A client with this name already exists. Choose it from Existing client." ||
-    message === "No compensation settings are active for this session date."
-  ) {
-    return 409;
-  }
-  if (
-    message === "You must be signed in to log a session." ||
-    message === "Select an existing client before saving." ||
-    message === "Selected client was not found." ||
-    message === "Client name is required for a new client."
-  ) {
-    return 400;
-  }
-  return 400;
 }
 
 export async function POST(request: Request) {
@@ -120,10 +93,14 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Request body must be valid JSON." },
+      { status: 400 },
+    );
   }
 
-  const { data: payload, error: payloadError } = parseSessionCreatePayload(body);
+  const { data: payload, error: payloadError } =
+    parseSessionCreatePayload(body);
   if (!payload || payloadError) {
     return NextResponse.json(
       { error: payloadError ?? "Session payload is invalid." },
@@ -145,22 +122,10 @@ export async function POST(request: Request) {
   );
 
   if (rpcError) {
-    const status = getRpcErrorStatus(rpcError.message);
-    const knownUserSafeMessage =
-      rpcError.message === "A client with this name already exists. Choose it from Existing client." ||
-      rpcError.message === "No compensation settings are active for this session date." ||
-      rpcError.message === "You must be signed in to log a session." ||
-      rpcError.message === "Select an existing client before saving." ||
-      rpcError.message === "Selected client was not found." ||
-      rpcError.message === "Client name is required for a new client.";
-
-    return NextResponse.json(
-      {
-        error: knownUserSafeMessage ? rpcError.message : "Could not create session.",
-        code: knownUserSafeMessage ? "SESSION_CREATE_VALIDATION_FAILED" : "SESSION_CREATE_FAILED",
-      },
-      { status },
+    const { status, code, message } = mapSessionCreateRpcError(
+      rpcError.message,
     );
+    return errorJson(message, code, status);
   }
 
   const rpcRow = rpcRows?.[0];

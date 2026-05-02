@@ -1,26 +1,16 @@
+import { errorJson } from "@/lib/api-response";
+import {
+  parseClientCreateRpcError,
+  parseClientDateRange,
+  parseClientSortField,
+  parseClientTier,
+} from "@/lib/clients/client-query-params";
 import { parseClientCreatePayload } from "@/lib/clients/client-write";
 import { fetchClientsPage } from "@/lib/clients/fetch-clients-page";
-import type { ClientSortField } from "@/lib/clients/models";
-import type { ClientTier } from "@/lib/clients/tier";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/constants";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
-import type { SessionDateRangePreset } from "@/lib/timezones";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
 import { NextResponse } from "next/server";
-
-const VALID_SORT_FIELDS = new Set<ClientSortField>(["session_count", "total_value"]);
-const VALID_DATE_RANGES = new Set<SessionDateRangePreset>([
-  "thisMonth",
-  "last30Days",
-  "last90Days",
-  "yearToDate",
-  "allTime",
-]);
-const VALID_TIERS = new Set<ClientTier>(["vip", "regular", "one-timer"]);
-
-function errorJson(status: number, code: string, error: string) {
-  return NextResponse.json({ error, code }, { status });
-}
 
 export async function GET(request: Request) {
   const { supabase, user, errorResponse } = await requireAuthenticatedApiUser(
@@ -40,17 +30,8 @@ export async function GET(request: Request) {
   const params = url.searchParams;
 
   const searchQuery = params.get("search") ?? "";
-  const rawSort = params.get("sort") ?? "session_count";
-  const sortField: ClientSortField = VALID_SORT_FIELDS.has(rawSort as ClientSortField)
-    ? (rawSort as ClientSortField)
-    : "session_count";
-
-  const rawDateRange = params.get("dateRange") ?? "last90Days";
-  const dateRange: SessionDateRangePreset = VALID_DATE_RANGES.has(
-    rawDateRange as SessionDateRangePreset,
-  )
-    ? (rawDateRange as SessionDateRangePreset)
-    : "last90Days";
+  const sortField = parseClientSortField(params.get("sort"));
+  const dateRange = parseClientDateRange(params.get("dateRange"));
 
   const limit = Math.max(
     1,
@@ -64,13 +45,9 @@ export async function GET(request: Request) {
   const reportingTimezone = params.get("tz") ?? "UTC";
   const cursorParam = params.get("cursor");
 
-  const tierParam = params.get("tier");
-  let tier: ClientTier | null = null;
-  if (tierParam !== null) {
-    if (!VALID_TIERS.has(tierParam as ClientTier)) {
-      return errorJson(400, "CLIENTS_INVALID_TIER", `Invalid tier: ${tierParam}`);
-    }
-    tier = tierParam as ClientTier;
+  const { data: tier, error: tierError } = parseClientTier(params.get("tier"));
+  if (tierError) {
+    return errorJson(tierError, "CLIENTS_INVALID_TIER", 400);
   }
 
   try {
@@ -90,12 +67,12 @@ export async function GET(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof CursorDecodeError) {
-      return errorJson(400, "CLIENTS_CURSOR_INVALID", err.message);
+      return errorJson(err.message, "CLIENTS_CURSOR_INVALID", 400);
     }
     if (err instanceof Error && err.message === "Could not compute date range boundaries.") {
-      return errorJson(400, "CLIENTS_DATE_RANGE_INVALID", err.message);
+      return errorJson(err.message, "CLIENTS_DATE_RANGE_INVALID", 400);
     }
-    return errorJson(500, "CLIENTS_FETCH_FAILED", "Could not load clients.");
+    return errorJson("Could not load clients.", "CLIENTS_FETCH_FAILED", 500);
   }
 }
 
@@ -134,17 +111,8 @@ export async function POST(request: Request) {
   });
 
   if (rpcError) {
-    const status =
-      rpcError.message === "A client with this name already exists." ? 409 : 400;
-    const message =
-      rpcError.message === "A client with this name already exists."
-        ? rpcError.message
-        : "Could not create client.";
-    const code =
-      rpcError.message === "A client with this name already exists."
-        ? "CLIENT_ALREADY_EXISTS"
-        : "CLIENT_CREATE_FAILED";
-    return errorJson(status, code, message);
+    const { status, code, message } = parseClientCreateRpcError(rpcError.message);
+    return errorJson(message, code, status);
   }
 
   return NextResponse.json({ success: true, clientId });
