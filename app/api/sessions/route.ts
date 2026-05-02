@@ -3,7 +3,7 @@ import { fetchSessionsPage } from "@/lib/sessions/fetch-sessions-page";
 import { CursorDecodeError, decodeCompositeCursor } from "@/lib/pagination/cursor";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
-import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
+import type { SessionSortField } from "@/lib/sessions/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
 

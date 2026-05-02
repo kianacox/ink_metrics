@@ -1,8 +1,8 @@
+import type { SessionRow } from "@/lib/sessions/models";
 import {
   formatSessionDate,
   formatSessionProfit,
   mapSessionRowsToListItems,
-  type SessionRow,
 } from "./session-formatting";
 
 describe("session-formatting utils", () => {

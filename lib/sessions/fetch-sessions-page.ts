@@ -1,8 +1,11 @@
-import type { SessionSortField } from "@/components/dashboard/sessions/utils/session-listing";
-import type { SessionRow } from "@/components/dashboard/sessions/utils/session-formatting";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getDateRangeStartDate } from "@/lib/timezones";
-import type { FetchSessionsPageParams, FetchSessionsPageResult } from "@/lib/sessions/models";
+import type {
+  FetchSessionsPageParams,
+  FetchSessionsPageResult,
+  SessionRow,
+  SessionSortField,
+} from "@/lib/sessions/models";
 import { encodeCompositeCursor } from "@/lib/pagination/cursor";
 
 const SORT_FIELD_TO_COLUMN: Record<SessionSortField, string> = {
