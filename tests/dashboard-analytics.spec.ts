@@ -328,6 +328,128 @@ test("expenses by category card shows correct values after adding expenses via U
   await expect(card.getByLabel("Total expenses")).toContainText("£40.00");
 });
 
+test.describe("month navigation", () => {
+  function pad2(value: number): string {
+    return String(value).padStart(2, "0");
+  }
+
+  function currentMonthInfo(): { yyyyMm: string; monthName: string; year: number } {
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthIndex = now.getMonth();
+    const monthName = now.toLocaleString("en-GB", { month: "long" });
+    return { yyyyMm: `${year}-${pad2(monthIndex + 1)}`, monthName, year };
+  }
+
+  function priorMonthInfo(): { yyyyMm: string; monthName: string; year: number } {
+    const now = new Date();
+    const prior = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = prior.getFullYear();
+    const monthIndex = prior.getMonth();
+    const monthName = prior.toLocaleString("en-GB", { month: "long" });
+    return { yyyyMm: `${year}-${pad2(monthIndex + 1)}`, monthName, year };
+  }
+
+  async function gotoInsightsTab(page: import("@playwright/test").Page) {
+    await page.goto("/dashboard?tab=insights");
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toBeVisible();
+  }
+
+  test("defaults to current month", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    const { monthName } = currentMonthInfo();
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toContainText(monthName);
+  });
+
+  test("prev navigates to prior month and updates heading", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    await page.getByRole("button", { name: "Previous month" }).click();
+
+    const { monthName } = priorMonthInfo();
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toContainText(monthName);
+  });
+
+  test("next returns to current month from prior month", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    await page.getByRole("button", { name: "Previous month" }).click();
+    const { monthName: priorName } = priorMonthInfo();
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toContainText(priorName);
+
+    await page.getByRole("button", { name: "Next month" }).click();
+
+    const { monthName: currentName } = currentMonthInfo();
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toContainText(currentName);
+  });
+
+  test("next button is disabled on current month", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    await expect(
+      page.getByRole("button", { name: "Next month" }),
+    ).toBeDisabled();
+  });
+
+  test("URL updates with month query param on prev navigation", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    await page.getByRole("button", { name: "Previous month" }).click();
+
+    const { yyyyMm } = priorMonthInfo();
+    await expect(page).toHaveURL(new RegExp(`month=${yyyyMm}`));
+  });
+
+  test("loading bookmarked month URL shows the correct month", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+
+    const { yyyyMm, monthName } = priorMonthInfo();
+    await page.goto(`/dashboard?tab=insights&month=${yyyyMm}`);
+
+    await expect(
+      page.getByRole("heading", { name: /Performance/ }),
+    ).toContainText(monthName);
+  });
+
+  test("prev disabled when no prior month data", async ({ page }) => {
+    // Fresh user has no sessions or expenses anywhere → no prior month data.
+    const email = `dashboard-no-prior-${Date.now()}@${mailboxDomain}`;
+    await signUpAndConfirmUserOnly(page, email, signUpPassword);
+    await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+    await completeProfileSetupMinimal(page, email);
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await gotoInsightsTab(page);
+
+    await expect(
+      page.getByRole("button", { name: "Previous month" }),
+    ).toBeDisabled();
+  });
+
+  test("hours tattooing card is not present", async ({ page }) => {
+    await loginAsUser(page, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, { waitForDashboard: true });
+    await gotoInsightsTab(page);
+
+    await expect(page.getByText(/hours tattooing/i)).toHaveCount(0);
+  });
+});
+
 test("retention card shows insufficient data message when user has too few sessions or clients", async ({ page }) => {
   const email = `dashboard-retention-thin-${Date.now()}@${mailboxDomain}`;
   await signUpAndConfirmUserOnly(page, email, signUpPassword);
