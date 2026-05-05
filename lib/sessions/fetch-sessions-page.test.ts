@@ -1,13 +1,21 @@
 import { fetchSessionsPage } from "./fetch-sessions-page";
 import { getDateRangeStartDate } from "@/lib/timezones";
 import { decodeCompositeCursor } from "@/lib/pagination/cursor";
+import { hydrateMissingCompensationVersions } from "@/lib/profiles/compensation-hydration";
 
 jest.mock("@/lib/timezones", () => ({
   ...jest.requireActual("@/lib/timezones"),
   getDateRangeStartDate: jest.fn(),
 }));
 
+jest.mock("@/lib/profiles/compensation-hydration", () => ({
+  hydrateMissingCompensationVersions: jest.fn(),
+}));
+
 const mockedGetDateRangeStartDate = jest.mocked(getDateRangeStartDate);
+const mockedHydrateMissingCompensationVersions = jest.mocked(
+  hydrateMissingCompensationVersions,
+);
 
 interface MockRowsQuery {
   eq: jest.Mock;
@@ -20,14 +28,6 @@ interface MockRowsQuery {
     onfulfilled?: ((value: { data: unknown[]; error: null }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ) => Promise<TResult1 | TResult2>;
-}
-
-interface MockVersionQuery {
-  eq: jest.Mock;
-  lte: jest.Mock;
-  or: jest.Mock;
-  order: jest.Mock;
-  limit: jest.Mock;
 }
 
 function createRowsQuery(rows: unknown[] = []): MockRowsQuery {
@@ -62,32 +62,11 @@ function createAnnotateQuery(rows: { client_id: string; session_at: string; crea
   return query as MockAnnotateQuery;
 }
 
-function createVersionQuery(
-  row: {
-    compensation_version_id: string;
-    pay_chair_rent: boolean;
-    rent_type: string | null;
-    fixed_frequency: string | null;
-    fixed_amount_minor: number | null;
-    commission_rate_bps: number | null;
-    commission_capped: boolean | null;
-    commission_cap_frequency: string | null;
-    commission_cap_amount_minor: number | null;
-  } | null,
-): MockVersionQuery {
-  const query: Partial<MockVersionQuery> = {};
-  query.eq = jest.fn(() => query);
-  query.lte = jest.fn(() => query);
-  query.or = jest.fn(() => query);
-  query.order = jest.fn(() => query);
-  query.limit = jest.fn().mockResolvedValue({ data: row ? [row] : [], error: null });
-  return query as MockVersionQuery;
-}
-
 describe("fetchSessionsPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedGetDateRangeStartDate.mockReturnValue("2026-03-01");
+    mockedHydrateMissingCompensationVersions.mockImplementation(async ({ rows }) => rows);
   });
 
   it("applies date range boundaries to rows query", async () => {
@@ -187,35 +166,23 @@ describe("fetchSessionsPage", () => {
     );
   });
 
-  it("hydrates missing compensation version rows by session_at when needed", async () => {
-    const rowsQuery = createRowsQuery([
-      {
-        session_id: "s-1",
-        price: 5000,
-        session_at: "2026-03-12",
-        created_at: "2026-03-12T10:00:00.000Z",
-        compensation_version_id: null,
-        artist_compensation_versions: null,
-        clients: { name: "Alice" },
-      },
-    ]);
-    const versionQuery = createVersionQuery({
-      compensation_version_id: "cv-1",
-      pay_chair_rent: true,
-      rent_type: "fixed",
-      fixed_frequency: "weekly",
-      fixed_amount_minor: 15000,
-      commission_rate_bps: null,
-      commission_capped: null,
-      commission_cap_frequency: null,
-      commission_cap_amount_minor: null,
-    });
-
-    const from = jest
-      .fn()
-      .mockReturnValueOnce({ select: jest.fn(() => rowsQuery) })
-      .mockReturnValueOnce({ select: jest.fn(() => versionQuery) });
+  it("delegates compensation hydration to hydrateMissingCompensationVersions", async () => {
+    const fetchedRow = {
+      session_id: "s-1",
+      price: 5000,
+      session_at: "2026-03-12",
+      created_at: "2026-03-12T10:00:00.000Z",
+      compensation_version_id: null,
+      artist_compensation_versions: null,
+      clients: { name: "Alice" },
+    };
+    const rowsQuery = createRowsQuery([fetchedRow]);
+    const from = jest.fn().mockReturnValueOnce({ select: jest.fn(() => rowsQuery) });
     const supabase = { from } as never;
+
+    mockedHydrateMissingCompensationVersions.mockResolvedValueOnce([
+      { ...fetchedRow, compensation_version_id: "cv-1" },
+    ]);
 
     const result = await fetchSessionsPage({
       supabase,
@@ -228,8 +195,11 @@ describe("fetchSessionsPage", () => {
       dateRange: "last30Days",
     });
 
-    expect(versionQuery.eq).toHaveBeenCalledWith("user_id", "user-1");
-    expect(versionQuery.lte).toHaveBeenCalledWith("effective_from", "2026-03-12");
+    expect(mockedHydrateMissingCompensationVersions).toHaveBeenCalledWith({
+      supabase,
+      userId: "user-1",
+      rows: [fetchedRow],
+    });
     expect(result.data[0]?.compensation_version_id).toBe("cv-1");
     expect(result.hasNextPage).toBe(false);
     expect(result.nextCursor).toBeNull();
