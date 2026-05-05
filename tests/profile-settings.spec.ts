@@ -6,9 +6,9 @@ import {
 import {
   clearMailbox,
   completeProfileSetupMinimal,
+  createConfirmedUser,
   fetchConfirmationLink,
   loginAsUser,
-  signUpAndConfirmUserOnly,
 } from "./auth-helpers";
 
 const signUpPassword = getSignUpPassword();
@@ -36,7 +36,8 @@ async function createProfileCompleteUser(
   } = {},
 ): Promise<string> {
   const email = makeDisposableEmail(emailPrefix);
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await completeProfileSetupMinimal(page, email, options);
   return email;
 }
