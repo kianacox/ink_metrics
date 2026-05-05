@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DEFAULT_INBUCKET_BASE_URL,
   DEFAULT_SEEDED_INCOMPLETE_USER_EMAIL,
@@ -210,6 +211,31 @@ export async function fetchConfirmationLink(
   throw new Error(
     `No confirmation link found for ${email} within ${timeoutMs}ms.`,
   );
+}
+
+/**
+ * Creates a pre-confirmed Supabase user via the admin API, bypassing the
+ * sign-up form and Inbucket entirely. Use this in tests that need an
+ * authenticated user but do not specifically exercise the sign-up flow.
+ *
+ * Callers can immediately call `loginAsUser` with the same credentials.
+ */
+export async function createConfirmedUser(
+  email: string,
+  password: string,
+): Promise<void> {
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to create confirmed user ${email}: ${error.message}`,
+    );
+  }
 }
 
 export async function signUpAndConfirmUserOnly(
