@@ -210,6 +210,9 @@ jobs:
       # Tests
       # ---------------------------------------------------------------------------
 
+      - name: Build Next.js app
+        run: npm run build
+
       - name: Run Playwright test suite
         run: npm run test:e2e
         env:
