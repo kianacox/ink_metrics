@@ -3,7 +3,11 @@ import {
   DEFAULT_MAILBOX_DOMAIN,
   getSignUpPassword,
 } from "./constants";
-import { signUpAndConfirmUserOnly, completeProfileSetupMinimal } from "./auth-helpers";
+import {
+  createConfirmedUser,
+  loginAsUser,
+  completeProfileSetupMinimal,
+} from "./auth-helpers";
 import {
   createSessionWithNewClient,
   dateStringDaysAgo,
@@ -20,7 +24,8 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
   await page.setViewportSize({ width: 390, height: 844 });
   const email = `profile-mobile-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
 
   await expect(page.getByText(/step 1 of 4/i)).toBeVisible();
@@ -56,7 +61,8 @@ test("mobile profile setup keeps a stable step count and finishes successfully",
 test("desktop profile setup shows marketing consent checkbox", async ({ page }) => {
   const email = `profile-consent-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
 
   const checkbox = page.locator("#marketing-consent");
@@ -67,7 +73,8 @@ test("desktop profile setup shows marketing consent checkbox", async ({ page }) 
 test("allows backdated session up to six months after profile setup", async ({ page }) => {
   const email = `profile-backdate-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
 
@@ -91,7 +98,8 @@ test("allows backdated session up to six months after profile setup", async ({ p
 test("profile setup blocks partial submission", async ({ page }) => {
   const email = `profile-partial-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
 
   await page.locator("#profile-name:visible").fill("Partial User");
