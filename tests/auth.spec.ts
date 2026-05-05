@@ -6,9 +6,10 @@ import {
 } from "./constants";
 import {
   completeProfileSetupMinimal,
+  confirmExistingUser,
+  createConfirmedUser,
   loginAsSeededUser,
-  signUpAndConfirmUser,
-  signUpAndConfirmUserOnly,
+  loginAsUser,
 } from "./auth-helpers";
 
 const signUpPassword = getSignUpPassword();
@@ -25,9 +26,18 @@ test("new user is sent to profile setup and can finish onboarding", async ({
 }) => {
   const email = `signup-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
-  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
+  await page.goto("/auth/sign-up");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(signUpPassword);
+  await page.getByLabel("Repeat Password").fill(signUpPassword);
+  await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
+  await page.getByRole("button", { name: /^sign up$/i }).click();
+  await expect(page.getByText(/check your email to confirm/i)).toBeVisible();
 
+  await confirmExistingUser(email);
+  await loginAsUser(page, email, signUpPassword, { waitForDashboard: true });
+
+  await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard/);
 });
@@ -35,7 +45,14 @@ test("new user is sent to profile setup and can finish onboarding", async ({
 test("logs in, persists session, and logs out", async ({ page }) => {
   const email = `login-${Date.now()}@${mailboxDomain}`;
 
-  await signUpAndConfirmUser(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword, { waitForDashboard: true });
+
+  if (page.url().includes("/dashboard/profile-setup")) {
+    await completeProfileSetupMinimal(page, email);
+  }
+
+  await expect(page).toHaveURL(/\/dashboard/);
 
   await page.reload();
   await expect(page).toHaveURL(/\/dashboard/);

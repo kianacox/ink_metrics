@@ -6,9 +6,9 @@ import {
 import {
   clearMailbox,
   completeProfileSetupMinimal,
+  createConfirmedUser,
   fetchConfirmationLink,
   loginAsUser,
-  signUpAndConfirmUserOnly,
 } from "./auth-helpers";
 
 const signUpPassword = getSignUpPassword();
@@ -36,7 +36,8 @@ async function createProfileCompleteUser(
   } = {},
 ): Promise<string> {
   const email = makeDisposableEmail(emailPrefix);
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword, { waitForDashboard: true });
   await completeProfileSetupMinimal(page, email, options);
   return email;
 }
@@ -103,6 +104,7 @@ test.describe("profile settings", () => {
   });
 
   test("updates email after confirming both change links", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires Mailpit email delivery — run locally only");
     const currentEmail = await createProfileCompleteUser(page, "email-confirm");
     const nextEmail = makeDisposableEmail("email-confirm-new");
 
