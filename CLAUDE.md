@@ -72,16 +72,6 @@ The `@/` path alias maps to the repo root in both TypeScript (`tsconfig.json`) a
 
 Work ships in vertical slices. Prefer complete, testable increments over broad partial refactors.
 
-Current roadmap:
-
-1. Auth and sessions
-2. Profile page
-3. Client tracking
-4. Expense tracking
-5. Analytics dashboard
-6. Monthly reports and imports
-7. Plan limits
-
 ## Local Development
 
 Common commands:
@@ -278,7 +268,7 @@ worktrees. Each agent operates in an isolated worktree under `./agents/`.
 4. Run checks:
    - `npm run lint`
    - `npm test` scoped to touched files
-5. If any check fails: write output to `./FAILED.md` and stop.
+5. If any check fails: read the output failure, debug and implement a fix. Rerun checks to test fix. Maximum fix attempts is 3 - if any check is still failing after 3 attempts, write output to `./FAILED.md` and stop.
 6. If all checks pass: write `./READY_FOR_REVIEW.md` with the full
    output of `git diff main...HEAD` and stop.
    Do not open PRs. Do not self-review.
