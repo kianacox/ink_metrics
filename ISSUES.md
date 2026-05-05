@@ -1,28 +1,61 @@
 # Issues
 
-_Last updated: 2026-05-02T09:00:00Z_
+_Last updated: 2026-05-05T00:00:00Z_
 
 ## READY
 
-_None — all four READY items shipped to PR this run. Re-evaluate BLOCKED items once their dependencies merge._
-
-## BLOCKED
-
 - #129: refactor(sessions): extract compensation hydration out of session fetch
-  depends: #128 (PR #138)
-  reason: both touch lib/sessions/fetch-sessions-page.ts — must not run in parallel; #128 lands first
+  scope: lib/sessions/
+  risk: medium
+  depends: none
+  brief: #129 (see issue comments)
+
+- #130: refactor: slim API handlers by extracting business logic to domain lib
+  scope: app/api/, lib/
+  risk: medium
+  depends: none
+  brief: #130 (see issue comments)
 
 - #131: refactor: add barrel exports (index.ts) to lib/clients, lib/sessions, lib/expenses
-  depends: #128 (PR #138)
-  reason: inverted-dep fix must land so exported surface is clean
+  scope: lib/clients/, lib/sessions/, lib/expenses/
+  risk: low
+  depends: none
+  brief: #131 (see issue comments)
+
+- #144: feat(profiles): add is_founding_user to profiles table with backfill migration
+  scope: supabase/migrations/
+  risk: low
+  depends: none
+  brief: #144 (see issue comments)
+
+- #145: feat(marketing): FoundingCounter component — progress bar + label
+  scope: components/marketing/
+  risk: low
+  depends: none
+  brief: #145 (see issue comments)
+
+## BLOCKED
 
 - #132: refactor: deduplicate pagination logic with shared useInfiniteApiQuery hook
   depends: #131
   reason: barrel exports must exist so hook imports are clean
 
-## In flight (PR open, awaiting merge)
+- #147: feat(profiles): founding user signup logic in ensureUserProfile
+  depends: #144
+  reason: column must exist before application logic can reference it
 
-- #127 → PR #137 (refactor(actions): split compute-and-upsert-actions into 3-phase pipeline)
-- #128 → PR #138 (refactor(sessions): move SessionRow and SessionSortField to lib/sessions/models)
-- #130 → PR #139 (refactor: extract API handler business logic to domain lib)
-- #103 → PR #140 (test(analytics): E2E tests for monthly history navigation)
+- #148: feat(marketing): getFoundingCount query utility with 60s cache
+  depends: #144
+  reason: column must exist before count query is meaningful
+
+- #149: feat(marketing): update pricing page — founding/standard card states + counter
+  depends: #145, #148
+  reason: requires FoundingCounter component and getFoundingCount utility
+
+- #150: feat(marketing): embed FoundingCounter on landing page — hero + final CTA
+  depends: #145, #148
+  reason: requires FoundingCounter component and getFoundingCount utility
+
+- #151: docs(context): migrate terms into domain CONTEXT.md files, prune root
+  depends: #146
+  reason: HITL — structure must be approved by human before migration begins
