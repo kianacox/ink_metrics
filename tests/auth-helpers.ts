@@ -238,6 +238,36 @@ export async function createConfirmedUser(
   }
 }
 
+/**
+ * Confirms an existing unconfirmed Supabase user via the admin API.
+ * Use this in tests that sign up via the form (to test the form itself)
+ * but need to bypass email delivery for CI reliability.
+ *
+ * Call after the sign-up form submission succeeds, then call `loginAsUser`.
+ */
+export async function confirmExistingUser(email: string): Promise<void> {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.auth.admin.listUsers();
+
+  if (error) {
+    throw new Error(`Failed to list users: ${error.message}`);
+  }
+
+  const user = data.users.find((u) => u.email === email);
+  if (!user) {
+    throw new Error(`User not found for confirmation: ${email}`);
+  }
+
+  const { error: updateError } = await adminClient.auth.admin.updateUserById(
+    user.id,
+    { email_confirm: true },
+  );
+
+  if (updateError) {
+    throw new Error(`Failed to confirm user ${email}: ${updateError.message}`);
+  }
+}
+
 export async function signUpAndConfirmUserOnly(
   page: Page,
   email: string,
