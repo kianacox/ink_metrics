@@ -12,8 +12,6 @@ import {
 import { mapSessionCreateRpcError } from "@/lib/sessions/session-rpc-error";
 import { parseSessionCreatePayload } from "@/lib/sessions/session-write";
 import { requireAuthenticatedApiUser } from "@/lib/supabase/require-authenticated-api-user";
-import type { SessionSortField } from "@/lib/sessions/models";
-import type { SessionDateRangePreset } from "@/lib/timezones";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
