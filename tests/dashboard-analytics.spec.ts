@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { DEFAULT_MAILBOX_DOMAIN, getSignUpPassword } from "./constants";
-import { completeProfileSetupMinimal, loginAsUser, signUpAndConfirmUserOnly } from "./auth-helpers";
+import { completeProfileSetupMinimal, createConfirmedUser, loginAsUser } from "./auth-helpers";
 import { createSessionWithNewClient, createSessionWithExistingClient } from "./session-helpers";
 import { createExpense, goToExpensesPage } from "./expense-helpers";
 
@@ -92,7 +92,8 @@ test("renders take-home summary values and comparative bars for seeded data", as
 
 test("renders safe zero retention state when no month sessions exist", async ({ page }) => {
   const email = `dashboard-retention-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -133,7 +134,8 @@ test("renders safe zero retention state when no month sessions exist", async ({ 
 test("average profit card shows correct computed value for known sessions", async ({ page }) => {
   // Fresh user with no chair rent: net = gross, avg = gross / session_count
   const email = `dashboard-avg-profit-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -178,7 +180,8 @@ test("average profit card shows correct computed value for known sessions", asyn
 test("average profit card reflects truncated integer division for non-round values", async ({ page }) => {
   // Verifies floor-toward-zero division: £1,000 / 3 sessions = £333.33 → trunc = 33333 minor = £333.33
   const email = `dashboard-avg-trunc-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -275,7 +278,8 @@ test("expenses by category card renders all seven category rows for seeded demo 
 
 test("expenses by category card shows friendly empty state when sessions exist but no expenses", async ({ page }) => {
   const email = `dashboard-no-expenses-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -296,7 +300,8 @@ test("expenses by category card shows friendly empty state when sessions exist b
 
 test("expenses by category card shows correct values after adding expenses via UI", async ({ page }) => {
   const email = `dashboard-expenses-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -430,7 +435,8 @@ test.describe("month navigation", () => {
   test("prev disabled when no prior month data", async ({ page }) => {
     // Fresh user has no sessions or expenses anywhere → no prior month data.
     const email = `dashboard-no-prior-${Date.now()}@${mailboxDomain}`;
-    await signUpAndConfirmUserOnly(page, email, signUpPassword);
+    await createConfirmedUser(email, signUpPassword);
+    await loginAsUser(page, email, signUpPassword);
     await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
     await completeProfileSetupMinimal(page, email);
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -452,7 +458,8 @@ test.describe("month navigation", () => {
 
 test("retention card shows insufficient data message when user has too few sessions or clients", async ({ page }) => {
   const email = `dashboard-retention-thin-${Date.now()}@${mailboxDomain}`;
-  await signUpAndConfirmUserOnly(page, email, signUpPassword);
+  await createConfirmedUser(email, signUpPassword);
+  await loginAsUser(page, email, signUpPassword);
   await expect(page).toHaveURL(/\/dashboard\/profile-setup/);
   await completeProfileSetupMinimal(page, email);
   await expect(page).toHaveURL(/\/dashboard$/);

@@ -12,7 +12,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: false,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI
     ? [["github"], ["html", { open: "never" }]]
@@ -31,7 +31,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3001",
+    command: process.env.CI
+      ? "npm start"
+      : "npm run dev -- --hostname 127.0.0.1 --port 3001",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
