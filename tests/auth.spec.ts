@@ -32,7 +32,7 @@ test("new user is sent to profile setup and can finish onboarding", async ({
   await page.getByLabel("Repeat Password").fill(signUpPassword);
   await page.getByRole("checkbox", { name: /terms and conditions/i }).click();
   await page.getByRole("button", { name: /^sign up$/i }).click();
-  await expect(page.getByText(/check your email to confirm/i)).toBeVisible();
+  await expect(page.getByText("Check your email to confirm", { exact: true })).toBeVisible();
 
   await confirmExistingUser(email);
   await loginAsUser(page, email, signUpPassword, { waitForDashboard: true });
