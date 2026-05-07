@@ -1,39 +1,52 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { mapSessionRowsToListItems } from "@/components/dashboard/sessions/utils/session-formatting";
+import { useInfiniteApiQuery } from "@/components/shared/hooks/use-infinite-api-query";
 import { usePreferences } from "@/lib/preferences/use-preferences";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type {
   UseSessionsPaginationParams,
   UseSessionsPaginationResult,
 } from "@/components/dashboard/sessions/models";
-import type { FetchSessionsPageResult } from "@/lib/sessions/models";
+import type { SessionRow, SessionSortField } from "@/lib/sessions/models";
+import type { SessionDateRangePreset } from "@/lib/timezones";
 
-async function fetchSessionsPage(
-  pageParam: string | null,
-  searchQuery: string,
-  sortField: string,
-  dateRange: string,
-  pageSize: number,
-  reportingTimezone: string,
-): Promise<FetchSessionsPageResult> {
-  const params = new URLSearchParams({
-    search: searchQuery,
-    sort: sortField,
-    dateRange,
-    limit: String(pageSize),
-    tz: reportingTimezone,
+interface SessionsQueryParams {
+  searchQuery: string;
+  sortField: SessionSortField;
+  dateRange: SessionDateRangePreset;
+  pageSize: number;
+  reportingTimezone: string;
+}
+
+const TIMEZONE_BOUNDARY_ERROR = "Could not compute date range boundaries.";
+const TIMEZONE_BOUNDARY_USER_MESSAGE =
+  "Could not load sessions for the selected reporting timezone. Please check your profile timezone and try again.";
+const GENERIC_USER_MESSAGE = "Could not load sessions. Please try again.";
+const DEFAULT_ERROR_MESSAGE = "Could not load sessions.";
+
+function buildSessionsSearchParams(
+  params: SessionsQueryParams,
+  cursor?: string,
+): URLSearchParams {
+  const search = new URLSearchParams({
+    search: params.searchQuery,
+    sort: params.sortField,
+    dateRange: params.dateRange,
+    limit: String(params.pageSize),
+    tz: params.reportingTimezone,
   });
-  if (pageParam) {
-    params.set("cursor", pageParam);
+  if (cursor) {
+    search.set("cursor", cursor);
   }
-  const res = await fetch(`/api/sessions?${params.toString()}`);
-  if (!res.ok) {
-    const body = (await res.json()) as { error?: string };
-    throw new Error(body.error ?? "Could not load sessions.");
+  return search;
+}
+
+function mapSessionsError(message: string): string {
+  if (message === TIMEZONE_BOUNDARY_ERROR) {
+    return TIMEZONE_BOUNDARY_USER_MESSAGE;
   }
-  return (await res.json()) as FetchSessionsPageResult;
+  return GENERIC_USER_MESSAGE;
 }
 
 export function useSessionsPagination({
@@ -45,52 +58,42 @@ export function useSessionsPagination({
   const { data: preferences, isLoading: isPreferencesLoading } = usePreferences();
   const reportingTimezone = preferences?.reportingTimezone ?? getDefaultReportingTimezone();
 
+  const queryParams: SessionsQueryParams = {
+    searchQuery,
+    sortField,
+    dateRange,
+    pageSize,
+    reportingTimezone,
+  };
+
   const {
-    data,
-    isFetching,
-    isFetchingNextPage,
-    hasNextPage: infiniteHasNextPage,
-    error: queryError,
+    items: sessionRows,
+    isLoading: isQueryLoading,
+    isLoadingMore,
+    hasNextPage,
+    error,
     refetch,
-    fetchNextPage,
-  } = useInfiniteQuery({
+    loadMore,
+  } = useInfiniteApiQuery<SessionRow, SessionsQueryParams>({
     queryKey: ["sessions", { searchQuery, sortField, dateRange, pageSize }],
-    queryFn: ({ pageParam }) =>
-      fetchSessionsPage(pageParam, searchQuery, sortField, dateRange, pageSize, reportingTimezone),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    initialPageParam: null as string | null,
+    endpoint: "/api/sessions",
+    params: queryParams,
+    buildSearchParams: buildSessionsSearchParams,
     enabled: !!preferences,
+    defaultErrorMessage: DEFAULT_ERROR_MESSAGE,
+    mapError: mapSessionsError,
   });
 
-  const sessions = data?.pages.flatMap((page) => mapSessionRowsToListItems(page.data)) ?? [];
-  const totalCount = sessions.length;
-
-  const isLoading = isPreferencesLoading || (isFetching && !isFetchingNextPage);
-  const isLoadingMore = isFetchingNextPage;
-
-  let error: string | null = null;
-  if (queryError) {
-    const message = queryError instanceof Error ? queryError.message : "";
-    error =
-      message === "Could not compute date range boundaries."
-        ? "Could not load sessions for the selected reporting timezone. Please check your profile timezone and try again."
-        : "Could not load sessions. Please try again.";
-  }
-
-  const loadMore = () => {
-    if (!isFetchingNextPage && infiniteHasNextPage) {
-      void fetchNextPage();
-    }
-  };
+  const sessions = mapSessionRowsToListItems(sessionRows);
 
   return {
     sessions,
-    totalCount,
-    isLoading,
+    totalCount: sessions.length,
+    isLoading: isPreferencesLoading || isQueryLoading,
     isLoadingMore,
-    hasNextPage: infiniteHasNextPage ?? false,
+    hasNextPage,
     error,
-    refetch: () => void refetch(),
+    refetch,
     loadMore,
   };
 }

@@ -1,39 +1,49 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import type { ExpensesApiResponse, UseExpensesParams, UseExpensesResult } from "@/lib/expenses/models";
+import type {
+  ExpenseListItem,
+  ExpensesApiResponse,
+  UseExpensesParams,
+  UseExpensesResult,
+} from "@/lib/expenses/models";
 import type { SessionDateRangePreset } from "@/lib/timezones";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import { usePreferences } from "@/lib/preferences/use-preferences";
+import { useInfiniteApiQuery } from "@/components/shared/hooks/use-infinite-api-query";
 
 const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_DATE_RANGE: SessionDateRangePreset = "last90Days";
+const DEFAULT_ERROR_MESSAGE = "Could not load expenses.";
+const FALLBACK_USER_MESSAGE = "Could not load expenses. Please try again.";
 
-async function fetchExpensesPage(
-  pageParam: string | null,
-  selectedCategories: string[],
-  dateRange: SessionDateRangePreset,
-  pageSize: number,
-  reportingTimezone: string,
-): Promise<ExpensesApiResponse> {
-  const params = new URLSearchParams({
-    limit: String(pageSize),
-    dateRange,
-    tz: reportingTimezone,
+interface ExpensesQueryParams {
+  selectedCategories: string[];
+  dateRange: SessionDateRangePreset;
+  pageSize: number;
+  reportingTimezone: string;
+}
+
+function buildExpensesSearchParams(
+  params: ExpensesQueryParams,
+  cursor?: string,
+): URLSearchParams {
+  const search = new URLSearchParams({
+    limit: String(params.pageSize),
+    dateRange: params.dateRange,
+    tz: params.reportingTimezone,
   });
-  if (pageParam) {
-    params.set("cursor", pageParam);
+  if (cursor) {
+    search.set("cursor", cursor);
   }
-  for (const category of selectedCategories) {
-    params.append("category", category);
+  for (const category of params.selectedCategories) {
+    search.append("category", category);
   }
-  const res = await fetch(`/api/expenses?${params.toString()}`);
-  if (!res.ok) {
-    const body = (await res.json()) as { error?: string };
-    throw new Error(body.error ?? "Could not load expenses.");
-  }
-  return (await res.json()) as ExpensesApiResponse;
+  return search;
+}
+
+function mapExpensesError(message: string): string {
+  return message || FALLBACK_USER_MESSAGE;
 }
 
 export function useExpenses({
@@ -44,50 +54,43 @@ export function useExpenses({
   const { data: preferences, isLoading: isPreferencesLoading } = usePreferences();
   const reportingTimezone = preferences?.reportingTimezone ?? getDefaultReportingTimezone();
 
+  const queryParams: ExpensesQueryParams = {
+    selectedCategories,
+    dateRange,
+    pageSize,
+    reportingTimezone,
+  };
+
   const {
-    data,
-    isFetching,
-    isFetchingNextPage,
-    hasNextPage: infiniteHasNextPage,
-    error: queryError,
+    items: expenses,
+    pages,
+    isLoading: isQueryLoading,
+    isLoadingMore,
+    hasNextPage,
+    error,
     refetch,
-    fetchNextPage,
-  } = useInfiniteQuery({
+    loadMore,
+  } = useInfiniteApiQuery<ExpenseListItem, ExpensesQueryParams, ExpensesApiResponse>({
     queryKey: ["expenses", { selectedCategories, dateRange, pageSize }],
-    queryFn: ({ pageParam }) =>
-      fetchExpensesPage(pageParam, selectedCategories, dateRange, pageSize, reportingTimezone),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    initialPageParam: null as string | null,
+    endpoint: "/api/expenses",
+    params: queryParams,
+    buildSearchParams: buildExpensesSearchParams,
     enabled: !!preferences,
+    defaultErrorMessage: DEFAULT_ERROR_MESSAGE,
+    mapError: mapExpensesError,
   });
 
-  const expenses = data?.pages.flatMap((page) => page.data) ?? [];
-  const rangeTotalMinor = data?.pages[0]?.rangeTotalMinor ?? 0;
-
-  const isLoading = isPreferencesLoading || (isFetching && !isFetchingNextPage);
-  const isLoadingMore = isFetchingNextPage;
-
-  let error: string | null = null;
-  if (queryError) {
-    const message = queryError instanceof Error ? queryError.message : "";
-    error = message || "Could not load expenses. Please try again.";
-  }
-
-  const loadMore = () => {
-    if (!isFetchingNextPage && infiniteHasNextPage) {
-      void fetchNextPage();
-    }
-  };
+  const rangeTotalMinor = pages[0]?.rangeTotalMinor ?? 0;
 
   return {
     expenses,
     rangeTotalMinor,
     defaultCurrency: preferences?.defaultCurrency ?? DEFAULT_CURRENCY,
-    isLoading,
+    isLoading: isPreferencesLoading || isQueryLoading,
     isLoadingMore,
-    hasNextPage: infiniteHasNextPage ?? false,
+    hasNextPage,
     error,
-    refetch: () => void refetch(),
+    refetch,
     loadMore,
   };
 }
