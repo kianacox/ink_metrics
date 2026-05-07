@@ -1,11 +1,18 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, request as playwrightRequest } from "@playwright/test";
+import { FOUNDING_MEMBER_LIMIT } from "@/lib/marketing/get-founding-count";
 import {
   cleanupFoundingFixtureProfiles,
-  seedFoundingProfilesUpTo,
+  isFoundingSeedError,
+  seedFoundingProfiles,
 } from "./founding-helpers";
 
-const FOUNDING_LIMIT = 50;
-const CACHE_REVALIDATE_SECONDS = 60;
+/**
+ * Module-level accumulator for created user_ids. We assign during `beforeAll`
+ * before awaiting the seed call so a partial failure inside
+ * `seedFoundingProfiles` still leaves the already-created user_ids reachable
+ * to `afterAll` for cleanup.
+ */
+let createdFoundingUserIds: string[] = [];
 
 test.describe("Pricing page — founding tier", () => {
   test("renders the founding £9.99 card with embedded counter when spots are available", async ({
@@ -32,29 +39,45 @@ test.describe("Pricing page — founding tier", () => {
 
     // Embedded founding counter
     await expect(
-      page.getByText(/of 50 founding spots taken/i),
+      page.getByText(
+        new RegExp(`of ${FOUNDING_MEMBER_LIMIT} founding spots taken`, "i"),
+      ),
     ).toBeVisible();
   });
 });
 
 test.describe.serial("Pricing page — founding spots full", () => {
-  let createdUserIds: string[] = [];
-
   test.beforeAll(async () => {
-    createdUserIds = await seedFoundingProfilesUpTo(FOUNDING_LIMIT);
+    try {
+      createdFoundingUserIds = await seedFoundingProfiles(
+        FOUNDING_MEMBER_LIMIT,
+      );
+    } catch (error) {
+      if (isFoundingSeedError(error)) {
+        createdFoundingUserIds = error.partialUserIds;
+      }
+      throw error;
+    }
 
-    // The pricing page wraps `getFoundingCount` in `unstable_cache` with a
-    // 60-second revalidation. If a previous test in the run already cached
-    // the not-full count, we must wait out the revalidation window before
-    // hitting the page to see the full state.
-    await new Promise((resolve) =>
-      setTimeout(resolve, (CACHE_REVALIDATE_SECONDS + 5) * 1000),
-    );
+    // The pricing page wraps `getFoundingCount` in `unstable_cache`. Hit the
+    // test-only revalidate endpoint so the next request reads fresh data
+    // from the database instead of an earlier (not-full) cached response.
+    const baseURL =
+      process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3001";
+    const apiContext = await playwrightRequest.newContext({ baseURL });
+    try {
+      const response = await apiContext.post(
+        "/api/__test__/revalidate-founding-count",
+      );
+      expect(response.ok()).toBeTruthy();
+    } finally {
+      await apiContext.dispose();
+    }
   });
 
   test.afterAll(async () => {
-    await cleanupFoundingFixtureProfiles(createdUserIds);
-    createdUserIds = [];
+    await cleanupFoundingFixtureProfiles(createdFoundingUserIds);
+    createdFoundingUserIds = [];
   });
 
   test("renders the standard £14.99 card with full-state counter when founding spots are full", async ({
@@ -78,7 +101,9 @@ test.describe.serial("Pricing page — founding spots full", () => {
 
     // Full-state founding counter
     await expect(
-      page.getByText("Founding spots full — 50 founding members joined"),
+      page.getByText(
+        `Founding spots full — ${FOUNDING_MEMBER_LIMIT} founding members joined`,
+      ),
     ).toBeVisible();
 
     // The founding-price-for-life note must NOT appear when full

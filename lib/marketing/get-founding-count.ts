@@ -17,6 +17,13 @@ const FOUNDING_COUNT_REVALIDATE_SECONDS = 60;
 
 const FOUNDING_COUNT_CACHE_KEY = ["marketing", "founding-count"];
 
+/**
+ * Cache tag that can be passed to `revalidateTag` to force the next call to
+ * {@link getFoundingCount} to bypass the cached value and re-query the
+ * database. Exported so test-only routes can invalidate after seeding.
+ */
+export const FOUNDING_COUNT_CACHE_TAG = "marketing:founding-count";
+
 export interface FoundingCount {
   count: number;
   isFull: boolean;
@@ -54,5 +61,8 @@ async function fetchFoundingCount(): Promise<FoundingCount> {
 export const getFoundingCount = unstable_cache(
   fetchFoundingCount,
   FOUNDING_COUNT_CACHE_KEY,
-  { revalidate: FOUNDING_COUNT_REVALIDATE_SECONDS },
+  {
+    revalidate: FOUNDING_COUNT_REVALIDATE_SECONDS,
+    tags: [FOUNDING_COUNT_CACHE_TAG],
+  },
 );

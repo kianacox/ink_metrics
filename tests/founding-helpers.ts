@@ -64,22 +64,43 @@ async function createFoundingFixtureProfile(index: number): Promise<string> {
 }
 
 /**
- * Brings the founding-member count up to the target value by inserting
- * additional founding-flagged profiles. Returns the list of user_ids that
- * were created so callers can clean up afterwards.
+ * Creates `count` confirmed auth users plus profiles flagged as founding
+ * members. Global setup resets the database before every Playwright run, so
+ * the count starts at zero — there is no top-up logic.
  *
- * If the current count already meets or exceeds the target, this is a no-op.
+ * On partial failure the helper rethrows the underlying error but attaches
+ * the user_ids that were already created via the `partialUserIds` property
+ * so callers can still clean up. Callers should typecheck with
+ * `isFoundingSeedError` before reading `partialUserIds`.
  */
-export async function seedFoundingProfilesUpTo(
-  target: number,
-): Promise<string[]> {
-  const currentCount = await getFoundingProfileCount();
-  const needed = Math.max(0, target - currentCount);
+export interface FoundingSeedError extends Error {
+  partialUserIds: string[];
+}
+
+export function isFoundingSeedError(
+  error: unknown,
+): error is FoundingSeedError {
+  return (
+    error instanceof Error &&
+    Array.isArray((error as FoundingSeedError).partialUserIds)
+  );
+}
+
+export async function seedFoundingProfiles(count: number): Promise<string[]> {
   const createdUserIds: string[] = [];
 
-  for (let index = 0; index < needed; index += 1) {
-    const userId = await createFoundingFixtureProfile(index);
-    createdUserIds.push(userId);
+  for (let index = 0; index < count; index += 1) {
+    try {
+      const userId = await createFoundingFixtureProfile(index);
+      createdUserIds.push(userId);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      const error = new Error(
+        `seedFoundingProfiles failed at index ${index}: ${message}`,
+      ) as FoundingSeedError;
+      error.partialUserIds = createdUserIds;
+      throw error;
+    }
   }
 
   return createdUserIds;
@@ -87,7 +108,7 @@ export async function seedFoundingProfilesUpTo(
 
 /**
  * Removes auth users (and their cascading profile rows) created by
- * `seedFoundingProfilesUpTo`. Safe to call with an empty array.
+ * `seedFoundingProfiles`. Safe to call with an empty array.
  */
 export async function cleanupFoundingFixtureProfiles(
   userIds: string[],
