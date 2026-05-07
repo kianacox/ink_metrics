@@ -5,8 +5,8 @@ import type { ClientTier } from "@/lib/clients/tier";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { getDefaultReportingTimezone } from "@/lib/timezones";
 import type { SessionDateRangePreset } from "@/lib/timezones";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { usePreferences } from "@/lib/preferences/use-preferences";
+import { useInfiniteApiQuery } from "@/components/shared/hooks/use-infinite-api-query";
 
 interface UseClientsParams {
   searchQuery: string;
@@ -28,43 +28,47 @@ interface UseClientsResult {
   loadMore: () => void;
 }
 
-interface ClientsApiResponse {
-  data: ClientListItem[];
-  nextCursor: string | null;
-  hasNextPage: boolean;
+interface ClientsQueryParams {
+  searchQuery: string;
+  sortField: ClientSortField;
+  dateRange: SessionDateRangePreset;
+  tier: ClientTier | null;
+  pageSize: number;
+  reportingTimezone: string;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
+const TIMEZONE_BOUNDARY_ERROR = "Could not compute date range boundaries.";
+const TIMEZONE_BOUNDARY_USER_MESSAGE =
+  "Could not load clients for the selected reporting timezone. Please check your profile timezone and try again.";
+const GENERIC_USER_MESSAGE = "Could not load clients. Please try again.";
+const DEFAULT_ERROR_MESSAGE = "Could not load clients.";
 
-async function fetchClientsPage(
-  pageParam: string | null,
-  searchQuery: string,
-  sortField: ClientSortField,
-  dateRange: SessionDateRangePreset,
-  tier: ClientTier | null,
-  pageSize: number,
-  reportingTimezone: string,
-): Promise<ClientsApiResponse> {
-  const params = new URLSearchParams({
-    search: searchQuery,
-    sort: sortField,
-    dateRange,
-    limit: String(pageSize),
-    tz: reportingTimezone,
+function buildClientsSearchParams(
+  params: ClientsQueryParams,
+  cursor?: string,
+): URLSearchParams {
+  const search = new URLSearchParams({
+    search: params.searchQuery,
+    sort: params.sortField,
+    dateRange: params.dateRange,
+    limit: String(params.pageSize),
+    tz: params.reportingTimezone,
   });
-  if (pageParam) {
-    params.set("cursor", pageParam);
+  if (cursor) {
+    search.set("cursor", cursor);
   }
-  if (tier) {
-    params.set("tier", tier);
+  if (params.tier) {
+    search.set("tier", params.tier);
   }
+  return search;
+}
 
-  const res = await fetch(`/api/clients?${params.toString()}`);
-  if (!res.ok) {
-    const body = (await res.json()) as { error?: string };
-    throw new Error(body.error ?? "Could not load clients.");
+function mapClientsError(message: string): string {
+  if (message === TIMEZONE_BOUNDARY_ERROR) {
+    return TIMEZONE_BOUNDARY_USER_MESSAGE;
   }
-  return (await res.json()) as ClientsApiResponse;
+  return GENERIC_USER_MESSAGE;
 }
 
 export function useClients({
@@ -78,58 +82,40 @@ export function useClients({
 
   const reportingTimezone = preferences?.reportingTimezone ?? getDefaultReportingTimezone();
 
-  const {
-    data,
-    isFetching,
-    isFetchingNextPage,
-    hasNextPage: infiniteHasNextPage,
-    error: queryError,
-    refetch,
-    fetchNextPage,
-  } = useInfiniteQuery({
-    queryKey: ["clients", { searchQuery, sortField, dateRange, tier, pageSize }],
-    queryFn: ({ pageParam }) =>
-      fetchClientsPage(
-        pageParam,
-        searchQuery,
-        sortField,
-        dateRange,
-        tier,
-        pageSize,
-        reportingTimezone,
-      ),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    initialPageParam: null as string | null,
-    enabled: !!preferences,
-  });
-
-  const clients = data?.pages.flatMap((page) => page.data) ?? [];
-
-  const isLoading = isPreferencesLoading || (isFetching && !isFetchingNextPage);
-  const isLoadingMore = isFetchingNextPage;
-
-  let error: string | null = null;
-  if (queryError) {
-    const message = queryError instanceof Error ? queryError.message : "";
-    error =
-      message === "Could not compute date range boundaries."
-        ? "Could not load clients for the selected reporting timezone. Please check your profile timezone and try again."
-        : "Could not load clients. Please try again.";
-  }
-
-  const loadMore = () => {
-    if (!isFetchingNextPage && infiniteHasNextPage) {
-      void fetchNextPage();
-    }
+  const queryParams: ClientsQueryParams = {
+    searchQuery,
+    sortField,
+    dateRange,
+    tier,
+    pageSize,
+    reportingTimezone,
   };
+
+  const {
+    items: clients,
+    isLoading: isQueryLoading,
+    isLoadingMore,
+    hasNextPage,
+    error,
+    refetch,
+    loadMore,
+  } = useInfiniteApiQuery<ClientListItem, ClientsQueryParams>({
+    queryKey: ["clients", { searchQuery, sortField, dateRange, tier, pageSize }],
+    endpoint: "/api/clients",
+    params: queryParams,
+    buildSearchParams: buildClientsSearchParams,
+    enabled: !!preferences,
+    defaultErrorMessage: DEFAULT_ERROR_MESSAGE,
+    mapError: mapClientsError,
+  });
 
   return {
     clients,
     defaultCurrency: preferences?.defaultCurrency ?? DEFAULT_CURRENCY,
     reportingTimezone,
-    isLoading,
+    isLoading: isPreferencesLoading || isQueryLoading,
     isLoadingMore,
-    hasNextPage: infiniteHasNextPage ?? false,
+    hasNextPage,
     error,
     refetch,
     loadMore,
