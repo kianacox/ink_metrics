@@ -68,7 +68,7 @@ test.describe.serial("Pricing page — founding spots full", () => {
     const apiContext = await playwrightRequest.newContext({ baseURL });
     try {
       const response = await apiContext.post(
-        "/api/__test__/revalidate-founding-count",
+        "/api/test/revalidate-founding-count",
       );
       expect(response.ok()).toBeTruthy();
     } finally {
