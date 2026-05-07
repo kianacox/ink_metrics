@@ -109,17 +109,36 @@ export async function seedFoundingProfiles(count: number): Promise<string[]> {
 /**
  * Removes auth users (and their cascading profile rows) created by
  * `seedFoundingProfiles`. Safe to call with an empty array.
+ *
+ * Attempts every deletion even if some fail, so a single bad user_id does
+ * not strand the rest in the shared local DB. If any deletes fail, throws
+ * a single aggregate error listing the failed user_ids and underlying
+ * messages.
  */
 export async function cleanupFoundingFixtureProfiles(
   userIds: string[],
 ): Promise<void> {
   const adminClient = createAdminClient();
+  const failures: { userId: string; message: string }[] = [];
+
   for (const userId of userIds) {
-    const { error } = await adminClient.auth.admin.deleteUser(userId);
-    if (error) {
-      throw new Error(
-        `Failed to delete founding fixture user ${userId}: ${error.message}`,
-      );
+    try {
+      const { error } = await adminClient.auth.admin.deleteUser(userId);
+      if (error) {
+        failures.push({ userId, message: error.message });
+      }
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      failures.push({ userId, message });
     }
+  }
+
+  if (failures.length > 0) {
+    const details = failures
+      .map(({ userId, message }) => `${userId}: ${message}`)
+      .join("; ");
+    throw new Error(
+      `Failed to delete ${failures.length} founding fixture user(s): ${details}`,
+    );
   }
 }

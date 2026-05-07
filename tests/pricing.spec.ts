@@ -48,6 +48,7 @@ test.describe("Pricing page — founding tier", () => {
 
 test.describe.serial("Pricing page — founding spots full", () => {
   test.beforeAll(async () => {
+    createdFoundingUserIds = [];
     try {
       createdFoundingUserIds = await seedFoundingProfiles(
         FOUNDING_MEMBER_LIMIT,
