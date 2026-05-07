@@ -39,6 +39,34 @@ test.describe("Landing page", () => {
       page.getByRole("link", { name: "Terms and Conditions" }),
     ).toBeVisible();
   });
+
+  test("shows founding counter in hero and final CTA sections", async ({
+    page,
+  }) => {
+    // Both placements share the same accessible label produced by
+    // FoundingCounter, so we expect exactly two progress bars on the page
+    // with matching labels.
+    const counters = page.getByRole("progressbar", {
+      name: /founding spots taken|Founding spots full/,
+    });
+    await expect(counters).toHaveCount(2);
+
+    const firstLabel = await counters.first().getAttribute("aria-label");
+    const secondLabel = await counters.last().getAttribute("aria-label");
+    expect(firstLabel).not.toBeNull();
+    expect(firstLabel).toBe(secondLabel);
+
+    // Counter should reflect a numeric count out of the 50 founding cap, or
+    // the full state if the cap is reached.
+    expect(firstLabel).toMatch(
+      /^(?:\d+ of 50 founding spots taken|Founding spots full — 50 founding members joined)$/,
+    );
+
+    // The hero counter sits below the hero CTA buttons; the final CTA
+    // counter sits below the "Get started free" button. Both visible.
+    await expect(counters.first()).toBeVisible();
+    await expect(counters.last()).toBeVisible();
+  });
 });
 
 test.describe("Landing page — authenticated redirect", () => {
