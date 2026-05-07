@@ -3,8 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { BarChart3, BellRing, Calculator, CheckCircle2, Copy, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui";
+import { FoundingCounter } from "@/components/marketing/founding-counter";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import { RevenueChart } from "@/components/marketing/revenue-chart";
+import { getFoundingCount } from "@/lib/marketing/get-founding-count";
 
 const HOW_IT_WORKS = [
   {
@@ -170,6 +172,10 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
 
+  // Fetch the founding-member count once and share it across every
+  // FoundingCounter placement on the page so we never amplify DB load.
+  const foundingCount = await getFoundingCount();
+
   return (
     <MarketingLayout activePath="product">
       <div className="flex flex-col gap-20 sm:gap-28">
@@ -201,6 +207,12 @@ export default async function HomePage() {
             >
               <Link href="/auth/login">Sign in</Link>
             </Button>
+          </div>
+          <div className="mx-auto mt-6 max-w-sm">
+            <FoundingCounter
+              count={foundingCount.count}
+              isFull={foundingCount.isFull}
+            />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             No card required · No booking migration
@@ -388,6 +400,12 @@ export default async function HomePage() {
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/auth/sign-up">Get started free</Link>
           </Button>
+          <div className="mx-auto mt-6 max-w-sm">
+            <FoundingCounter
+              count={foundingCount.count}
+              isFull={foundingCount.isFull}
+            />
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Then £9.99/month. Cancel any time.
           </p>
