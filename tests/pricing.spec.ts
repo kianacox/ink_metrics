@@ -1,5 +1,5 @@
 import { test, expect, request as playwrightRequest } from "@playwright/test";
-import { FOUNDING_MEMBER_LIMIT } from "@/lib/marketing/get-founding-count";
+import { FOUNDING_MEMBER_LIMIT } from "@/lib/marketing/founding";
 import {
   cleanupFoundingFixtureProfiles,
   isFoundingSeedError,

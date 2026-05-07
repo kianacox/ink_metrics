@@ -2,12 +2,12 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  FOUNDING_COUNT_CACHE_TAG,
+  FOUNDING_MEMBER_LIMIT,
+} from "./founding";
 
-/**
- * Maximum number of founding-member spots available. Once the count of
- * profiles flagged as founding users reaches this number, the offer is full.
- */
-export const FOUNDING_MEMBER_LIMIT = 50;
+export { FOUNDING_COUNT_CACHE_TAG, FOUNDING_MEMBER_LIMIT };
 
 /**
  * How long (in seconds) to cache the founding-count query result before
@@ -16,13 +16,6 @@ export const FOUNDING_MEMBER_LIMIT = 50;
 const FOUNDING_COUNT_REVALIDATE_SECONDS = 60;
 
 const FOUNDING_COUNT_CACHE_KEY = ["marketing", "founding-count"];
-
-/**
- * Cache tag that can be passed to `revalidateTag` to force the next call to
- * {@link getFoundingCount} to bypass the cached value and re-query the
- * database. Exported so test-only routes can invalidate after seeding.
- */
-export const FOUNDING_COUNT_CACHE_TAG = "marketing:founding-count";
 
 export interface FoundingCount {
   count: number;
