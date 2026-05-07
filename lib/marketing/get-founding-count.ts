@@ -2,12 +2,12 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  FOUNDING_COUNT_CACHE_TAG,
+  FOUNDING_MEMBER_LIMIT,
+} from "./founding";
 
-/**
- * Maximum number of founding-member spots available. Once the count of
- * profiles flagged as founding users reaches this number, the offer is full.
- */
-export const FOUNDING_MEMBER_LIMIT = 50;
+export { FOUNDING_COUNT_CACHE_TAG, FOUNDING_MEMBER_LIMIT };
 
 /**
  * How long (in seconds) to cache the founding-count query result before
@@ -54,5 +54,8 @@ async function fetchFoundingCount(): Promise<FoundingCount> {
 export const getFoundingCount = unstable_cache(
   fetchFoundingCount,
   FOUNDING_COUNT_CACHE_KEY,
-  { revalidate: FOUNDING_COUNT_REVALIDATE_SECONDS },
+  {
+    revalidate: FOUNDING_COUNT_REVALIDATE_SECONDS,
+    tags: [FOUNDING_COUNT_CACHE_TAG],
+  },
 );

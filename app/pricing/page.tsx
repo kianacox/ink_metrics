@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
+import { FoundingCounter } from "@/components/marketing/founding-counter";
+import { getFoundingCount } from "@/lib/marketing/get-founding-count";
 
 const FEATURES = [
   "Unlimited session logging",
@@ -18,12 +20,19 @@ const FEATURES = [
   "No bank connection required",
 ] as const;
 
+const FOUNDING_PRICE = "£9.99";
+const STANDARD_PRICE = "£14.99";
+
 export default async function PricingPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
+
+  const { count, isFull } = await getFoundingCount();
+
+  const headlinePrice = isFull ? STANDARD_PRICE : FOUNDING_PRICE;
 
   return (
     <MarketingLayout activePath="pricing">
@@ -37,19 +46,41 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
+        {isFull ? (
+          <div className="mb-6">
+            <FoundingCounter count={count} isFull={isFull} />
+          </div>
+        ) : null}
+
+        <div
+          data-testid="pricing-card"
+          className="rounded-none border border-border bg-card p-8 shadow-sm"
+        >
           <div className="mb-6 text-center">
             <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Solo Artist Plan
             </p>
             <p className="mt-2">
-              <span className="text-4xl font-bold text-foreground">£9.99</span>
+              <span className="text-4xl font-bold text-foreground">
+                {headlinePrice}
+              </span>
               <span className="text-muted-foreground">/month</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               after your 60-day free trial
             </p>
+            {!isFull ? (
+              <p className="mt-2 text-sm text-foreground">
+                This price is locked in for life for founding members.
+              </p>
+            ) : null}
           </div>
+
+          {!isFull ? (
+            <div className="mb-6">
+              <FoundingCounter count={count} isFull={isFull} />
+            </div>
+          ) : null}
 
           <ul className="mb-8 space-y-3">
             {FEATURES.map((feature) => (
