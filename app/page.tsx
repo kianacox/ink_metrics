@@ -219,77 +219,6 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {/* Problem */}
-        <section>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
-            The problem
-          </p>
-          <h2 className="mb-6 text-2xl font-bold text-foreground sm:text-3xl">
-            Most artists are flying blind on their own money
-          </h2>
-          <div className="space-y-4 text-base leading-relaxed text-muted-foreground">
-            <p>
-              Platforms like Vagaro and Square will give you financial reports —
-              but only if you move your{" "}
-              <strong className="text-foreground">
-                entire booking workflow
-              </strong>{" "}
-              into their system. Most artists book through Instagram DMs and
-              personal calendars. That&apos;s not going to change.
-            </p>
-            <p>
-              So the alternative is a spreadsheet. But after a long day, entries
-              get skipped, clients drift away quietly, and{" "}
-              <strong className="text-foreground">
-                you have no idea who&apos;s worth chasing or what it&apos;s
-                costing you not to
-              </strong>
-              .
-            </p>
-            <p>
-              Neither option tells you that a regular hasn&apos;t booked in two
-              months, or what you&apos;re losing by not following up.
-            </p>
-          </div>
-          <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-4 sm:p-5">
-            <p className="text-sm font-bold text-primary">
-              inkMetrics is the third option.
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">
-              It fits around how you already work — tracking your money and your
-              clients, and telling you exactly who to reach out to next.
-            </p>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section>
-          <h2 className="mb-10 text-center text-2xl font-bold text-foreground sm:text-3xl">
-            How it works
-          </h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {HOW_IT_WORKS.map(({ Icon, step, title, description }) => (
-              <div
-                key={step}
-                className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 sm:p-6"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Step {step}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-foreground">{title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Actions showcase */}
         <section>
           <div className="mb-10">
@@ -332,6 +261,54 @@ export default async function HomePage() {
           <RevenueChart />
         </section>
 
+        {/* How it works */}
+        <section>
+          <h2 className="mb-10 text-center text-2xl font-bold text-foreground sm:text-3xl">
+            How it works
+          </h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {HOW_IT_WORKS.map(({ Icon, step, title, description }) => (
+              <div
+                key={step}
+                className="flex flex-col gap-4 border border-border bg-card p-5 sm:p-6"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Step {step}
+                  </span>
+                </div>
+                <h3 className="font-semibold text-foreground">{title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Problem */}
+        <section>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">
+            The problem
+          </p>
+          <h2 className="mb-6 text-2xl font-bold text-foreground sm:text-3xl">
+            Most artists are flying blind on their own money
+          </h2>
+          <p className="text-base leading-relaxed text-muted-foreground">
+            Most artists book through Instagram DMs and personal calendars — not
+            studio software — so they end up with{" "}
+            <strong className="text-foreground">
+              no real visibility into what they earn or which clients are
+              drifting away
+            </strong>
+            . inkMetrics fits around how you already work, tracking your money
+            and your clients without forcing a booking migration.
+          </p>
+        </section>
+
         {/* Built for you */}
         <section>
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
@@ -370,20 +347,19 @@ export default async function HomePage() {
         </section>
 
         {/* Tax season */}
-        <section className="rounded-xl border border-primary/25 bg-muted/30 p-6 sm:p-10">
+        <section className="border border-border p-6 sm:p-10">
           <div className="max-w-2xl">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
               Tax season
             </p>
             <h2 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
-              No more spreadsheet archaeology in January
+              Coming soon: export records your accountant can use
             </h2>
             <p className="leading-relaxed text-muted-foreground">
-              Every session and expense you log builds a clean record you can
-              actually hand to an accountant. No bank statement archaeology, no
-              receipts in a drawer. HMRC&apos;s record-keeping rules are only
-              getting stricter — inkMetrics keeps you covered without adding to
-              your workload.
+              Every session and expense you log builds a clean record of your
+              year as you go. In a future release, you&apos;ll be able to
+              download it in an accountant-ready format — so when tax season
+              comes around, the work is already done.
             </p>
           </div>
         </section>

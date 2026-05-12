@@ -67,6 +67,62 @@ test.describe("Landing page", () => {
     await expect(counters.first()).toBeVisible();
     await expect(counters.last()).toBeVisible();
   });
+
+  test("Actions section appears before How it works section", async ({
+    page,
+  }) => {
+    const actionsHeading = page.getByRole("heading", {
+      name: /Know exactly who to message/i,
+    });
+    const howItWorksHeading = page.getByRole("heading", {
+      name: /^How it works$/i,
+    });
+
+    await expect(actionsHeading).toBeVisible();
+    await expect(howItWorksHeading).toBeVisible();
+
+    const actionsBox = await actionsHeading.boundingBox();
+    const howItWorksBox = await howItWorksHeading.boundingBox();
+    expect(actionsBox).not.toBeNull();
+    expect(howItWorksBox).not.toBeNull();
+    // Actions section sits above How it works on the page.
+    expect(actionsBox!.y).toBeLessThan(howItWorksBox!.y);
+  });
+
+  test("Revenue chart section appears before How it works section", async ({
+    page,
+  }) => {
+    const revenueHeading = page.getByRole("heading", {
+      name: /See exactly where your money goes/i,
+    });
+    const howItWorksHeading = page.getByRole("heading", {
+      name: /^How it works$/i,
+    });
+
+    await expect(revenueHeading).toBeVisible();
+    await expect(howItWorksHeading).toBeVisible();
+
+    const revenueBox = await revenueHeading.boundingBox();
+    const howItWorksBox = await howItWorksHeading.boundingBox();
+    expect(revenueBox).not.toBeNull();
+    expect(howItWorksBox).not.toBeNull();
+    expect(revenueBox!.y).toBeLessThan(howItWorksBox!.y);
+  });
+
+  test("Tax section frames the export feature as coming soon", async ({
+    page,
+  }) => {
+    // The new tax heading explicitly signals the export feature is upcoming.
+    await expect(
+      page.getByRole("heading", { name: /coming soon/i }),
+    ).toBeVisible();
+    // And mentions an accountant-ready format somewhere in the body copy.
+    await expect(page.getByText(/accountant/i).first()).toBeVisible();
+  });
+
+  test("Tax section no longer uses the archaeology copy", async ({ page }) => {
+    await expect(page.getByText(/archaeology/i)).toHaveCount(0);
+  });
 });
 
 test.describe("Landing page — authenticated redirect", () => {
