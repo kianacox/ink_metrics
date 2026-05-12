@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import { FoundingCounter } from "@/components/marketing/founding-counter";
 import { getFoundingCount } from "@/lib/marketing/get-founding-count";
+import { TrackedLink } from "@/components/marketing/tracked-link";
 
 const FEATURES = [
   "Unlimited session logging",
@@ -92,7 +92,9 @@ export default async function PricingPage() {
           </ul>
 
           <Button asChild className="w-full" size="lg">
-            <Link href="/auth/sign-up">Start free for 60 days</Link>
+            <TrackedLink href="/auth/sign-up" eventName="pricing_cta_click">
+              Start free for 60 days
+            </TrackedLink>
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             No credit card required to start

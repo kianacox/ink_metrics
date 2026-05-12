@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/ui";
 import { ThemeSwitcher } from "@/components/shared/theme-switcher";
+import { GoogleAnalytics } from "@/components/marketing/google-analytics";
+import { TrackedLink } from "@/components/marketing/tracked-link";
 
 function MarketingHeader({
   activePath,
@@ -71,7 +73,13 @@ function MarketingHeader({
             <Link href="/auth/login">Sign in</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/auth/sign-up">Get started</Link>
+            <TrackedLink
+              href="/auth/sign-up"
+              eventName="header_cta_click"
+              eventParams={{ page: activePath === "pricing" ? "pricing" : "landing" }}
+            >
+              Get started
+            </TrackedLink>
           </Button>
         </div>
       </div>
@@ -120,6 +128,7 @@ export function MarketingLayout({
 }) {
   return (
     <main className="flex min-h-dvh min-h-[100dvh] flex-col bg-background">
+      <GoogleAnalytics />
       <MarketingHeader activePath={activePath} />
       <div className="flex flex-1 flex-col items-center">
         <div className="w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
