@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
+import { DatePicker } from "@/components/dashboard/shared/date-picker";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
   EXPENSE_CATEGORIES,
@@ -52,6 +53,13 @@ export function ExpenseEditModal({
   });
 
   const isSubmitting = isUpdating || isUploadingReceipt;
+
+  // Future dates are not valid for an expense.
+  const datePickerBounds = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return { after: today };
+  }, []);
 
   useEffect(() => {
     if (!open || !expense) {
@@ -200,12 +208,13 @@ export function ExpenseEditModal({
 
         <div className="grid gap-2">
           <Label htmlFor="edit-expense-date">Date purchased</Label>
-          <Input
+          <DatePicker
             id="edit-expense-date"
-            type="date"
             value={datePurchased}
-            onChange={(e) => setDatePurchased(e.target.value)}
-            aria-required="true"
+            onChange={setDatePurchased}
+            disabled={datePickerBounds}
+            aria-required
+            data-testid="edit-expense-date-picker"
           />
         </div>
 

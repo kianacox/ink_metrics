@@ -1,11 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Input, Label } from "@/components/ui";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/dashboard/shared/date-picker";
 
 interface SessionEditableFieldsProps {
   fieldIdPrefix: string;
@@ -18,33 +14,14 @@ interface SessionEditableFieldsProps {
   onInProgressChange: (value: boolean) => void;
 }
 
-function parseDateString(dateString: string): Date | undefined {
-  if (!dateString) return undefined;
-  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return undefined;
-  const [, year, month, day] = match;
-  return new Date(Number(year), Number(month) - 1, Number(day));
-}
+const MONTHS_OF_SESSION_BACKDATING = 6;
 
-function formatDateToYYYYMMDD(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatDateForDisplay(dateString: string): string {
-  const parsed = parseDateString(dateString);
-  if (!parsed) return "Pick a date";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(parsed);
-}
-
-function getDisabledDays(): { before: Date; after: Date } | { after: Date } {
+function getSessionDateBounds(): { before: Date; after: Date } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const sixMonthsAgo = new Date(today);
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - MONTHS_OF_SESSION_BACKDATING);
 
   return { before: sixMonthsAgo, after: today };
 }
@@ -59,20 +36,8 @@ export function SessionEditableFields({
   onProfitChange,
   onInProgressChange,
 }: SessionEditableFieldsProps) {
-  const [calendarOpen, setCalendarOpen] = useState(false);
-
   const priceId = `${fieldIdPrefix}-session-price`;
   const inProgressId = `${fieldIdPrefix}-in-progress`;
-
-  const selectedDate = parseDateString(sessionDate);
-  const disabledDays = getDisabledDays();
-
-  function handleDaySelect(day: Date | undefined) {
-    if (day) {
-      onSessionDateChange(formatDateToYYYYMMDD(day));
-      setCalendarOpen(false);
-    }
-  }
 
   return (
     <>
@@ -81,30 +46,12 @@ export function SessionEditableFields({
         <p className="text-xs text-muted-foreground">
           You can backdate sessions by up to 6 months.
         </p>
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              data-testid="session-date-picker"
-              className={cn(
-                "flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                !sessionDate && "text-muted-foreground",
-              )}
-            >
-              <CalendarIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-              {formatDateForDisplay(sessionDate)}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDaySelect}
-              disabled={disabledDays}
-              defaultMonth={selectedDate}
-            />
-          </PopoverContent>
-        </Popover>
+        <DatePicker
+          value={sessionDate}
+          onChange={onSessionDateChange}
+          disabled={getSessionDateBounds()}
+          data-testid="session-date-picker"
+        />
       </div>
       <div className="grid min-w-0 gap-2">
         <Label htmlFor={priceId}>Price ({currencyCode})</Label>
