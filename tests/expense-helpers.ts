@@ -1,8 +1,54 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 const CREATED_TOAST_TEXT = "Expense logged successfully.";
 const UPDATED_TOAST_TEXT = "Expense updated successfully.";
 const DELETED_TOAST_TEXT = "Expense deleted successfully.";
+
+const MAX_CALENDAR_NAV_STEPS = 240; // 20 years either side, plenty for any test
+
+/**
+ * Pick a date on the shared calendar+popover DatePicker.
+ *
+ * @param page         The Playwright page.
+ * @param dialog       Container the picker lives in (so we can scope the trigger).
+ * @param testId       data-testid of the trigger button.
+ * @param dateStr      Target date as YYYY-MM-DD.
+ */
+export async function pickDateOnDatePicker(
+  page: Page,
+  dialog: Locator,
+  testId: string,
+  dateStr: string,
+): Promise<void> {
+  const [targetYear, targetMonth, targetDay] = dateStr.split("-").map(Number);
+
+  await dialog.getByTestId(testId).click();
+
+  // Calendar renders in a Radix portal outside the dialog.
+  const calendar = page.locator('[data-slot="calendar"]');
+  await expect(calendar).toBeVisible({ timeout: 5000 });
+
+  for (let i = 0; i < MAX_CALENDAR_NAV_STEPS; i++) {
+    const captionText = (await calendar.locator(".rdp-caption_label").textContent()) ?? "";
+    const match = captionText.trim().match(/(\w+)\s+(\d{4})/);
+    if (!match) break;
+    const currentMonth = new Date(`${match[1]} 1, 2000`).getMonth() + 1;
+    const currentYear = parseInt(match[2], 10);
+    if (currentYear === targetYear && currentMonth === targetMonth) break;
+    const isAfter =
+      currentYear > targetYear || (currentYear === targetYear && currentMonth > targetMonth);
+    await (isAfter
+      ? calendar.locator(".rdp-button_previous")
+      : calendar.locator(".rdp-button_next")
+    ).click();
+  }
+
+  await calendar
+    .locator("button[data-day]:not([disabled])")
+    .filter({ hasText: new RegExp(`^${targetDay}$`) })
+    .first()
+    .click();
+}
 
 export interface ExpenseInput {
   item: string;
@@ -39,7 +85,7 @@ export async function createExpense(page: Page, input: ExpenseInput): Promise<vo
   }
 
   if (input.datePurchased) {
-    await dialog.getByLabel("Date purchased").fill(input.datePurchased);
+    await pickDateOnDatePicker(page, dialog, "expense-date-picker", input.datePurchased);
   }
 
   await dialog.getByRole("button", { name: /log expense/i }).click();

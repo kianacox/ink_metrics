@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { Paperclip } from "lucide-react";
 import { Button, Input, Label } from "@/components/ui";
+import { DatePicker } from "@/components/dashboard/shared/date-picker";
 import { SessionModalShell } from "@/components/dashboard/session-form/session-modal-shell";
 import {
   EXPENSE_CATEGORIES,
@@ -49,6 +50,14 @@ export function ExpenseCreateModal({
   });
 
   const isSubmitting = isCreating || isUploadingReceipt;
+
+  // Future dates are not valid for an expense — recompute when the modal opens
+  // (cheap, but `useMemo` keeps the reference stable across renders).
+  const datePickerBounds = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return { after: today };
+  }, []);
 
   function resetForm() {
     setItem("");
@@ -206,16 +215,14 @@ export function ExpenseCreateModal({
 
         <div className="grid gap-2">
           <Label htmlFor="expense-date">Date purchased</Label>
-          <div className="overflow-hidden">
-            <Input
-              id="expense-date"
-              type="date"
-              value={datePurchased}
-              onChange={(e) => setDatePurchased(e.target.value)}
-              className="w-full min-w-0"
-              aria-required="true"
-            />
-          </div>
+          <DatePicker
+            id="expense-date"
+            value={datePurchased}
+            onChange={setDatePurchased}
+            disabled={datePickerBounds}
+            aria-required
+            data-testid="expense-date-picker"
+          />
         </div>
 
         <div className="grid gap-2">
