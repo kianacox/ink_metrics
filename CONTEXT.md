@@ -81,6 +81,23 @@ Both pages are linked from the site footer alongside Privacy Policy and Terms.
 
 ---
 
+## Auth Email Templates
+
+Supabase authentication emails are authored in-repo under `email-templates/` and then copied into Supabase as the runtime templates.
+
+### Visual language
+
+- Auth emails use the same **monochrome marketing palette** as the public site.
+- Legacy green accents are not part of the current brand language.
+- CTA buttons in auth emails follow the site-wide sharp-corner convention.
+- Auth-email content cards also use sharp corners (no radius) to match the site-wide style.
+- Update scope is styling-only: preserve existing auth template copy, links, and content structure.
+- Brand label in auth emails is plain black `inkMetrics` text for now (no accent treatment); this is a temporary stand-in for a future logo.
+- Primary auth-email CTA uses a solid black fill with white text.
+- Auth-email outer background uses the site-aligned warm off-white tone.
+
+---
+
 ## Action Cards
 
 Action cards surface client retention nudges on the insights/actions tab. Each card maps to a `ClientAction` with an `actionType`.
