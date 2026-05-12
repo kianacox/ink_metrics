@@ -7,6 +7,7 @@ import { FoundingCounter } from "@/components/marketing/founding-counter";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import { RevenueChart } from "@/components/marketing/revenue-chart";
 import { getFoundingCount } from "@/lib/marketing/get-founding-count";
+import { TrackedLink } from "@/components/marketing/tracked-link";
 
 const HOW_IT_WORKS = [
   {
@@ -197,7 +198,9 @@ export default async function HomePage() {
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link href="/auth/sign-up">Start free for 60 days</Link>
+              <TrackedLink href="/auth/sign-up" eventName="hero_cta_click">
+                Start free for 60 days
+              </TrackedLink>
             </Button>
             <Button
               asChild
@@ -374,7 +377,9 @@ export default async function HomePage() {
             just finally know your numbers.
           </p>
           <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link href="/auth/sign-up">Get started free</Link>
+            <TrackedLink href="/auth/sign-up" eventName="final_cta_click">
+              Get started free
+            </TrackedLink>
           </Button>
           <div className="mx-auto mt-6 max-w-sm">
             <FoundingCounter
