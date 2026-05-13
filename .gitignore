@@ -48,3 +48,7 @@ next-env.d.ts
 #docs
 COMPLETED.md
 ISSUES.md
+
+# agent worktrees and qa snapshots
+agents/
+qa/

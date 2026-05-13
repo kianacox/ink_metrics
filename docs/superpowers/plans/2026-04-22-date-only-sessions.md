@@ -1775,7 +1775,7 @@ const saveSession = useCallback(
 Verify shadcn Calendar and Popover components exist:
 
 ```bash
-ls /Users/kianacox/Code/ink_metrics/components/ui/ | grep -i "calendar\|popover"
+ls components/ui/ | grep -i "calendar\|popover"
 ```
 
 If missing, install them:
