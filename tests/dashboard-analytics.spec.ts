@@ -16,7 +16,7 @@ const EXPECTED_RETENTION = {
   numerator: 10,
   denominator: 11,
   rate: 10 / 11,
-  totalSessions: 59,
+  totalSessions: 69,
 } as const;
 const EXPECTED_AVG_PROFIT = {
   sessionCount: 10,
